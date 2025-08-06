@@ -1,0 +1,34 @@
+# Directorios de reportes generados
+reportes/
+target/
+
+# Archivos de configuración sensibles
+src/test/resources/configuracion/application-prod.properties
+src/test/resources/configuracion/secrets.properties
+
+# Archivos de IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.zip
+
+# Logs
+*.log
+
+# Screenshots y videos
+screenshots/
+videos/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Dependencias de Node.js (si se usan herramientas adicionales)
+node_modules/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
