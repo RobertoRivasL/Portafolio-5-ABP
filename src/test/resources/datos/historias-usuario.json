@@ -1,0 +1,411 @@
+{
+  "historias_usuario": [
+    {
+      "codigo": "HU-001",
+      "titulo": "Autenticación de Usuario",
+      "descripcion": "Como usuario registrado del sistema, quiero poder iniciar sesión para acceder a mis datos y funcionalidades personalizadas",
+      "como_usuario": "usuario registrado del sistema",
+      "quiero": "poder iniciar sesión con email y contraseña",
+      "para": "acceder a mis datos y funcionalidades personalizadas",
+      "prioridad": "ALTA",
+      "estado": "TERMINADO",
+      "epic": "Autenticación y Seguridad",
+      "asignado_a": "Equipo Frontend",
+      "tags_relacionados": ["@Login", "@Autenticacion", "@SmokeTest"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-001",
+          "descripcion": "El usuario puede ingresar email y contraseña válidos",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Login exitoso con credenciales válidas",
+            "Validación de formato de email"
+          ]
+        },
+        {
+          "id": "CA-002",
+          "descripcion": "El sistema valida las credenciales correctamente",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Login fallido con credenciales inválidas",
+            "Bloqueo temporal tras múltiples intentos fallidos"
+          ]
+        },
+        {
+          "id": "CA-003",
+          "descripcion": "El usuario es redirigido al dashboard tras login exitoso",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Redirección correcta después del login",
+            "Persistencia de sesión"
+          ]
+        }
+      ],
+      "escenarios_asociados": [
+        "Login exitoso con credenciales válidas",
+        "Login fallido con email inválido",
+        "Login fallido con contraseña incorrecta",
+        "Bloqueo temporal tras múltiples intentos",
+        "Recuperación de contraseña"
+      ]
+    },
+    {
+      "codigo": "HU-002",
+      "titulo": "Registro de Nuevo Usuario",
+      "descripcion": "Como visitante del sistema, quiero registrarme para crear una cuenta y acceder a las funcionalidades",
+      "como_usuario": "visitante del sistema",
+      "quiero": "registrarme con mis datos personales",
+      "para": "crear una cuenta y acceder a las funcionalidades del sistema",
+      "prioridad": "ALTA",
+      "estado": "TERMINADO",
+      "epic": "Gestión de Usuarios",
+      "asignado_a": "Equipo Backend",
+      "tags_relacionados": ["@Registro", "@Usuario", "@SmokeTest"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-004",
+          "descripcion": "El usuario puede ingresar datos personales requeridos",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Registro exitoso con datos válidos",
+            "Validación de campos obligatorios"
+          ]
+        },
+        {
+          "id": "CA-005",
+          "descripcion": "El sistema valida unicidad de email y nombre de usuario",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Error al registrar email existente",
+            "Error al registrar usuario existente"
+          ]
+        },
+        {
+          "id": "CA-006",
+          "descripcion": "El usuario recibe confirmación de registro exitoso",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Mensaje de confirmación tras registro",
+            "Email de bienvenida"
+          ]
+        }
+      ],
+      "escenarios_asociados": [
+        "Registro exitoso con datos completos",
+        "Error al registrar con email existente",
+        "Validación de contraseña débil",
+        "Registro con campos opcionales",
+        "Términos y condiciones requeridos"
+      ]
+    },
+    {
+      "codigo": "HU-003",
+      "titulo": "Cierre Seguro de Sesión",
+      "descripcion": "Como usuario autenticado, quiero cerrar mi sesión de forma segura para proteger mi información",
+      "como_usuario": "usuario autenticado del sistema",
+      "quiero": "cerrar mi sesión de forma segura",
+      "para": "proteger mi información personal y evitar accesos no autorizados",
+      "prioridad": "MEDIA",
+      "estado": "TERMINADO",
+      "epic": "Autenticación y Seguridad",
+      "asignado_a": "Equipo Frontend",
+      "tags_relacionados": ["@Logout", "@Seguridad", "@SmokeTest"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-007",
+          "descripcion": "El usuario puede cerrar sesión desde cualquier página",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Logout desde dashboard",
+            "Logout desde páginas internas"
+          ]
+        },
+        {
+          "id": "CA-008",
+          "descripcion": "La sesión se limpia completamente tras logout",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Invalidación de tokens de sesión",
+            "Limpieza de datos de sesión local"
+          ]
+        },
+        {
+          "id": "CA-009",
+          "descripcion": "El usuario es redirigido al login tras logout",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Redirección automática a login",
+            "Mensaje de confirmación de logout"
+          ]
+        }
+      ],
+      "escenarios_asociados": [
+        "Logout exitoso desde dashboard",
+        "Logout con confirmación",
+        "Logout automático por inactividad",
+        "Logout desde múltiples pestañas",
+        "Verificación de limpieza de sesión"
+      ]
+    },
+    {
+      "codigo": "HU-004",
+      "titulo": "Gestión CRUD de Productos",
+      "descripcion": "Como usuario administrativo, quiero gestionar productos para mantener actualizado el catálogo",
+      "como_usuario": "administrador del sistema",
+      "quiero": "crear, leer, actualizar y eliminar productos",
+      "para": "mantener actualizado y organizado el catálogo de productos",
+      "prioridad": "ALTA",
+      "estado": "EN_DESARROLLO",
+      "epic": "Gestión de Catálogo",
+      "asignado_a": "Equipo Fullstack",
+      "tags_relacionados": ["@CRUD", "@Productos", "@Regression"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-010",
+          "descripcion": "El usuario puede crear nuevos productos con datos válidos",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Crear producto con datos completos",
+            "Validación de campos requeridos"
+          ]
+        },
+        {
+          "id": "CA-011",
+          "descripcion": "El usuario puede visualizar lista de productos existentes",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Listar todos los productos",
+            "Paginación de productos"
+          ]
+        },
+        {
+          "id": "CA-012",
+          "descripcion": "El usuario puede actualizar información de productos",
+          "completado": false,
+          "escenarios_que_lo_validan": [
+            "Editar producto existente",
+            "Actualización parcial de campos"
+          ]
+        },
+        {
+          "id": "CA-013",
+          "descripcion": "El usuario puede eliminar productos de manera segura",
+          "completado": false,
+          "escenarios_que_lo_validan": [
+            "Eliminar producto con confirmación",
+            "Eliminación lógica vs física"
+          ]
+        }
+      ],
+      "escenarios_asociados": [
+        "Crear producto exitosamente",
+        "Editar producto existente",
+        "Eliminar producto con confirmación",
+        "Validación de datos de producto",
+        "Gestión de stock de productos"
+      ]
+    },
+    {
+      "codigo": "HU-005",
+      "titulo": "Sistema de Búsqueda de Productos",
+      "descripcion": "Como usuario del sistema, quiero buscar productos eficientemente para encontrar lo que necesito",
+      "como_usuario": "usuario del sistema",
+      "quiero": "buscar y filtrar productos",
+      "para": "encontrar rápidamente los productos que necesito",
+      "prioridad": "MEDIA",
+      "estado": "EN_TESTING",
+      "epic": "Experiencia de Usuario",
+      "asignado_a": "Equipo Frontend",
+      "tags_relacionados": ["@Busqueda", "@Filtros", "@UX"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-014",
+          "descripcion": "El usuario puede buscar productos por nombre o categoría",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Búsqueda por nombre de producto",
+            "Filtrado por categoría"
+          ]
+        },
+        {
+          "id": "CA-015",
+          "descripcion": "Los resultados se muestran de forma clara y ordenada",
+          "completado": true,
+          "escenarios_que_lo_validan": [
+            "Visualización de resultados de búsqueda",
+            "Ordenamiento de resultados"
+          ]
+        },
+        {
+          "id": "CA-016",
+          "descripcion": "El usuario puede aplicar filtros múltiples",
+          "completado": false,
+          "escenarios_que_lo_validan": [
+            "Combinación de múltiples filtros",
+            "Filtrado por rango de precios"
+          ]
+        }
+      ],
+      "escenarios_asociados": [
+        "Búsqueda básica por nombre",
+        "Filtrado por categoría y precio",
+        "Ordenamiento de resultados",
+        "Búsqueda sin resultados",
+        "Autocompletado de búsqueda"
+      ]
+    },
+    {
+      "codigo": "HU-006",
+      "titulo": "Gestión de Perfil de Usuario",
+      "descripcion": "Como usuario registrado, quiero gestionar mi perfil para mantener actualizados mis datos",
+      "como_usuario": "usuario registrado",
+      "quiero": "ver y editar mi información de perfil",
+      "para": "mantener actualizados mis datos personales y preferencias",
+      "prioridad": "BAJA",
+      "estado": "BACKLOG",
+      "epic": "Gestión de Usuarios",
+      "asignado_a": "Por asignar",
+      "tags_relacionados": ["@Perfil", "@Usuario", "@Personalización"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-017",
+          "descripcion": "El usuario puede ver su información actual de perfil",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        },
+        {
+          "id": "CA-018",
+          "descripcion": "El usuario puede editar datos personales",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        },
+        {
+          "id": "CA-019",
+          "descripcion": "El usuario puede cambiar su contraseña",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        }
+      ],
+      "escenarios_asociados": [
+        "Ver información de perfil",
+        "Editar datos personales",
+        "Cambio de contraseña",
+        "Subir foto de perfil",
+        "Configurar notificaciones"
+      ]
+    },
+    {
+      "codigo": "HU-007",
+      "titulo": "Panel de Administración",
+      "descripcion": "Como administrador del sistema, quiero acceso a funcionalidades administrativas para gestionar el sistema",
+      "como_usuario": "administrador del sistema",
+      "quiero": "acceder a un panel de administración completo",
+      "para": "gestionar usuarios, productos y configuraciones del sistema",
+      "prioridad": "MEDIA",
+      "estado": "EN_ANALISIS",
+      "epic": "Administración del Sistema",
+      "asignado_a": "Equipo Backend",
+      "tags_relacionados": ["@Admin", "@Gestión", "@Dashboard"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-020",
+          "descripcion": "Solo usuarios con rol admin pueden acceder",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        },
+        {
+          "id": "CA-021",
+          "descripcion": "El panel muestra estadísticas del sistema",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        },
+        {
+          "id": "CA-022",
+          "descripcion": "Permite gestionar usuarios y roles",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        }
+      ],
+      "escenarios_asociados": [
+        "Acceso restringido a administradores",
+        "Dashboard de estadísticas",
+        "Gestión de usuarios",
+        "Configuración del sistema",
+        "Logs de auditoría"
+      ]
+    },
+    {
+      "codigo": "HU-008",
+      "titulo": "Sistema de Notificaciones",
+      "descripcion": "Como usuario del sistema, quiero recibir notificaciones relevantes para estar informado de eventos importantes",
+      "como_usuario": "usuario del sistema",
+      "quiero": "recibir notificaciones de eventos importantes",
+      "para": "estar informado de cambios y actualizaciones relevantes",
+      "prioridad": "BAJA",
+      "estado": "BACKLOG",
+      "epic": "Experiencia de Usuario",
+      "asignado_a": "Por asignar",
+      "tags_relacionados": ["@Notificaciones", "@UX", "@Comunicación"],
+      "criterios_aceptacion": [
+        {
+          "id": "CA-023",
+          "descripcion": "El usuario recibe notificaciones en tiempo real",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        },
+        {
+          "id": "CA-024",
+          "descripcion": "Las notificaciones se pueden marcar como leídas",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        },
+        {
+          "id": "CA-025",
+          "descripcion": "El usuario puede configurar preferencias de notificación",
+          "completado": false,
+          "escenarios_que_lo_validan": []
+        }
+      ],
+      "escenarios_asociados": [
+        "Recibir notificación de nuevo producto",
+        "Marcar notificaciones como leídas",
+        "Configurar tipos de notificación",
+        "Notificaciones por email",
+        "Historial de notificaciones"
+      ]
+    }
+  ],
+  "estadisticas": {
+    "total_historias": 8,
+    "por_estado": {
+      "TERMINADO": 3,
+      "EN_DESARROLLO": 1,
+      "EN_TESTING": 1,
+      "EN_ANALISIS": 1,
+      "BACKLOG": 2
+    },
+    "por_prioridad": {
+      "ALTA": 3,
+      "MEDIA": 3,
+      "BAJA": 2
+    },
+    "por_epic": {
+      "Autenticación y Seguridad": 2,
+      "Gestión de Usuarios": 2,
+      "Gestión de Catálogo": 1,
+      "Experiencia de Usuario": 2,
+      "Administración del Sistema": 1
+    },
+    "cobertura_testing": {
+      "criterios_completados": 9,
+      "criterios_pendientes": 16,
+      "porcentaje_cobertura": 36.0
+    }
+  },
+  "configuracion": {
+    "version": "1.0.0",
+    "fecha_actualizacion": "2024-01-15",
+    "responsable_actualizacion": "Equipo QA",
+    "proximo_review": "2024-02-15"
+  }
+}
