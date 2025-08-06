@@ -1,0 +1,38 @@
+<!-- logback-test.xml - Configuración de logging para pruebas -->
+<configuration>
+    <!-- Configuración para consola -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Configuración para archivo de logs -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>target/logs/pruebas-bdd.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>target/logs/pruebas-bdd.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Configuración específica para Selenium -->
+    <logger name="org.openqa.selenium" level="WARN"/>
+    <logger name="io.github.bonigarcia.wdm" level="WARN"/>
+
+    <!-- Configuración específica para Cucumber -->
+    <logger name="io.cucumber" level="INFO"/>
+
+    <!-- Configuración específica para nuestras clases -->
+    <logger name="com.automatizacion.pruebas" level="DEBUG"/>
+
+    <!-- Nivel raíz -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

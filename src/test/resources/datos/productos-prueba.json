@@ -1,0 +1,396 @@
+{
+  "productos": [
+    {
+      "id": "producto_laptop_dell",
+      "codigo_sku": "DELL-INS-15-2024",
+      "nombre": "Laptop Dell Inspiron 15",
+      "descripcion": "Laptop para uso profesional y estudiantil con procesador Intel Core i5",
+      "precio": 799999.00,
+      "categoria": "Electrónicos",
+      "stock": 25,
+      "estado": "ACTIVO",
+      "fecha_creacion": "2024-01-15T10:00:00",
+      "fecha_modificacion": "2024-12-10T14:30:00",
+      "usuario_creacion": "admin@test.com",
+      "usuario_modificacion": "admin@test.com",
+      "especificaciones": {
+        "marca": "Dell",
+        "modelo": "Inspiron 15 3000",
+        "procesador": "Intel Core i5-1135G7",
+        "memoria_ram": "8GB DDR4",
+        "almacenamiento": "256GB SSD",
+        "pantalla": "15.6 pulgadas Full HD",
+        "sistema_operativo": "Windows 11 Home"
+      },
+      "dimensiones": {
+        "alto": 2.0,
+        "ancho": 36.0,
+        "profundidad": 25.0,
+        "peso": 1.8
+      },
+      "precio_historico": [
+        {"fecha": "2024-01-15", "precio": 849999.00},
+        {"fecha": "2024-06-01", "precio": 799999.00}
+      ],
+      "casos_uso": ["crear_producto", "editar_producto", "buscar_producto"],
+      "descripcion_prueba": "Producto principal para pruebas CRUD"
+    },
+    {
+      "id": "producto_mouse_logitech",
+      "codigo_sku": "LOGI-MX-MASTER-3",
+      "nombre": "Mouse Logitech MX Master 3",
+      "descripcion": "Mouse inalámbrico de alta precisión para profesionales",
+      "precio": 89990.00,
+      "categoria": "Electrónicos",
+      "stock": 50,
+      "estado": "ACTIVO",
+      "fecha_creacion": "2024-02-01T09:30:00",
+      "fecha_modificacion": "2024-12-01T16:15:00",
+      "usuario_creacion": "admin@test.com",
+      "usuario_modificacion": "test@test.com",
+      "especificaciones": {
+        "marca": "Logitech",
+        "modelo": "MX Master 3",
+        "conectividad": "Bluetooth, USB-C",
+        "bateria": "Hasta 70 días",
+        "sensor": "Darkfield 4000 DPI",
+        "botones": "7 botones programables"
+      },
+      "casos_uso": ["operaciones_stock", "busqueda_categoria"],
+      "descripcion_prueba": "Producto para pruebas de gestión de stock"
+    },
+    {
+      "id": "producto_libro_java",
+      "codigo_sku": "BOOK-JAVA-EFF-3ED",
+      "nombre": "Effective Java 3rd Edition",
+      "descripcion": "Libro de mejores prácticas en programación Java por Joshua Bloch",
+      "precio": 45990.00,
+      "categoria": "Libros",
+      "stock": 15,
+      "estado": "ACTIVO",
+      "fecha_creacion": "2024-03-10T11:45:00",
+      "fecha_modificacion": "2024-11-20T13:20:00",
+      "usuario_creacion": "test@test.com",
+      "usuario_modificacion": "test@test.com",
+      "especificaciones": {
+        "autor": "Joshua Bloch",
+        "editorial": "Addison-Wesley",
+        "isbn": "978-0134685991",
+        "paginas": 416,
+        "idioma": "Inglés",
+        "formato": "Tapa blanda"
+      },
+      "casos_uso": ["cambio_categoria", "validacion_precio"],
+      "descripcion_prueba": "Producto de categoría diferente para pruebas de filtros"
+    },
+    {
+      "id": "producto_silla_ergonomica",
+      "codigo_sku": "CHAIR-ERGO-PREM-2024",
+      "nombre": "Silla Ergonómica Premium",
+      "descripcion": "Silla de oficina ergonómica con soporte lumbar ajustable",
+      "precio": 299990.00,
+      "categoria": "Muebles",
+      "stock": 8,
+      "estado": "ACTIVO",
+      "fecha_creacion": "2024-04-05T14:20:00",
+      "fecha_modificacion": "2024-12-05T10:10:00",
+      "usuario_creacion": "admin@test.com",
+      "usuario_modificacion": "admin@test.com",
+      "especificaciones": {
+        "material": "Malla transpirable",
+        "soporte_lumbar": "Ajustable",
+        "reposabrazos": "4D ajustables",
+        "altura_ajustable": "42-52 cm",
+        "peso_maximo": "120 kg",
+        "garantia": "5 años"
+      },
+      "casos_uso": ["producto_alto_valor", "stock_limitado"],
+      "descripcion_prueba": "Producto de alto valor para pruebas de validación"
+    },
+    {
+      "id": "producto_cafe_origen",
+      "codigo_sku": "COFFEE-COL-ORIGIN-500G",
+      "nombre": "Café de Origen Colombia",
+      "descripcion": "Café premium de origen único, tostado artesanal",
+      "precio": 12990.00,
+      "categoria": "Alimentos",
+      "stock": 100,
+      "estado": "ACTIVO",
+      "fecha_creacion": "2024-05-15T08:30:00",
+      "fecha_modificacion": "2024-12-12T09:45:00",
+      "usuario_creacion": "test@test.com",
+      "usuario_modificacion": "admin@test.com",
+      "especificaciones": {
+        "origen": "Huila, Colombia",
+        "variedad": "Arábica Caturra",
+        "proceso": "Lavado",
+        "tostado": "Medio",
+        "peso": "500g",
+        "fecha_tostado": "2024-12-10"
+      },
+      "casos_uso": ["stock_alto", "precio_bajo", "operaciones_masivas"],
+      "descripcion_prueba": "Producto con stock alto para pruebas de operaciones masivas"
+    },
+    {
+      "id": "producto_agotado",
+      "codigo_sku": "AGOTADO-TEST-001",
+      "nombre": "Producto Agotado Test",
+      "descripcion": "Producto para probar manejo de stock cero",
+      "precio": 19990.00,
+      "categoria": "Test",
+      "stock": 0,
+      "estado": "AGOTADO",
+      "fecha_creacion": "2024-06-01T12:00:00",
+      "fecha_modificacion": "2024-12-14T18:00:00",
+      "usuario_creacion": "admin@test.com",
+      "usuario_modificacion": "sistema",
+      "casos_uso": ["stock_cero", "estado_agotado", "validacion_disponibilidad"],
+      "descripcion_prueba": "Producto específico para probar manejo de stock agotado"
+    }
+  ],
+  "productos_para_crear": [
+    {
+      "id": "nuevo_producto_1",
+      "codigo_sku": "NUEVO-PROD-2024-001",
+      "nombre": "Nuevo Producto de Prueba",
+      "descripcion": "Producto creado durante las pruebas automatizadas",
+      "precio": 25990.00,
+      "categoria": "Test",
+      "stock": 10,
+      "descripcion_prueba": "Producto para probar funcionalidad de creación"
+    },
+    {
+      "id": "nuevo_producto_2",
+      "codigo_sku": "TABLET-SAMSUNG-TAB-A8",
+      "nombre": "Tablet Samsung Galaxy Tab A8",
+      "descripcion": "Tablet de 10.5 pulgadas para entretenimiento y productividad",
+      "precio": 199990.00,
+      "categoria": "Electrónicos",
+      "stock": 20,
+      "especificaciones": {
+        "marca": "Samsung",
+        "pantalla": "10.5 pulgadas",
+        "procesador": "Unisoc Tiger T618",
+        "memoria": "4GB RAM + 64GB Storage",
+        "sistema": "Android 11"
+      },
+      "descripcion_prueba": "Producto con especificaciones completas para crear"
+    }
+  ],
+  "productos_invalidos": [
+    {
+      "id": "sin_nombre",
+      "codigo_sku": "SIN-NOMBRE-001",
+      "nombre": "",
+      "descripcion": "Producto sin nombre para validación",
+      "precio": 10000.00,
+      "categoria": "Test",
+      "stock": 5,
+      "mensaje_error_esperado": "El nombre del producto es obligatorio"
+    },
+    {
+      "id": "sin_precio",
+      "codigo_sku": "SIN-PRECIO-001",
+      "nombre": "Producto Sin Precio",
+      "descripcion": "Producto sin precio para validación",
+      "precio": null,
+      "categoria": "Test",
+      "stock": 5,
+      "mensaje_error_esperado": "El precio es obligatorio"
+    },
+    {
+      "id": "precio_negativo",
+      "codigo_sku": "PRECIO-NEG-001",
+      "nombre": "Producto Precio Negativo",
+      "descripcion": "Producto con precio negativo para validación",
+      "precio": -100.00,
+      "categoria": "Test",
+      "stock": 5,
+      "mensaje_error_esperado": "El precio debe ser mayor a cero"
+    },
+    {
+      "id": "stock_negativo",
+      "codigo_sku": "STOCK-NEG-001",
+      "nombre": "Producto Stock Negativo",
+      "descripcion": "Producto con stock negativo para validación",
+      "precio": 10000.00,
+      "categoria": "Test",
+      "stock": -5,
+      "mensaje_error_esperado": "El stock no puede ser negativo"
+    },
+    {
+      "id": "sku_duplicado",
+      "codigo_sku": "DELL-INS-15-2024",
+      "nombre": "Producto SKU Duplicado",
+      "descripcion": "Producto con SKU duplicado para validación",
+      "precio": 10000.00,
+      "categoria": "Test",
+      "stock": 5,
+      "mensaje_error_esperado": "El código SKU ya existe en el sistema"
+    }
+  ],
+  "criterios_busqueda": [
+    {
+      "tipo": "por_nombre",
+      "valor": "Laptop",
+      "resultados_esperados": ["DELL-INS-15-2024"],
+      "descripcion": "Búsqueda por nombre de producto"
+    },
+    {
+      "tipo": "por_categoria",
+      "valor": "Electrónicos",
+      "resultados_esperados": ["DELL-INS-15-2024", "LOGI-MX-MASTER-3"],
+      "descripcion": "Búsqueda por categoría"
+    },
+    {
+      "tipo": "por_codigo_sku",
+      "valor": "DELL",
+      "resultados_esperados": ["DELL-INS-15-2024"],
+      "descripcion": "Búsqueda por código SKU parcial"
+    },
+    {
+      "tipo": "por_rango_precio",
+      "valor_minimo": 500000,
+      "valor_maximo": 1000000,
+      "resultados_esperados": ["DELL-INS-15-2024"],
+      "descripcion": "Búsqueda por rango de precios"
+    }
+  ],
+  "operaciones_masivas": [
+    {
+      "tipo": "cambio_categoria",
+      "productos_seleccionados": ["DELL-INS-15-2024", "LOGI-MX-MASTER-3"],
+      "nueva_categoria": "Ofertas Especiales",
+      "mensaje_exito_esperado": "2 productos actualizados exitosamente"
+    },
+    {
+      "tipo": "descuento_masivo",
+      "productos_seleccionados": ["BOOK-JAVA-EFF-3ED", "COFFEE-COL-ORIGIN-500G"],
+      "porcentaje_descuento": 10,
+      "mensaje_exito_esperado": "Descuento aplicado a 2 productos"
+    },
+    {
+      "tipo": "activar_productos",
+      "productos_seleccionados": ["AGOTADO-TEST-001"],
+      "nuevo_estado": "ACTIVO",
+      "mensaje_exito_esperado": "1 producto activado exitosamente"
+    }
+  ],
+  "configuracion": {
+    "categorias_disponibles": [
+      "Electrónicos",
+      "Libros",
+      "Muebles",
+      "Alimentos",
+      "Ropa",
+      "Deportes",
+      "Hogar",
+      "Test"
+    ],
+    "estados_producto": [
+      "ACTIVO",
+      "INACTIVO",
+      "AGOTADO",
+      "DESCONTINUADO"
+    ],
+    "precio_minimo": 0.01,
+    "precio_maximo": 99999999.99,
+    "stock_minimo_alerta": 10,
+    "longitud_maxima_nombre": 200,
+    "longitud_maxima_descripcion": 1000,
+    "formato_sku": "^[A-Z0-9-]+$",
+    "longitud_maxima_sku": 50
+  },
+  "validaciones": {
+    "campos_obligatorios": [
+      "codigo_sku",
+      "nombre",
+      "precio",
+      "categoria"
+    ],
+    "formatos_precio": {
+      "decimales_permitidos": 2,
+      "separador_decimal": ".",
+      "separador_miles": ","
+    },
+    "reglas_sku": {
+      "unico": true,
+      "solo_mayusculas": true,
+      "caracteres_permitidos": "A-Z0-9-",
+      "no_espacios": true
+    }
+  },
+  "mensajes_sistema": {
+    "producto_creado": "Producto creado exitosamente",
+    "producto_actualizado": "Producto actualizado exitosamente",
+    "producto_eliminado": "Producto eliminado exitosamente",
+    "sin_resultados": "No se encontraron productos que coincidan con la búsqueda",
+    "confirmacion_eliminar": "¿Está seguro de eliminar este producto?",
+    "stock_agotado": "Producto sin stock disponible",
+    "precio_actualizado": "Precio actualizado correctamente"
+  },
+  "datos_auditoria": [
+    {
+      "producto_id": "DELL-INS-15-2024",
+      "cambios": [
+        {
+          "fecha": "2024-12-10T14:30:00",
+          "usuario": "admin@test.com",
+          "campo": "precio",
+          "valor_anterior": 849999.00,
+          "valor_nuevo": 799999.00,
+          "motivo": "Ajuste de precio promocional"
+        },
+        {
+          "fecha": "2024-11-15T10:15:00",
+          "usuario": "test@test.com",
+          "campo": "stock",
+          "valor_anterior": 30,
+          "valor_nuevo": 25,
+          "motivo": "Ajuste de inventario"
+        }
+      ]
+    }
+  ],
+  "escenarios_performance": [
+    {
+      "tipo": "carga_masiva",
+      "numero_productos": 1000,
+      "tiempo_maximo_segundos": 30,
+      "descripcion": "Cargar 1000 productos en menos de 30 segundos"
+    },
+    {
+      "tipo": "busqueda_rapida",
+      "criterio": "nombre contiene 'test'",
+      "tiempo_maximo_milisegundos": 500,
+      "descripcion": "Búsqueda debe responder en menos de 500ms"
+    },
+    {
+      "tipo": "operacion_crud",
+      "operacion": "crear",
+      "tiempo_maximo_segundos": 2,
+      "descripcion": "Crear producto en menos de 2 segundos"
+    }
+  ],
+  "metadatos": {
+    "version": "1.0.0",
+    "fecha_creacion": "2024-12-15",
+    "autor": "Equipo QA - Proyecto BDD",
+    "descripcion": "Datos de prueba para escenarios CRUD de productos",
+    "casos_cubiertos": [
+      "Crear productos",
+      "Editar productos",
+      "Eliminar productos",
+      "Buscar productos",
+      "Validaciones de campos",
+      "Operaciones masivas",
+      "Manejo de stock",
+      "Validación de SKU único",
+      "Filtros por categoría",
+      "Rangos de precio"
+    ],
+    "historias_usuario_relacionadas": [
+      "HU-003: Gestión de Productos (CRUD)"
+    ]
+  }
+}

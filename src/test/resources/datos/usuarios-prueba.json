@@ -1,0 +1,243 @@
+{
+  "usuarios": [
+    {
+      "id": "usuario_login_valido",
+      "nombre": "Juan Carlos",
+      "apellido": "Pérez González",
+      "email": "test@test.com",
+      "password": "password123",
+      "telefono": "+56912345678",
+      "estado": "ACTIVO",
+      "fecha_registro": "2024-01-15T10:30:00",
+      "ultimo_acceso": "2024-12-15T09:15:00",
+      "intentos_fallidos": 0,
+      "perfil": "USUARIO_ESTANDAR",
+      "configuracion": {
+        "recordar_sesion": true,
+        "notificaciones_email": true,
+        "idioma": "es"
+      },
+      "descripcion": "Usuario principal para pruebas de login exitoso",
+      "casos_uso": ["login_exitoso", "navegacion_dashboard", "operaciones_basicas"]
+    },
+    {
+      "id": "usuario_admin",
+      "nombre": "María José",
+      "apellido": "Silva Rodríguez",
+      "email": "admin@test.com",
+      "password": "admin123",
+      "telefono": "+56987654321",
+      "estado": "ACTIVO",
+      "fecha_registro": "2024-01-10T08:00:00",
+      "ultimo_acceso": "2024-12-15T08:45:00",
+      "intentos_fallidos": 0,
+      "perfil": "ADMINISTRADOR",
+      "configuracion": {
+        "recordar_sesion": false,
+        "notificaciones_email": true,
+        "idioma": "es"
+      },
+      "permisos": ["CRUD_PRODUCTOS", "GESTION_USUARIOS", "VER_REPORTES", "CONFIGURACION_SISTEMA"],
+      "descripcion": "Usuario administrador para pruebas de funcionalidades avanzadas",
+      "casos_uso": ["gestion_usuarios", "crud_productos", "reportes", "configuracion"]
+    },
+    {
+      "id": "usuario_bloqueado",
+      "nombre": "Usuario",
+      "apellido": "Bloqueado",
+      "email": "bloqueado@test.com",
+      "password": "password123",
+      "telefono": "+56911111111",
+      "estado": "BLOQUEADO",
+      "fecha_registro": "2024-01-20T14:20:00",
+      "ultimo_acceso": "2024-12-10T16:30:00",
+      "intentos_fallidos": 5,
+      "fecha_bloqueo": "2024-12-10T16:35:00",
+      "motivo_bloqueo": "Múltiples intentos fallidos de login",
+      "perfil": "USUARIO_ESTANDAR",
+      "descripcion": "Usuario para probar escenarios de bloqueo",
+      "casos_uso": ["login_usuario_bloqueado", "validacion_bloqueo"]
+    },
+    {
+      "id": "usuario_intentos_fallidos",
+      "nombre": "Intentos",
+      "apellido": "Fallidos",
+      "email": "intentos@test.com",
+      "password": "password123",
+      "telefono": "+56922222222",
+      "estado": "ACTIVO",
+      "fecha_registro": "2024-02-01T09:00:00",
+      "ultimo_acceso": "2024-12-14T10:20:00",
+      "intentos_fallidos": 3,
+      "perfil": "USUARIO_ESTANDAR",
+      "descripcion": "Usuario para probar escenarios de múltiples intentos fallidos",
+      "casos_uso": ["intentos_fallidos", "bloqueo_temporal"]
+    },
+    {
+      "id": "usuario_inactivo",
+      "nombre": "Laura",
+      "apellido": "Rodríguez",
+      "email": "inactivo@test.com",
+      "password": "password123",
+      "telefono": "+56955555555",
+      "estado": "INACTIVO",
+      "fecha_registro": "2024-01-05T12:00:00",
+      "ultimo_acceso": "2024-11-15T14:30:00",
+      "intentos_fallidos": 0,
+      "perfil": "USUARIO_ESTANDAR",
+      "descripcion": "Usuario inactivo para pruebas de validación de estado",
+      "casos_uso": ["login_usuario_inactivo", "validacion_estado"]
+    }
+  ],
+  "credenciales_invalidas": [
+    {
+      "id": "email_invalido_formato",
+      "email": "email-invalido",
+      "password": "password123",
+      "mensaje_error_esperado": "Formato de email inválido",
+      "descripcion": "Email sin formato válido"
+    },
+    {
+      "id": "email_sin_arroba",
+      "email": "emailtest.com",
+      "password": "password123",
+      "mensaje_error_esperado": "Formato de email inválido",
+      "descripcion": "Email sin símbolo @"
+    },
+    {
+      "id": "email_sin_dominio",
+      "email": "test@",
+      "password": "password123",
+      "mensaje_error_esperado": "Formato de email inválido",
+      "descripcion": "Email sin dominio"
+    },
+    {
+      "id": "credenciales_incorrectas",
+      "email": "noexiste@test.com",
+      "password": "passwordIncorrecto",
+      "mensaje_error_esperado": "Credenciales inválidas",
+      "descripcion": "Usuario que no existe en el sistema"
+    },
+    {
+      "id": "password_incorrecta",
+      "email": "test@test.com",
+      "password": "passwordIncorrecto",
+      "mensaje_error_esperado": "Credenciales inválidas",
+      "descripcion": "Usuario válido con contraseña incorrecta"
+    }
+  ],
+  "datos_registro": [
+    {
+      "id": "registro_valido_1",
+      "nombre": "Ana",
+      "apellido": "Martínez",
+      "email": "ana.martinez@ejemplo.com",
+      "password": "MiPassword123!",
+      "confirmar_password": "MiPassword123!",
+      "telefono": "+56933333333",
+      "aceptar_terminos": true,
+      "suscribir_newsletter": false,
+      "descripcion": "Datos válidos para registro exitoso"
+    },
+    {
+      "id": "registro_valido_2",
+      "nombre": "Carlos",
+      "apellido": "López",
+      "email": "carlos.lopez@ejemplo.com",
+      "password": "Password456!",
+      "confirmar_password": "Password456!",
+      "telefono": "+56944444444",
+      "aceptar_terminos": true,
+      "suscribir_newsletter": true,
+      "descripcion": "Segundo conjunto de datos válidos para registro"
+    },
+    {
+      "id": "registro_email_duplicado",
+      "nombre": "Duplicado",
+      "apellido": "Email",
+      "email": "test@test.com",
+      "password": "Password789!",
+      "confirmar_password": "Password789!",
+      "telefono": "+56966666666",
+      "aceptar_terminos": true,
+      "mensaje_error_esperado": "Ya existe una cuenta con este email",
+      "descripcion": "Email que ya existe en el sistema"
+    }
+  ],
+  "validaciones_password": [
+    {
+      "id": "password_muy_corta",
+      "password": "123",
+      "nivel_fortaleza": "Muy Débil",
+      "mensaje_error": "La contraseña debe tener al menos 8 caracteres",
+      "reglas_pendientes": ["Mínimo 8 caracteres", "Al menos una mayúscula", "Al menos un número", "Al menos un carácter especial"]
+    },
+    {
+      "id": "password_sin_numeros",
+      "password": "password",
+      "nivel_fortaleza": "Débil",
+      "mensaje_error": "La contraseña debe contener al menos un número",
+      "reglas_pendientes": ["Al menos una mayúscula", "Al menos un número", "Al menos un carácter especial"]
+    },
+    {
+      "id": "password_sin_mayusculas",
+      "password": "password123",
+      "nivel_fortaleza": "Débil",
+      "mensaje_error": "La contraseña debe contener al menos una mayúscula",
+      "reglas_pendientes": ["Al menos una mayúscula", "Al menos un carácter especial"]
+    },
+    {
+      "id": "password_sin_especiales",
+      "password": "Password123",
+      "nivel_fortaleza": "Media",
+      "mensaje_error": "La contraseña debe contener al menos un carácter especial",
+      "reglas_pendientes": ["Al menos un carácter especial"]
+    },
+    {
+      "id": "password_fuerte",
+      "password": "Password123!",
+      "nivel_fortaleza": "Fuerte",
+      "mensaje_error": "",
+      "reglas_pendientes": []
+    }
+  ],
+  "configuracion": {
+    "tiempo_bloqueo_minutos": 15,
+    "max_intentos_fallidos": 3,
+    "longitud_minima_password": 8,
+    "requerir_mayuscula": true,
+    "requerir_numero": true,
+    "requerir_caracter_especial": true,
+    "caracteres_especiales_validos": "!@#$%^&*()_+-=[]{}|;:,.<>?",
+    "tiempo_expiracion_sesion_horas": 24,
+    "recordar_sesion_dias": 30
+  },
+  "mensajes_sistema": {
+    "login_exitoso": "Bienvenido al sistema",
+    "login_fallido": "Credenciales inválidas",
+    "usuario_bloqueado": "Cuenta temporalmente bloqueada. Intente en 15 minutos",
+    "usuario_inactivo": "Su cuenta está inactiva. Contacte al administrador",
+    "campos_obligatorios": "Por favor, complete todos los campos",
+    "formato_email_invalido": "Formato de email inválido",
+    "registro_exitoso": "Registro completado exitosamente",
+    "email_confirmacion": "Por favor, confirme su email para activar su cuenta",
+    "passwords_no_coinciden": "Las contraseñas no coinciden",
+    "terminos_requeridos": "Debe aceptar los términos y condiciones"
+  },
+  "metadatos": {
+    "version": "1.0.0",
+    "fecha_creacion": "2024-12-15",
+    "autor": "Equipo QA - Proyecto BDD",
+    "descripcion": "Datos de prueba para escenarios de autenticación y registro",
+    "casos_cubiertos": [
+      "Login exitoso",
+      "Login con credenciales inválidas",
+      "Validación de formato de email",
+      "Bloqueo por intentos fallidos",
+      "Registro de nuevos usuarios",
+      "Validación de fortaleza de contraseña",
+      "Confirmación de contraseñas",
+      "Prevención de emails duplicados"
+    ]
+  }
+}
