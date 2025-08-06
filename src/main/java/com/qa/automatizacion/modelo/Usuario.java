@@ -1,4 +1,4 @@
-package com.qa.automatizacion.pruebas.modelo;
+package com.qa.automatizacion.modelo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

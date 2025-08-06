@@ -1,0 +1,424 @@
+{
+  "configuracion_performance": {
+    "version": "1.0.0",
+    "descripcion": "Configuración para escenarios de pruebas de performance",
+    "fecha_creacion": "2024-12-15",
+    "autores": [
+      "Antonio B. Arriagada LL.",
+      "Dante Escalona Bustos",
+      "Roberto Rivas Lopez"
+    ]
+  },
+  "parametros_globales": {
+    "timeout_maximo_segundos": 30,
+    "timeout_navegacion_segundos": 10,
+    "timeout_elemento_segundos": 5,
+    "reintentos_maximo": 3,
+    "espera_entre_reintentos_ms": 1000,
+    "captura_screenshots_performance": false,
+    "nivel_logging": "INFO"
+  },
+  "umbrales_performance": {
+    "login": {
+      "tiempo_maximo_segundos": 3,
+      "tiempo_objetivo_segundos": 2,
+      "descripcion": "Tiempo máximo aceptable para proceso de login"
+    },
+    "registro": {
+      "tiempo_maximo_segundos": 5,
+      "tiempo_objetivo_segundos": 3,
+      "descripcion": "Tiempo máximo aceptable para registro de usuario"
+    },
+    "carga_pagina": {
+      "tiempo_maximo_segundos": 4,
+      "tiempo_objetivo_segundos": 2,
+      "descripcion": "Tiempo máximo aceptable para carga de página"
+    },
+    "crud_crear": {
+      "tiempo_maximo_segundos": 4,
+      "tiempo_objetivo_segundos": 2,
+      "descripcion": "Tiempo máximo para crear un producto"
+    },
+    "crud_listar": {
+      "tiempo_maximo_segundos": 5,
+      "tiempo_objetivo_segundos": 3,
+      "descripcion": "Tiempo máximo para listar productos"
+    },
+    "crud_actualizar": {
+      "tiempo_maximo_segundos": 3,
+      "tiempo_objetivo_segundos": 2,
+      "descripcion": "Tiempo máximo para actualizar un producto"
+    },
+    "crud_eliminar": {
+      "tiempo_maximo_segundos": 3,
+      "tiempo_objetivo_segundos": 1,
+      "descripcion": "Tiempo máximo para eliminar un producto"
+    },
+    "busqueda": {
+      "tiempo_maximo_segundos": 6,
+      "tiempo_objetivo_segundos": 3,
+      "descripcion": "Tiempo máximo para búsqueda de productos"
+    },
+    "navegacion": {
+      "tiempo_maximo_segundos": 2,
+      "tiempo_objetivo_segundos": 1,
+      "descripcion": "Tiempo máximo para navegación entre páginas"
+    }
+  },
+  "escenarios_performance": {
+    "login_performance": {
+      "nombre": "Performance del proceso de login",
+      "descripcion": "Validar que el login se complete en tiempo aceptable",
+      "categoria": "autenticacion",
+      "prioridad": "alta",
+      "tags": ["@Performance", "@Login", "@Critico"],
+      "umbral_segundos": 3,
+      "datos_prueba": {
+        "usuario_valido": {
+          "email": "performance@test.com",
+          "password": "PerformanceTest123!"
+        }
+      },
+      "validaciones": [
+        "Tiempo de respuesta <= 3 segundos",
+        "Sin errores JavaScript",
+        "Redirección correcta post-login"
+      ]
+    },
+    "registro_performance": {
+      "nombre": "Performance del proceso de registro",
+      "descripcion": "Validar que el registro se complete en tiempo aceptable",
+      "categoria": "registro",
+      "prioridad": "alta",
+      "tags": ["@Performance", "@Registro", "@Critico"],
+      "umbral_segundos": 5,
+      "datos_prueba": {
+        "usuario_nuevo": {
+          "nombre": "Usuario",
+          "apellido": "Performance",
+          "email": "performance{timestamp}@test.com",
+          "password": "PerformanceTest123!"
+        }
+      },
+      "validaciones": [
+        "Tiempo de respuesta <= 5 segundos",
+        "Validaciones cliente-servidor",
+        "Confirmación de registro exitoso"
+      ]
+    },
+    "crud_productos_performance": {
+      "nombre": "Performance de operaciones CRUD",
+      "descripcion": "Validar performance de crear, leer, actualizar y eliminar productos",
+      "categoria": "crud",
+      "prioridad": "media",
+      "tags": ["@Performance", "@CRUD", "@GestionProductos"],
+      "operaciones": {
+        "crear": {
+          "umbral_segundos": 4,
+          "datos_producto": {
+            "nombre": "Producto Performance {timestamp}",
+            "descripcion": "Producto para pruebas de performance",
+            "precio": 99.99,
+            "categoria": "GENERAL",
+            "stock": 100
+          }
+        },
+        "listar": {
+          "umbral_segundos": 5,
+          "cantidad_registros_esperados": "variable",
+          "filtros_aplicables": ["categoria", "precio", "nombre"]
+        },
+        "actualizar": {
+          "umbral_segundos": 3,
+          "campos_actualizar": ["nombre", "descripcion", "precio", "stock"]
+        },
+        "eliminar": {
+          "umbral_segundos": 3,
+          "validar_eliminacion": true
+        }
+      }
+    },
+    "carga_paginas_performance": {
+      "nombre": "Performance de carga de páginas",
+      "descripcion": "Validar tiempo de carga de las principales páginas",
+      "categoria": "navegacion",
+      "prioridad": "media",
+      "tags": ["@Performance", "@Navegacion", "@UX"],
+      "paginas": {
+        "inicio": {
+          "url": "/",
+          "umbral_segundos": 4,
+          "elementos_criticos": ["header", "navigation", "main-content"]
+        },
+        "login": {
+          "url": "/login",
+          "umbral_segundos": 3,
+          "elementos_criticos": ["login-form", "email-input", "password-input"]
+        },
+        "registro": {
+          "url": "/registro",
+          "umbral_segundos": 4,
+          "elementos_criticos": ["registro-form", "campos-obligatorios"]
+        },
+        "productos": {
+          "url": "/productos",
+          "umbral_segundos": 5,
+          "elementos_criticos": ["tabla-productos", "filtros", "paginacion"]
+        },
+        "dashboard": {
+          "url": "/dashboard",
+          "umbral_segundos": 4,
+          "elementos_criticos": ["widgets", "estadisticas", "navegacion"]
+        }
+      }
+    },
+    "busqueda_performance": {
+      "nombre": "Performance de funcionalidad de búsqueda",
+      "descripcion": "Validar performance de búsquedas y filtros",
+      "categoria": "busqueda",
+      "prioridad": "media",
+      "tags": ["@Performance", "@Busqueda", "@Filtros"],
+      "tipos_busqueda": {
+        "busqueda_simple": {
+          "umbral_segundos": 6,
+          "terminos_prueba": ["producto", "test", "categoria", "precio"],
+          "validaciones": ["resultados_relevantes", "tiempo_respuesta"]
+        },
+        "busqueda_avanzada": {
+          "umbral_segundos": 8,
+          "filtros_combinados": {
+            "categoria": ["ELECTRODOMESTICOS", "ELECTRONICOS", "GENERAL"],
+            "rango_precio": {"min": 10.0, "max": 1000.0},
+            "disponibilidad": ["en_stock", "agotado"]
+          },
+          "validaciones": ["precision_filtros", "ordenamiento", "paginacion"]
+        },
+        "busqueda_autocompletado": {
+          "umbral_segundos": 2,
+          "caracteres_minimos": 3,
+          "sugerencias_maximas": 10,
+          "validaciones": ["relevancia_sugerencias", "velocidad_respuesta"]
+        }
+      }
+    }
+  },
+  "configuracion_navegador": {
+    "performance_settings": {
+      "disable_images": false,
+      "disable_css": false,
+      "disable_javascript": false,
+      "network_throttling": false,
+      "cache_disabled": false,
+      "user_agent": "Mozilla/5.0 (Performance Testing Bot)"
+    },
+    "metricas_capturar": [
+      "page_load_time",
+      "dom_content_loaded",
+      "first_contentful_paint",
+      "largest_contentful_paint",
+      "cumulative_layout_shift",
+      "first_input_delay"
+    ]
+  },
+  "datos_prueba_performance": {
+    "usuarios_concurrentes": {
+      "usuario_performance_1": {
+        "email": "perf1@test.com",
+        "password": "Performance123!",
+        "perfil": "usuario_basico"
+      },
+      "usuario_performance_2": {
+        "email": "perf2@test.com",
+        "password": "Performance123!",
+        "perfil": "usuario_avanzado"
+      },
+      "usuario_performance_admin": {
+        "email": "admin.perf@test.com",
+        "password": "AdminPerf123!",
+        "perfil": "administrador"
+      }
+    },
+    "productos_prueba": [
+      {
+        "nombre": "Producto Performance A",
+        "descripcion": "Producto optimizado para pruebas de rendimiento",
+        "precio": 99.99,
+        "categoria": "GENERAL",
+        "stock": 1000,
+        "activo": true
+      },
+      {
+        "nombre": "Producto Performance B",
+        "descripcion": "Segundo producto para pruebas de performance",
+        "precio": 149.99,
+        "categoria": "ELECTRONICOS",
+        "stock": 500,
+        "activo": true
+      }
+    ]
+  },
+  "reportes_performance": {
+    "configuracion": {
+      "generar_graficos": true,
+      "incluir_metricas_detalladas": true,
+      "formato_salida": ["json", "html", "csv"],
+      "directorio_salida": "reportes/performance"
+    },
+    "metricas_incluir": [
+      "tiempo_promedio_respuesta",
+      "tiempo_maximo_respuesta",
+      "tiempo_minimo_respuesta",
+      "percentil_95",
+      "percentil_99",
+      "tasa_exito",
+      "errores_por_tipo",
+      "tendencia_temporal"
+    ],
+    "alertas": {
+      "umbral_degradacion_porcentaje": 20,
+      "notification_webhook": null,
+      "email_alertas": []
+    }
+  },
+  "escenarios_carga": {
+    "carga_ligera": {
+      "descripcion": "Prueba con carga mínima del sistema",
+      "usuarios_simultaneos": 1,
+      "duracion_minutos": 5,
+      "ramp_up_segundos": 0
+    },
+    "carga_moderada": {
+      "descripcion": "Prueba con carga moderada del sistema",
+      "usuarios_simultaneos": 5,
+      "duracion_minutos": 10,
+      "ramp_up_segundos": 30
+    },
+    "carga_alta": {
+      "descripcion": "Prueba con alta carga del sistema",
+      "usuarios_simultaneos": 20,
+      "duracion_minutos": 15,
+      "ramp_up_segundos": 60
+    }
+  },
+  "validaciones_automaticas": {
+    "reglas_performance": [
+      {
+        "nombre": "Tiempo de respuesta aceptable",
+        "condicion": "tiempo_respuesta <= umbral_definido",
+        "accion_fallo": "marcar_como_fallido"
+      },
+      {
+        "nombre": "Sin errores JavaScript",
+        "condicion": "errores_javascript == 0",
+        "accion_fallo": "capturar_logs_consola"
+      },
+      {
+        "nombre": "Elementos críticos cargados",
+        "condicion": "elementos_criticos.todos_visibles",
+        "accion_fallo": "capturar_screenshot"
+      },
+      {
+        "nombre": "Memoria estable",
+        "condicion": "uso_memoria < 100MB",
+        "accion_fallo": "registrar_uso_recursos"
+      }
+    ]
+  },
+  "integraciones": {
+    "herramientas_monitoring": {
+      "new_relic": {
+        "habilitado": false,
+        "api_key": null,
+        "application_id": null
+      },
+      "datadog": {
+        "habilitado": false,
+        "api_key": null,
+        "application_key": null
+      },
+      "elastic_apm": {
+        "habilitado": false,
+        "server_url": null,
+        "service_name": "bdd-automation"
+      }
+    },
+    "ci_cd": {
+      "jenkins": {
+        "plugin_performance": "performance-plugin",
+        "umbral_fallo_porcentaje": 15
+      },
+      "gitlab_ci": {
+        "artifacts_performance": "reportes/performance/",
+        "pages_deployment": true
+      }
+    }
+  },
+  "ambiente_ejecucion": {
+    "desarrollo": {
+      "umbrales_relajados": true,
+      "factor_multiplicador": 1.5,
+      "logging_detallado": true
+    },
+    "testing": {
+      "umbrales_estandar": true,
+      "factor_multiplicador": 1.2,
+      "logging_detallado": true
+    },
+    "staging": {
+      "umbrales_estrictos": true,
+      "factor_multiplicador": 1.0,
+      "logging_detallado": false
+    },
+    "produccion": {
+      "umbrales_produccion": true,
+      "factor_multiplicador": 0.8,
+      "logging_detallado": false
+    }
+  },
+  "troubleshooting": {
+    "problemas_comunes": [
+      {
+        "sintoma": "Tiempos de respuesta elevados",
+        "causas_posibles": [
+          "Base de datos lenta",
+          "Red congestionada",
+          "Servidor sobrecargado",
+          "Consultas no optimizadas"
+        ],
+        "acciones_diagnostico": [
+          "Revisar logs de BD",
+          "Verificar métricas de red",
+          "Analizar uso CPU/memoria",
+          "Revisar planes de ejecución"
+        ]
+      },
+      {
+        "sintoma": "Errores intermitentes",
+        "causas_posibles": [
+          "Timeouts de red",
+          "Elementos no cargados",
+          "Condiciones de carrera",
+          "Recursos insuficientes"
+        ],
+        "acciones_diagnostico": [
+          "Incrementar timeouts",
+          "Agregar esperas explícitas",
+          "Revisar sincronización",
+          "Monitorear recursos sistema"
+        ]
+      }
+    ]
+  },
+  "metadatos": {
+    "version_esquema": "1.0.0",
+    "compatible_cucumber": "7.x",
+    "compatible_selenium": "4.x",
+    "ultima_actualizacion": "2024-12-15",
+    "revisado_por": "Equipo QA Automatización",
+    "notas": [
+      "Los umbrales pueden ajustarse según el ambiente de ejecución",
+      "Se recomienda ejecutar pruebas de performance en ambiente dedicado",
+      "Validar que la infraestructura sea consistente entre ejecuciones"
+    ]
+  }
+}

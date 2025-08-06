@@ -1,0 +1,8 @@
+com\qa\automatizacion\utilidades\HelperTrazabilidad$RegistroHistoriaUsuario.class
+com\qa\automatizacion\utilidades\HelperTrazabilidad.class
+com\qa\automatizacion\utilidades\HelperTrazabilidad$RegistroEscenario.class
+com\qa\automatizacion\modelo\Usuario$Builder.class
+com\qa\automatizacion\modelo\Usuario.class
+com\qa\automatizacion\configuracion\PropiedadesAplicacion.class
+com\qa\automatizacion\modelo\Usuario$TipoRol.class
+com\qa\automatizacion\utilidades\HelperTrazabilidad$ResumenTrazabilidad.class

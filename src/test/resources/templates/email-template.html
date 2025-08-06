@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Ejecución BDD - {{FECHA_EJECUCION}}</title>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .metric-card.success::before { background-color: #28a745; }
+        .metric-card.failure::before { background-color: #dc3545; }
+        .metric-card.warning::before { background-color: #ffc107; }
+        .metric-card.info::before { background-color: #17a2b8; }
+
+        .metric-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .success { color: #28a745; }
+        .failure { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+
+        .section {
+            margin: 30px 0;
+        }
+
+        .section h2 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .feature-list {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .feature-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-name {
+            font-weight: 500;
+        }
+
+        .feature-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-passed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-skipped {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .timeline-info {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+        }
+
+        .timeline-label {
+            font-weight: 500;
+        }
+
+        .timeline-value {
+            color: #6c757d;
+        }
+
+        .environment-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .environment-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .env-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .env-item {
+            padding: 8px 0;
+        }
+
+        .env-label {
+            font-weight: 500;
+            color: #424242;
+        }
+
+        .env-value {
+            color: #757575;
+            margin-left: 10px;
+        }
+
+        .trazabilidad {
+            background: #f3e5f5;
+            border: 1px solid #ce93d8;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .trazabilidad h3 {
+            color: #7b1fa2;
+            margin-bottom: 15px;
+        }
+
+        .historia-item {
+            background: white;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .historia-id {
+            font-weight: bold;
+            color: #7b1fa2;
+        }
+
+        .historia-descripcion {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .historia-cobertura {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .cobertura-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .cobertura-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .cobertura-100 { background: #4caf50; }
+        .cobertura-75 { background: #8bc34a; }
+        .cobertura-50 { background: #ffc107; }
+        .cobertura-25 { background: #ff9800; }
+        .cobertura-0 { background: #f44336; }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 25px 20px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer p {
+            color: #6c757d;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+            transform: translateY(-2px);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f1aeb5;
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .summary {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .content {
+                padding: 20px 15px;
+            }
+
+            .env-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Impresión */
+        @media print {
+            .container {
+                box-shadow: none;
+                margin: 0;
+            }
+
+            .header {
+                background: #333 !important;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>🔬 Reporte de Ejecución BDD</h1>
+        <p>Resultados de Pruebas Automatizadas - {{FECHA_EJECUCION}}</p>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="content">
+        <!-- Resumen Ejecutivo -->
+        <div class="summary">
+            <div class="metric-card success">
+                <div class="metric-number success">{{ESCENARIOS_PASADOS}}</div>
+                <div class="metric-label">Escenarios Exitosos</div>
+            </div>
+            <div class="metric-card failure">
+                <div class="metric-number failure">{{ESCENARIOS_FALLIDOS}}</div>
+                <div class="metric-label">Escenarios Fallidos</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="metric-number warning">{{ESCENARIOS_OMITIDOS}}</div>
+                <div class="metric-label">Escenarios Omitidos</div>
+            </div>
+            <div class="metric-card info">
+                <div class="metric-number info">{{DURACION_TOTAL}}</div>
+                <div class="metric-label">Tiempo Total</div>
+            </div>
+        </div>
+
+        <!-- Alertas si hay fallos críticos -->
+        {{#SI_HAY_FALLOS}}
+        <div class="alert alert-danger">
+            <strong>⚠️ Atención:</strong> Se detectaron {{ESCENARIOS_FALLIDOS}} escenarios fallidos.
+            Revisa los detalles en el reporte completo y toma acciones correctivas.
+        </div>
+        {{/SI_HAY_FALLOS}}
+
+        {{#SI_HAY_ADVERTENCIAS}}
+        <div class="alert alert-warning">
+            <strong>⚡ Advertencia:</strong> Algunos escenarios fueron omitidos o presentan advertencias.
+            Considera revisar la configuración y dependencias.
+        </div>
+        {{/SI_HAY_ADVERTENCIAS}}
+
+        {{#EJECUCION_EXITOSA}}
+        <div class="alert alert-success">
+            <strong>✅ Excelente:</strong> Todos los escenarios se ejecutaron exitosamente.
+            El sistema mantiene la calidad esperada.
+        </div>
+        {{/EJECUCION_EXITOSA}}
+
+        <!-- Información de Timeline -->
+        <div class="section">
+            <h2>⏱️ Timeline de Ejecución</h2>
+            <div class="timeline-info">
+                <div class="timeline-item">
+                    <span class="timeline-label">Inicio de Ejecución:</span>
+                    <span class="timeline-value">{{HORA_INICIO}}</span>
+                </div>
+                <div class="timeline-item">
+                    <span class="timeline-label">Fin de Ejecución:</span>
+                    <span class="timeline-value">{{HORA_FIN}}</span>
+                </div>
+                <div class="timeline-item">
+                    <span class="timeline-label">Duración Total:</span>
+                    <span class="timeline-value">{{DURACION_DETALLADA}}</span>
+                </div>
+                <div class="timeline-item">
+                    <span class="timeline-label">Promedio por Escenario:</span>
+                    <span class="timeline-value">{{PROMEDIO_POR_ESCENARIO}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Ejecutados -->
+        <div class="section">
+            <h2>📋 Features Ejecutados</h2>
+            <div class="feature-list">
+                {{#FEATURES}}
+                <div class="feature-item">
+                    <div>
+                        <div class="feature-name">{{NOMBRE_FEATURE}}</div>
+                        <small>{{ESCENARIOS_FEATURE}} escenarios • {{DURACION_FEATURE}}</small>
+                    </div>
+                    <div class="feature-status status-{{ESTADO_FEATURE}}">{{ESTADO_FEATURE}}</div>
+                </div>
+                {{/FEATURES}}
+            </div>
+        </div>
+
+        <!-- Trazabilidad con Historias de Usuario -->
+        <div class="section">
+            <h2>🎯 Trazabilidad - Historias de Usuario</h2>
+            <div class="trazabilidad">
+                <h3>Cobertura de Requerimientos</h3>
+                {{#HISTORIAS_USUARIO}}
+                <div class="historia-item">
+                    <div class="historia-id">{{ID_HISTORIA}}: {{TITULO_HISTORIA}}</div>
+                    <div class="historia-descripcion">{{DESCRIPCION_HISTORIA}}</div>
+                    <div class="historia-cobertura">
+                        Cobertura: {{PORCENTAJE_COBERTURA}}%
+                        ({{ESCENARIOS_PASADOS}}/{{TOTAL_ESCENARIOS}} escenarios)
+                    </div>
+                    <div class="cobertura-bar">
+                        <div class="cobertura-fill cobertura-{{NIVEL_COBERTURA}}"
+                             style="width: {{PORCENTAJE_COBERTURA}}%"></div>
+                    </div>
+                </div>
+                {{/HISTORIAS_USUARIO}}
+            </div>
+        </div>
+
+        <!-- Información del Ambiente -->
+        <div class="section">
+            <h2>🌐 Información del Ambiente</h2>
+            <div class="environment-info">
+                <h3>Configuración de Ejecución</h3>
+                <div class="env-grid">
+                    <div class="env-item">
+                        <span class="env-label">Navegador:</span>
+                        <span class="env-value">{{NAVEGADOR}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Versión:</span>
+                        <span class="env-value">{{VERSION_NAVEGADOR}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">SO:</span>
+                        <span class="env-value">{{SISTEMA_OPERATIVO}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Java:</span>
+                        <span class="env-value">{{VERSION_JAVA}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">URL Base:</span>
+                        <span class="env-value">{{URL_APLICACION}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Ambiente:</span>
+                        <span class="env-value">{{AMBIENTE_EJECUCION}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Usuario CI:</span>
+                        <span class="env-value">{{USUARIO_CI}}</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Build:</span>
+                        <span class="env-value">{{BUILD_NUMBER}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipo y Autoría -->
+        <div class="section">
+            <h2>👥 Información del Equipo</h2>
+            <div class="environment-info">
+                <h3>Equipo de Automatización</h3>
+                <div class="env-grid">
+                    <div class="env-item">
+                        <span class="env-label">Antonio B. Arriagada LL.</span>
+                        <span class="env-value">anarriag@gmail.com</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Dante Escalona Bustos</span>
+                        <span class="env-value">Jacobo.bustos.22@gmail.com</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Roberto Rivas Lopez</span>
+                        <span class="env-value">umancl@gmail.com</span>
+                    </div>
+                    <div class="env-item">
+                        <span class="env-label">Curso:</span>
+                        <span class="env-value">Automatización de Pruebas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enlaces a Reportes Detallados -->
+        <div class="section" style="text-align: center;">
+            <h2>📊 Reportes Detallados</h2>
+            <p>Accede a los reportes completos para análisis detallado:</p>
+            <a href="{{ENLACE_REPORTE_HTML}}" class="btn btn-primary">
+                📋 Reporte HTML Interactivo
+            </a>
+            <a href="{{ENLACE_REPORTE_JSON}}" class="btn btn-secondary">
+                📄 Datos JSON
+            </a>
+            <a href="{{ENLACE_TRAZABILIDAD}}" class="btn btn-primary">
+                🎯 Matriz de Trazabilidad
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>Proyecto BDD - Automatización de Pruebas</strong></p>
+        <p>Generado automáticamente el {{FECHA_COMPLETA}} a las {{HORA_GENERACION}}</p>
+        <p>Framework: Cucumber + Selenium WebDriver | Java 21 | Maven 3.9.10</p>
+        <p>🔄 Este reporte se genera automáticamente después de cada ejecución de pruebas</p>
+    </div>
+</div>
+</body>
+</html>
