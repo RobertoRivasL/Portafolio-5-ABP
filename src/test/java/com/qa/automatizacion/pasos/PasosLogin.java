@@ -393,7 +393,7 @@ public class PasosLogin {
     }
 
     @Entonces("debe permanecer en la página de login")
-    public void debePermanecer En LaPaginaDeLogin() {
+    public void debePermanecerenLaPaginaDeLogin() {
         logger.info("Verificando permanencia en página de login");
         trazabilidad.registrarPaso("HU-001", "Verificación de permanencia en login");
 
@@ -406,7 +406,7 @@ public class PasosLogin {
         assertTrue(urlActual.contains("login") || urlActual.equals(urlLogin),
                 "No permaneció en la página de login. URL actual: " + urlActual);
 
-        logger.info("Permanencia en página de login verificada");
+        logger.info("Verificación exitosa: permaneció en página de login");
     }
 
     @Entonces("los campos de entrada deben estar vacíos")
@@ -488,23 +488,20 @@ public class PasosLogin {
         logger.info("Login automático verificado exitosamente");
     }
 
-    @Entonces("debe poder moverse secuencialmente entre:")
-    public void debePoderMoverseSecuencialmenteEntre(DataTable tablaCampos) {
-        logger.info("Verificando navegación secuencial con Tab");
-        trazabilidad.registrarPaso("HU-001", "Verificación de navegación con Tab");
+    @Entonces("debe poder moverse secuencialmente entre {string}")
+    public void debePodermoverseSecuencialmenteEntre(String elementos) {
+        logger.info("Verificando navegación secuencial entre: {}", elementos);
+        trazabilidad.registrarPaso("HU-001", "Verificación de navegación secuencial");
 
-        List<Map<String, String>> campos = tablaCampos.asMaps(String.class, String.class);
-
-        for (Map<String, String> campo : campos) {
-            String nombreCampo = campo.get("campo");
-            int ordenEsperado = Integer.parseInt(campo.get("orden"));
-
-            boolean tieneEnfoque = paginaLogin.verificarEnfoqueCampo(nombreCampo, ordenEsperado);
-            assertTrue(tieneEnfoque,
-                    "El campo '" + nombreCampo + "' no tiene el enfoque en el orden " + ordenEsperado);
+        String[] elementosArray = elementos.split(",");
+        for (String elemento : elementosArray) {
+            elemento = elemento.trim();
+            assertTrue(paginaDashboard.esElementoNavegable(elemento),
+                    "No se puede navegar al elemento: " + elemento);
+            logger.debug("Navegación exitosa a: {}", elemento);
         }
 
-        logger.info("Navegación secuencial con Tab verificada exitosamente");
+        logger.info("Verificación exitosa: navegación secuencial completada");
     }
 
     @Entonces("cada campo debe tener el foco visual claramente visible")

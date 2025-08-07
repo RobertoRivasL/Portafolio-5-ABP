@@ -265,7 +265,7 @@ public class PasosRegistro {
         logger.info("Haciendo clic en el botón: {}", nombreBoton);
         trazabilidad.registrarPaso("HU-002", "Clic en botón: " + nombreBoton);
 
-        if (!tiempoInicioRegistro != null) {
+        if (tiempoInicioRegistro == null) {
             this.tiempoInicioRegistro = LocalDateTime.now();
         }
 

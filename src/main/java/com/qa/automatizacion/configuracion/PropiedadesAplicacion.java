@@ -8,24 +8,42 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Gestiona las propiedades de configuración de la aplicación.
- * Implementa el patrón Singleton para garantizar una única instancia.
+ * Gestor de propiedades de la aplicación para pruebas automatizadas.
+ * Centraliza la configuración y permite sobrescribir valores via system properties.
  *
  * Principios aplicados:
- * - Singleton: Una sola instancia para toda la aplicación
- * - Encapsulación: Oculta la complejidad de carga de propiedades
- * - Separación de Intereses: Se enfoca únicamente en la gestión de configuración
+ * - Single Responsibility: Se enfoca únicamente en gestión de propiedades
+ * - Strategy Pattern: Permite diferentes fuentes de configuración
+ * - Singleton Pattern: Una sola instancia de configuración
+ *
+ * @author Equipo QA Automatización
+ * @version 1.0
  */
 public class PropiedadesAplicacion {
 
     private static final Logger logger = LoggerFactory.getLogger(PropiedadesAplicacion.class);
-    private static final String ARCHIVO_PROPIEDADES = "configuracion/application.properties";
+
     private static PropiedadesAplicacion instancia;
     private final Properties propiedades;
 
+    // Nombres de archivos de propiedades
+    private static final String ARCHIVO_PROPIEDADES_PRINCIPAL = "application.properties";
+    private static final String ARCHIVO_PROPIEDADES_TEST = "application-test.properties";
+
+    // URLs por defecto
+    private static final String URL_BASE_DEFECTO = "http://localhost:8080";
+    private static final String URL_LOGIN_DEFECTO = URL_BASE_DEFECTO + "/login";
+    private static final String URL_REGISTRO_DEFECTO = URL_BASE_DEFECTO + "/registro";
+    private static final String URL_DASHBOARD_DEFECTO = URL_BASE_DEFECTO + "/dashboard";
+    private static final String URL_PRODUCTOS_DEFECTO = URL_BASE_DEFECTO + "/productos";
+
+    // Timeouts por defecto (en segundos)
+    private static final int TIMEOUT_IMPLICITO_DEFECTO = 10;
+    private static final int TIMEOUT_EXPLICITO_DEFECTO = 15;
+    private static final int TIMEOUT_CARGA_PAGINA_DEFECTO = 30;
+
     /**
-     * Constructor privado para implementar el patrón Singleton.
-     * Carga las propiedades desde el archivo de configuración.
+     * Constructor privado para implementar Singleton
      */
     private PropiedadesAplicacion() {
         this.propiedades = new Properties();
@@ -33,10 +51,9 @@ public class PropiedadesAplicacion {
     }
 
     /**
-     * Obtiene la instancia única de PropiedadesAplicacion.
-     * Thread-safe usando synchronized.
+     * Obtiene la instancia única de PropiedadesAplicacion
      *
-     * @return instancia única de PropiedadesAplicacion
+     * @return Instancia única
      */
     public static synchronized PropiedadesAplicacion obtenerInstancia() {
         if (instancia == null) {
@@ -45,192 +62,321 @@ public class PropiedadesAplicacion {
         return instancia;
     }
 
+    // Métodos para URLs de la aplicación
+
     /**
-     * Carga las propiedades desde el archivo de configuración.
-     * Implementa manejo de errores robusto.
+     * Obtiene la URL base de la aplicación
+     *
+     * @return URL base
+     */
+    public String obtenerUrlBase() {
+        return obtenerPropiedad("app.url.base", URL_BASE_DEFECTO);
+    }
+
+    /**
+     * Obtiene la URL de la página de login
+     *
+     * @return URL de login
+     */
+    public String obtenerUrlLogin() {
+        return obtenerPropiedad("app.url.login", URL_LOGIN_DEFECTO);
+    }
+
+    /**
+     * Obtiene la URL de la página de registro
+     *
+     * @return URL de registro
+     */
+    public String obtenerUrlRegistro() {
+        return obtenerPropiedad("app.url.registro", URL_REGISTRO_DEFECTO);
+    }
+
+    /**
+     * Obtiene la URL del dashboard
+     *
+     * @return URL del dashboard
+     */
+    public String obtenerUrlDashboard() {
+        return obtenerPropiedad("app.url.dashboard", URL_DASHBOARD_DEFECTO);
+    }
+
+    /**
+     * Obtiene la URL de la página de productos
+     *
+     * @return URL de productos
+     */
+    public String obtenerUrlProductos() {
+        return obtenerPropiedad("app.url.productos", URL_PRODUCTOS_DEFECTO);
+    }
+
+    // Métodos para configuración de WebDriver
+
+    /**
+     * Obtiene el tipo de navegador a usar
+     *
+     * @return Tipo de navegador (chrome, firefox, edge)
+     */
+    public String obtenerTipoNavegador() {
+        return obtenerPropiedad("webdriver.browser", "chrome");
+    }
+
+    /**
+     * Indica si el navegador debe ejecutarse en modo headless
+     *
+     * @return true si debe ser headless
+     */
+    public boolean esNavegadorHeadless() {
+        return Boolean.parseBoolean(obtenerPropiedad("webdriver.headless", "false"));
+    }
+
+    /**
+     * Obtiene el timeout implícito para WebDriver
+     *
+     * @return Timeout en segundos
+     */
+    public int obtenerTimeoutImplicito() {
+        return Integer.parseInt(obtenerPropiedad("webdriver.timeout.implicit",
+                String.valueOf(TIMEOUT_IMPLICITO_DEFECTO)));
+    }
+
+    /**
+     * Obtiene el timeout explícito para WebDriverWait
+     *
+     * @return Timeout en segundos
+     */
+    public int obtenerTimeoutExplicito() {
+        return Integer.parseInt(obtenerPropiedad("webdriver.timeout.explicit",
+                String.valueOf(TIMEOUT_EXPLICITO_DEFECTO)));
+    }
+
+    /**
+     * Obtiene el timeout de carga de página
+     *
+     * @return Timeout en segundos
+     */
+    public int obtenerTimeoutCargaPagina() {
+        return Integer.parseInt(obtenerPropiedad("webdriver.timeout.pageload",
+                String.valueOf(TIMEOUT_CARGA_PAGINA_DEFECTO)));
+    }
+
+    // Métodos para configuración de reportes
+
+    /**
+     * Obtiene el directorio base para reportes
+     *
+     * @return Directorio de reportes
+     */
+    public String obtenerDirectorioReportes() {
+        return obtenerPropiedad("reportes.directorio", "reportes");
+    }
+
+    /**
+     * Indica si se deben tomar capturas de pantalla en fallos
+     *
+     * @return true si se deben tomar capturas
+     */
+    public boolean tomarCapturasEnFallos() {
+        return Boolean.parseBoolean(obtenerPropiedad("reportes.capturas.fallos", "true"));
+    }
+
+    /**
+     * Indica si se deben tomar capturas de pantalla en todos los pasos
+     *
+     * @return true si se deben tomar capturas en todos los pasos
+     */
+    public boolean tomarCapturasEnTodosLosPasos() {
+        return Boolean.parseBoolean(obtenerPropiedad("reportes.capturas.todos", "false"));
+    }
+
+    // Métodos para configuración de base de datos
+
+    /**
+     * Obtiene la URL de la base de datos de pruebas
+     *
+     * @return URL de BD
+     */
+    public String obtenerUrlBaseDatos() {
+        return obtenerPropiedad("bd.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
+    }
+
+    /**
+     * Obtiene el usuario de la base de datos
+     *
+     * @return Usuario de BD
+     */
+    public String obtenerUsuarioBaseDatos() {
+        return obtenerPropiedad("bd.usuario", "sa");
+    }
+
+    /**
+     * Obtiene la contraseña de la base de datos
+     *
+     * @return Contraseña de BD
+     */
+    public String obtenerPasswordBaseDatos() {
+        return obtenerPropiedad("bd.password", "");
+    }
+
+    // Métodos para datos de prueba
+
+    /**
+     * Obtiene el email del usuario de prueba principal
+     *
+     * @return Email de usuario de prueba
+     */
+    public String obtenerEmailUsuarioPrueba() {
+        return obtenerPropiedad("test.usuario.email", "test@test.com");
+    }
+
+    /**
+     * Obtiene la contraseña del usuario de prueba principal
+     *
+     * @return Contraseña de usuario de prueba
+     */
+    public String obtenerPasswordUsuarioPrueba() {
+        return obtenerPropiedad("test.usuario.password", "password123");
+    }
+
+    /**
+     * Obtiene el nombre del usuario de prueba principal
+     *
+     * @return Nombre de usuario de prueba
+     */
+    public String obtenerNombreUsuarioPrueba() {
+        return obtenerPropiedad("test.usuario.nombre", "Usuario Test");
+    }
+
+    // Métodos para configuración de logging
+
+    /**
+     * Obtiene el nivel de logging
+     *
+     * @return Nivel de logging (DEBUG, INFO, WARN, ERROR)
+     */
+    public String obtenerNivelLogging() {
+        return obtenerPropiedad("logging.level", "INFO");
+    }
+
+    /**
+     * Indica si se debe loggear información detallada de las pruebas
+     *
+     * @return true si se debe loggear información detallada
+     */
+    public boolean esLoggingDetallado() {
+        return Boolean.parseBoolean(obtenerPropiedad("logging.detallado", "true"));
+    }
+
+    // Métodos para configuración de entorno
+
+    /**
+     * Obtiene el entorno de ejecución actual
+     *
+     * @return Entorno (dev, test, staging, prod)
+     */
+    public String obtenerEntorno() {
+        return obtenerPropiedad("app.entorno", "test");
+    }
+
+    /**
+     * Indica si se está ejecutando en modo de desarrollo
+     *
+     * @return true si es entorno de desarrollo
+     */
+    public boolean esModoDesarrollo() {
+        return "dev".equalsIgnoreCase(obtenerEntorno());
+    }
+
+    /**
+     * Indica si se está ejecutando en modo de producción
+     *
+     * @return true si es entorno de producción
+     */
+    public boolean esModoProduccion() {
+        return "prod".equalsIgnoreCase(obtenerEntorno());
+    }
+
+    // Métodos auxiliares privados
+
+    /**
+     * Carga las propiedades desde archivos y system properties
      */
     private void cargarPropiedades() {
-        try (InputStream flujoEntrada = Thread.currentThread()
-                .getContextClassLoader()
-                .getResourceAsStream(ARCHIVO_PROPIEDADES)) {
+        try {
+            // Cargar propiedades principales
+            cargarArchivoPropiedad(ARCHIVO_PROPIEDADES_PRINCIPAL);
 
-            if (flujoEntrada == null) {
-                logger.warn("No se encontró el archivo de propiedades: {}. Usando valores por defecto.",
-                        ARCHIVO_PROPIEDADES);
-                cargarPropiedadesPorDefecto();
-                return;
-            }
+            // Cargar propiedades específicas de test si existen
+            cargarArchivoPropiedad(ARCHIVO_PROPIEDADES_TEST);
 
-            propiedades.load(flujoEntrada);
-            logger.info("Propiedades cargadas exitosamente desde: {}", ARCHIVO_PROPIEDADES);
+            // Sobrescribir con system properties
+            propiedades.putAll(System.getProperties());
 
-            // Log de propiedades cargadas (sin mostrar información sensible)
-            if (logger.isDebugEnabled()) {
-                propiedades.forEach((clave, valor) -> {
-                    String valorMostrar = esPropiedadSensible(clave.toString()) ? "***" : valor.toString();
-                    logger.debug("Propiedad cargada: {} = {}", clave, valorMostrar);
-                });
+            logger.info("Propiedades cargadas exitosamente. Entorno: {}", obtenerEntorno());
+
+        } catch (Exception e) {
+            logger.warn("Error cargando propiedades: {}. Usando valores por defecto.", e.getMessage());
+        }
+    }
+
+    /**
+     * Carga un archivo de propiedades específico
+     *
+     * @param nombreArchivo Nombre del archivo a cargar
+     */
+    private void cargarArchivoPropiedad(String nombreArchivo) {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(nombreArchivo)) {
+
+            if (inputStream != null) {
+                Properties propiedadesArchivo = new Properties();
+                propiedadesArchivo.load(inputStream);
+
+                // Agregar propiedades del archivo a las propiedades principales
+                propiedades.putAll(propiedadesArchivo);
+
+                logger.debug("Archivo de propiedades cargado: {}", nombreArchivo);
+            } else {
+                logger.debug("Archivo de propiedades no encontrado: {}", nombreArchivo);
             }
 
         } catch (IOException e) {
-            logger.error("Error al cargar el archivo de propiedades: {}", e.getMessage());
-            cargarPropiedadesPorDefecto();
-        } catch (Exception e) {
-            logger.error("Error inesperado al cargar propiedades: {}", e.getMessage());
-            cargarPropiedadesPorDefecto();
+            logger.warn("Error leyendo archivo de propiedades {}: {}", nombreArchivo, e.getMessage());
         }
     }
 
     /**
-     * Carga propiedades por defecto en caso de error o archivo faltante.
-     */
-    private void cargarPropiedadesPorDefecto() {
-        logger.info("Cargando propiedades por defecto...");
-
-        // Configuración del navegador
-        propiedades.setProperty("navegador.tipo", "chrome");
-        propiedades.setProperty("navegador.headless", "false");
-        propiedades.setProperty("navegador.timeout.implicito", "10");
-        propiedades.setProperty("navegador.timeout.explicito", "15");
-
-        // URLs de la aplicación
-        propiedades.setProperty("aplicacion.url.base", "http://localhost:8080");
-        propiedades.setProperty("aplicacion.url.login", "http://localhost:8080/login");
-        propiedades.setProperty("aplicacion.url.registro", "http://localhost:8080/registro");
-        propiedades.setProperty("aplicacion.url.dashboard", "http://localhost:8080/dashboard");
-
-        // Base de datos
-        propiedades.setProperty("bd.url", "jdbc:h2:mem:testdb");
-        propiedades.setProperty("bd.usuario", "sa");
-        propiedades.setProperty("bd.password", "");
-        propiedades.setProperty("bd.driver", "org.h2.Driver");
-
-        // Reportes
-        propiedades.setProperty("reportes.directorio", "reportes");
-        propiedades.setProperty("reportes.formato", "html,json");
-        propiedades.setProperty("reportes.incluir.screenshots", "true");
-
-        logger.info("Propiedades por defecto cargadas exitosamente");
-    }
-
-    /**
-     * Determina si una propiedad contiene información sensible.
+     * Obtiene una propiedad con valor por defecto
      *
-     * @param nombrePropiedad nombre de la propiedad a evaluar
-     * @return true si es sensible, false en caso contrario
+     * @param clave Clave de la propiedad
+     * @param valorDefecto Valor por defecto si no existe la propiedad
+     * @return Valor de la propiedad
      */
-    private boolean esPropiedadSensible(String nombrePropiedad) {
-        return nombrePropiedad.toLowerCase().contains("password") ||
-                nombrePropiedad.toLowerCase().contains("clave") ||
-                nombrePropiedad.toLowerCase().contains("secret") ||
-                nombrePropiedad.toLowerCase().contains("token");
-    }
-
-    /**
-     * Obtiene el valor de una propiedad.
-     *
-     * @param clave nombre de la propiedad
-     * @return valor de la propiedad o null si no existe
-     */
-    public String obtenerPropiedad(String clave) {
-        String valor = propiedades.getProperty(clave);
+    private String obtenerPropiedad(String clave, String valorDefecto) {
+        // Prioridad: System Properties > Archivo Properties > Valor por defecto
+        String valor = System.getProperty(clave);
 
         if (valor == null) {
-            logger.warn("Propiedad no encontrada: {}", clave);
+            valor = propiedades.getProperty(clave, valorDefecto);
         }
 
+        logger.debug("Propiedad '{}' = '{}'", clave, valor);
         return valor;
     }
 
     /**
-     * Obtiene el valor de una propiedad con un valor por defecto.
+     * Establece una propiedad programáticamente
      *
-     * @param clave nombre de la propiedad
-     * @param valorPorDefecto valor a retornar si la propiedad no existe
-     * @return valor de la propiedad o valorPorDefecto si no existe
-     */
-    public String obtenerPropiedad(String clave, String valorPorDefecto) {
-        String valor = propiedades.getProperty(clave, valorPorDefecto);
-
-        if (valor.equals(valorPorDefecto)) {
-            logger.debug("Usando valor por defecto para {}: {}", clave, valorPorDefecto);
-        }
-
-        return valor;
-    }
-
-    /**
-     * Obtiene una propiedad como entero.
-     *
-     * @param clave nombre de la propiedad
-     * @param valorPorDefecto valor por defecto si la propiedad no existe o no es un entero válido
-     * @return valor entero de la propiedad
-     */
-    public int obtenerPropiedadEntero(String clave, int valorPorDefecto) {
-        String valor = obtenerPropiedad(clave);
-
-        if (valor == null) {
-            return valorPorDefecto;
-        }
-
-        try {
-            return Integer.parseInt(valor);
-        } catch (NumberFormatException e) {
-            logger.warn("El valor '{}' para la propiedad '{}' no es un entero válido. Usando valor por defecto: {}",
-                    valor, clave, valorPorDefecto);
-            return valorPorDefecto;
-        }
-    }
-
-    /**
-     * Obtiene una propiedad como booleano.
-     *
-     * @param clave nombre de la propiedad
-     * @param valorPorDefecto valor por defecto si la propiedad no existe
-     * @return valor booleano de la propiedad
-     */
-    public boolean obtenerPropiedadBooleano(String clave, boolean valorPorDefecto) {
-        String valor = obtenerPropiedad(clave);
-
-        if (valor == null) {
-            return valorPorDefecto;
-        }
-
-        // Valores considerados como true: true, yes, 1, on, enabled
-        return valor.equalsIgnoreCase("true") ||
-                valor.equalsIgnoreCase("yes") ||
-                valor.equals("1") ||
-                valor.equalsIgnoreCase("on") ||
-                valor.equalsIgnoreCase("enabled");
-    }
-
-    /**
-     * Establece el valor de una propiedad en tiempo de ejecución.
-     *
-     * @param clave nombre de la propiedad
-     * @param valor valor a establecer
+     * @param clave Clave de la propiedad
+     * @param valor Valor de la propiedad
      */
     public void establecerPropiedad(String clave, String valor) {
         propiedades.setProperty(clave, valor);
-        logger.debug("Propiedad establecida: {} = {}", clave,
-                esPropiedadSensible(clave) ? "***" : valor);
+        logger.debug("Propiedad establecida: '{}' = '{}'", clave, valor);
     }
 
     /**
-     * Verifica si una propiedad existe.
+     * Obtiene todas las propiedades como Properties
      *
-     * @param clave nombre de la propiedad
-     * @return true si la propiedad existe, false en caso contrario
-     */
-    public boolean existePropiedad(String clave) {
-        return propiedades.containsKey(clave);
-    }
-
-    /**
-     * Obtiene todas las propiedades como un objeto Properties.
-     * Retorna una copia para evitar modificaciones externas.
-     *
-     * @return copia de todas las propiedades
+     * @return Copia de todas las propiedades
      */
     public Properties obtenerTodasLasPropiedades() {
         Properties copia = new Properties();
@@ -239,56 +385,27 @@ public class PropiedadesAplicacion {
     }
 
     /**
-     * Obtiene la URL base de la aplicación.
+     * Genera un resumen de la configuración actual
      *
-     * @return URL base configurada
+     * @return String con resumen de configuración
      */
-    public String obtenerUrlBase() {
-        return obtenerPropiedad("aplicacion.url.base", "http://localhost:8080");
-    }
+    public String generarResumenConfiguracion() {
+        StringBuilder resumen = new StringBuilder();
+        resumen.append("=== Configuración Actual ===\n");
+        resumen.append("Entorno: ").append(obtenerEntorno()).append("\n");
+        resumen.append("URL Base: ").append(obtenerUrlBase()).append("\n");
+        resumen.append("Navegador: ").append(obtenerTipoNavegador());
 
-    /**
-     * Obtiene la URL de login.
-     *
-     * @return URL de login
-     */
-    public String obtenerUrlLogin() {
-        return obtenerPropiedad("aplicacion.url.login", obtenerUrlBase() + "/login");
-    }
+        if (esNavegadorHeadless()) {
+            resumen.append(" (headless)");
+        }
+        resumen.append("\n");
 
-    /**
-     * Obtiene la URL de registro.
-     *
-     * @return URL de registro
-     */
-    public String obtenerUrlRegistro() {
-        return obtenerPropiedad("aplicacion.url.registro", obtenerUrlBase() + "/registro");
-    }
+        resumen.append("Timeout Implícito: ").append(obtenerTimeoutImplicito()).append("s\n");
+        resumen.append("Timeout Explícito: ").append(obtenerTimeoutExplicito()).append("s\n");
+        resumen.append("Directorio Reportes: ").append(obtenerDirectorioReportes()).append("\n");
+        resumen.append("Nivel Logging: ").append(obtenerNivelLogging()).append("\n");
 
-    /**
-     * Obtiene la URL del dashboard.
-     *
-     * @return URL del dashboard
-     */
-    public String obtenerUrlDashboard() {
-        return obtenerPropiedad("aplicacion.url.dashboard", obtenerUrlBase() + "/dashboard");
-    }
-
-    /**
-     * Obtiene el directorio de reportes.
-     *
-     * @return directorio configurado para reportes
-     */
-    public String obtenerDirectorioReportes() {
-        return obtenerPropiedad("reportes.directorio", "reportes");
-    }
-
-    /**
-     * Verifica si se deben incluir screenshots en los reportes.
-     *
-     * @return true si se deben incluir screenshots
-     */
-    public boolean debeIncluirScreenshots() {
-        return obtenerPropiedadBooleano("reportes.incluir.screenshots", true);
+        return resumen.toString();
     }
 }
