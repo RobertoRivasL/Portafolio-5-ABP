@@ -1,394 +1,730 @@
 package com.qa.automatizacion.paginas;
 
+import com.qa.automatizacion.configuracion.ConfiguradorNavegador;
+import com.qa.automatizacion.configuracion.PropiedadesAplicacion;
+import com.qa.automatizacion.utilidades.HelperTrazabilidad;
+import com.qa.automatizacion.utilidades.UtileriasComunes;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.interactions.Actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 
 /**
- * Clase base para todas las páginas del patrón Page Object Model.
- * Proporciona funcionalidades comunes para interactuar con elementos web.
+ * Clase base abstracta para todos los Page Objects del proyecto.
+ * Proporciona funcionalidades comunes y reutilizables usando UtileriasComunes.
  *
  * Principios aplicados:
- * - Template Method: Define el esqueleto de operaciones comunes
- * - DRY: Evita repetición de código en las páginas
- * - Abstracción: Encapsula complejidades de Selenium
- * - Single Responsibility: Se enfoca en operaciones básicas de página
+ * - DRY: Centraliza funcionalidades comunes en UtileriasComunes
+ * - Template Method: Define la estructura común para todas las páginas
+ * - Delegation: Delega operaciones complejas a UtileriasComunes
+ * - Single Responsibility: Se enfoca en ser la base para Page Objects
+ * - Open/Closed: Abierta para extensión por las páginas hijas
  *
- * @author Equipo QA Automatización
- * @version 1.0
+ * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
+ * @version 2.0.0 - Optimizada con métodos reutilizables centralizados
  */
 public abstract class PaginaBase {
 
-    protected static final Logger logger = LoggerFactory.getLogger(PaginaBase.class);
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+    protected final WebDriver driver;
+    protected final PropiedadesAplicacion propiedades;
+    protected final HelperTrazabilidad trazabilidad;
 
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-    protected Actions actions;
-    protected JavascriptExecutor jsExecutor;
-
-    // Configuración de timeouts
-    protected static final Duration TIMEOUT_DEFECTO = Duration.ofSeconds(10);
-    protected static final Duration TIMEOUT_LARGO = Duration.ofSeconds(30);
-    protected static final Duration TIMEOUT_CORTO = Duration.ofSeconds(5);
+    // Localizadores comunes para todas las páginas
+    protected static final By SPINNER_CARGA = By.cssSelector(".spinner, .loading, [data-testid='loading']");
+    protected static final By OVERLAY_CARGA = By.cssSelector(".overlay, .modal-backdrop, [data-testid='overlay']");
+    protected static final By MENSAJE_ERROR_GLOBAL = By.cssSelector(".alert-error, .error-global, [data-testid='global-error']");
+    protected static final By MENSAJE_EXITO_GLOBAL = By.cssSelector(".alert-success, .success-global, [data-testid='global-success']");
 
     /**
-     * Constructor base que inicializa los componentes comunes
+     * Constructor que inicializa la página base con todas las dependencias.
      *
-     * @param driver Instancia del WebDriver
+     * @param driver WebDriver activo - puede ser null para usar el driver global
      */
     protected PaginaBase(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, TIMEOUT_DEFECTO);
-        this.actions = new Actions(driver);
-        this.jsExecutor = (JavascriptExecutor) driver;
+        this.driver = driver != null ? driver : ConfiguradorNavegador.obtenerDriver();
+        this.propiedades = PropiedadesAplicacion.obtenerInstancia();
+        this.trazabilidad = new HelperTrazabilidad();
 
-        // Inicializar elementos de la página con PageFactory
-        PageFactory.initElements(driver, this);
+        // Inicializar elementos usando PageFactory si el driver está disponible
+        if (this.driver != null) {
+            PageFactory.initElements(this.driver, this);
+        }
 
         logger.debug("Página base inicializada: {}", this.getClass().getSimpleName());
     }
 
     /**
-     * Método abstracto para verificar que la página esté cargada
-     * Debe ser implementado por cada página específica
+     * Constructor por defecto que usa el driver global.
+     */
+    protected PaginaBase() {
+        this(null);
+    }
+
+    // ==================== MÉTODOS ABSTRACTOS ====================
+
+    /**
+     * Verifica si la página está completamente cargada.
+     * Debe ser implementado por cada página específica.
      *
-     * @return true si la página está cargada correctamente
+     * @return true si la página está cargada
      */
     public abstract boolean estaPaginaCargada();
 
-    // Métodos para interactuar con elementos
+    /**
+     * Obtiene la URL base de la página.
+     * Debe ser implementado por cada página específica.
+     *
+     * @return URL base de la página
+     */
+    public abstract String obtenerUrlBase();
 
     /**
-     * Espera a que un elemento sea visible y clickeable
+     * Obtiene los localizadores únicos que identifican esta página.
+     * Debe ser implementado por cada página específica.
      *
-     * @param elemento WebElement a esperar
-     * @return El mismo WebElement para encadenamiento
+     * @return array de localizadores únicos de la página
      */
-    protected WebElement esperarElementoClickeable(WebElement elemento) {
-        return wait.until(ExpectedConditions.elementToBeClickable(elemento));
+    protected abstract By[] obtenerLocalizadoresUnicos();
+
+    // ==================== MÉTODOS DE NAVEGACIÓN ====================
+
+    /**
+     * Navega a esta página usando su URL base.
+     */
+    public void navegarAPagina() {
+        String url = obtenerUrlBase();
+        registrarAccion("Navegando a página", this.getClass().getSimpleName(), url);
+        UtileriasComunes.navegarAUrl(driver, url);
+        esperarCargaPagina();
     }
 
     /**
-     * Espera a que un elemento sea visible
-     *
-     * @param elemento WebElement a esperar
-     * @return El mismo WebElement para encadenamiento
+     * Actualiza la página actual.
      */
-    protected WebElement esperarElementoVisible(WebElement elemento) {
-        return wait.until(ExpectedConditions.visibilityOf(elemento));
+    public void actualizarPagina() {
+        registrarAccion("Actualizando página", this.getClass().getSimpleName());
+        UtileriasComunes.actualizarPagina(driver);
+        esperarCargaPagina();
     }
 
     /**
-     * Espera a que un elemento sea visible usando localizador
+     * Navega hacia atrás en el historial.
+     */
+    public void navegarAtras() {
+        registrarAccion("Navegando hacia atrás");
+        UtileriasComunes.navegarAtras(driver);
+        esperarCargaPagina();
+    }
+
+    // ==================== MÉTODOS DE BÚSQUEDA DE ELEMENTOS ====================
+
+    /**
+     * Busca un elemento en la página usando UtileriasComunes.
      *
      * @param localizador By localizador del elemento
-     * @return WebElement encontrado
+     * @param timeoutSegundos timeout opcional
+     * @return Optional con el elemento si se encuentra
      */
-    protected WebElement esperarElementoVisible(By localizador) {
-        return wait.until(ExpectedConditions.visibilityOfElementLocated(localizador));
+    protected Optional<WebElement> buscarElemento(By localizador, int... timeoutSegundos) {
+        return UtileriasComunes.buscarElemento(driver, localizador, timeoutSegundos);
     }
 
     /**
-     * Hace clic en un elemento de forma segura
+     * Busca múltiples elementos en la página.
      *
-     * @param elemento WebElement a hacer clic
+     * @param localizador By localizador de los elementos
+     * @param timeoutSegundos timeout opcional
+     * @return Lista de elementos encontrados
      */
-    protected void hacerClicSeguro(WebElement elemento) {
-        try {
-            esperarElementoClickeable(elemento).click();
-            logger.debug("Clic realizado en elemento: {}", elemento.getTagName());
-        } catch (Exception e) {
-            logger.warn("Clic normal falló, intentando con JavaScript: {}", e.getMessage());
-            hacerClicConJavascript(elemento);
-        }
+    protected List<WebElement> buscarElementos(By localizador, int... timeoutSegundos) {
+        return UtileriasComunes.buscarElementos(driver, localizador, timeoutSegundos);
     }
 
     /**
-     * Hace clic usando JavaScript
-     *
-     * @param elemento WebElement a hacer clic
-     */
-    protected void hacerClicConJavascript(WebElement elemento) {
-        jsExecutor.executeScript("arguments[0].click();", elemento);
-        logger.debug("Clic con JavaScript realizado");
-    }
-
-    /**
-     * Escribe texto en un elemento de forma segura
-     *
-     * @param elemento WebElement donde escribir
-     * @param texto Texto a escribir
-     */
-    protected void escribirTextoSeguro(WebElement elemento, String texto) {
-        try {
-            esperarElementoVisible(elemento);
-            elemento.clear();
-            elemento.sendKeys(texto);
-            logger.debug("Texto '{}' escrito en elemento", texto);
-        } catch (Exception e) {
-            logger.warn("Error al escribir texto: {}", e.getMessage());
-            escribirTextoConJavascript(elemento, texto);
-        }
-    }
-
-    /**
-     * Escribe texto usando JavaScript
-     *
-     * @param elemento WebElement donde escribir
-     * @param texto Texto a escribir
-     */
-    protected void escribirTextoConJavascript(WebElement elemento, String texto) {
-        jsExecutor.executeScript("arguments[0].value = arguments[1];", elemento, texto);
-        logger.debug("Texto '{}' escrito con JavaScript", texto);
-    }
-
-    /**
-     * Obtiene el texto de un elemento de forma segura
-     *
-     * @param elemento WebElement del cual obtener texto
-     * @return Texto del elemento o cadena vacía si hay error
-     */
-    protected String obtenerTextoSeguro(WebElement elemento) {
-        try {
-            esperarElementoVisible(elemento);
-            String texto = elemento.getText();
-            logger.debug("Texto obtenido: '{}'", texto);
-            return texto;
-        } catch (Exception e) {
-            logger.warn("Error al obtener texto: {}", e.getMessage());
-            return "";
-        }
-    }
-
-    /**
-     * Verifica si un elemento está presente en la página
+     * Busca un elemento clickeable con espera fluida.
      *
      * @param localizador By localizador del elemento
-     * @return true si el elemento está presente
+     * @param timeoutSegundos timeout opcional
+     * @return Optional con el elemento clickeable
      */
-    protected boolean estaElementoPresente(By localizador) {
-        try {
-            driver.findElement(localizador);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    protected Optional<WebElement> buscarElementoClickeable(By localizador, int... timeoutSegundos) {
+        return UtileriasComunes.buscarElementoClickeable(driver, localizador, timeoutSegundos);
     }
 
+    // ==================== MÉTODOS DE VERIFICACIÓN ====================
+
     /**
-     * Verifica si un elemento está visible
+     * Verifica si un elemento está visible.
      *
-     * @param elemento WebElement a verificar
+     * @param localizador By localizador del elemento
+     * @param timeoutSegundos timeout opcional
      * @return true si el elemento está visible
      */
-    protected boolean estaElementoVisible(WebElement elemento) {
-        try {
-            return elemento.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
+    protected boolean esElementoVisible(By localizador, int... timeoutSegundos) {
+        return UtileriasComunes.esElementoVisible(driver, localizador, timeoutSegundos);
     }
 
     /**
-     * Espera a que un elemento desaparezca
+     * Verifica si un elemento está habilitado.
      *
      * @param localizador By localizador del elemento
-     * @return true si el elemento desapareció
+     * @return true si el elemento está habilitado
      */
-    protected boolean esperarElementoDesaparezca(By localizador) {
-        try {
-            return wait.until(ExpectedConditions.invisibilityOfElementLocated(localizador));
-        } catch (Exception e) {
-            logger.warn("Elemento no desapareció en el tiempo esperado: {}", localizador);
-            return false;
-        }
+    protected boolean esElementoHabilitado(By localizador) {
+        return UtileriasComunes.esElementoHabilitado(driver, localizador);
     }
 
     /**
-     * Desplaza la página hasta un elemento
+     * Verifica si un elemento está seleccionado.
      *
-     * @param elemento WebElement al cual desplazarse
+     * @param localizador By localizador del elemento
+     * @return true si el elemento está seleccionado
      */
-    protected void desplazarseAElemento(WebElement elemento) {
-        jsExecutor.executeScript("arguments[0].scrollIntoView(true);", elemento);
-        logger.debug("Desplazamiento realizado hacia elemento");
+    protected boolean esElementoSeleccionado(By localizador) {
+        return UtileriasComunes.esElementoSeleccionado(driver, localizador);
     }
 
     /**
-     * Realiza hover sobre un elemento
+     * Verifica si la página contiene un texto específico.
      *
-     * @param elemento WebElement sobre el cual hacer hover
+     * @param texto texto a buscar
+     * @return true si el texto está presente
      */
-    protected void hacerHover(WebElement elemento) {
-        actions.moveToElement(elemento).perform();
-        logger.debug("Hover realizado sobre elemento");
+    public boolean paginaContieneTexto(String texto) {
+        registrarAccion("Verificando texto en página", texto);
+        return UtileriasComunes.paginaContienTexto(driver, texto);
     }
 
+    // ==================== MÉTODOS DE INTERACCIÓN ====================
+
     /**
-     * Espera un tiempo específico (usar con moderación)
+     * Hace clic en un elemento de forma segura.
      *
-     * @param milisegundos Tiempo a esperar en milisegundos
+     * @param localizador By localizador del elemento
+     * @param reintentos número de reintentos opcionales
+     * @return true si el clic fue exitoso
      */
-    protected void esperarTiempo(long milisegundos) {
-        try {
-            Thread.sleep(milisegundos);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.warn("Espera interrumpida: {}", e.getMessage());
-        }
+    protected boolean hacerClicSeguro(By localizador, int... reintentos) {
+        registrarAccion("Haciendo clic en elemento", localizador.toString());
+        return UtileriasComunes.hacerClicSeguro(driver, localizador, reintentos);
     }
 
     /**
-     * Ejecuta JavaScript personalizado
+     * Hace doble clic en un elemento.
      *
-     * @param script Script de JavaScript a ejecutar
-     * @param argumentos Argumentos para el script
-     * @return Resultado de la ejecución
+     * @param localizador By localizador del elemento
+     * @return true si el doble clic fue exitoso
      */
-    protected Object ejecutarJavascript(String script, Object... argumentos) {
-        return jsExecutor.executeScript(script, argumentos);
+    protected boolean hacerDobleClicSeguro(By localizador) {
+        registrarAccion("Haciendo doble clic en elemento", localizador.toString());
+        return UtileriasComunes.hacerDobleClicSeguro(driver, localizador);
     }
 
     /**
-     * Obtiene el título de la página actual
+     * Hace clic derecho en un elemento.
      *
-     * @return Título de la página
+     * @param localizador By localizador del elemento
+     * @return true si el clic derecho fue exitoso
      */
-    protected String obtenerTituloPagina() {
-        return driver.getTitle();
+    protected boolean hacerClicDerechoSeguro(By localizador) {
+        registrarAccion("Haciendo clic derecho en elemento", localizador.toString());
+        return UtileriasComunes.hacerClicDerechoSeguro(driver, localizador);
     }
 
     /**
-     * Obtiene la URL actual
+     * Ingresa texto en un campo de forma segura.
+     *
+     * @param localizador By localizador del campo
+     * @param texto texto a ingresar
+     * @param limpiarAntes true para limpiar el campo antes de escribir
+     * @return true si el texto se ingresó correctamente
+     */
+    protected boolean ingresarTextoSeguro(By localizador, String texto, boolean... limpiarAntes) {
+        registrarAccion("Ingresando texto en campo", localizador.toString(), "Texto: " + texto);
+        return UtileriasComunes.ingresarTextoSeguro(driver, localizador, texto, limpiarAntes);
+    }
+
+    /**
+     * Selecciona una opción de dropdown por texto visible.
+     *
+     * @param localizador By localizador del select
+     * @param textoOpcion texto de la opción a seleccionar
+     * @return true si la selección fue exitosa
+     */
+    protected boolean seleccionarOpcionPorTexto(By localizador, String textoOpcion) {
+        registrarAccion("Seleccionando opción por texto", localizador.toString(), "Opción: " + textoOpcion);
+        return UtileriasComunes.seleccionarOpcionPorTexto(driver, localizador, textoOpcion);
+    }
+
+    /**
+     * Selecciona una opción de dropdown por valor.
+     *
+     * @param localizador By localizador del select
+     * @param valor valor de la opción a seleccionar
+     * @return true si la selección fue exitosa
+     */
+    protected boolean seleccionarOpcionPorValor(By localizador, String valor) {
+        registrarAccion("Seleccionando opción por valor", localizador.toString(), "Valor: " + valor);
+        return UtileriasComunes.seleccionarOpcionPorValor(driver, localizador, valor);
+    }
+
+    // ==================== MÉTODOS DE OBTENCIÓN DE DATOS ====================
+
+    /**
+     * Obtiene el texto de un elemento.
+     *
+     * @param localizador By localizador del elemento
+     * @return Optional con el texto del elemento
+     */
+    protected Optional<String> obtenerTextoElemento(By localizador) {
+        return UtileriasComunes.obtenerTextoElemento(driver, localizador);
+    }
+
+    /**
+     * Obtiene el valor de un atributo de un elemento.
+     *
+     * @param localizador By localizador del elemento
+     * @param nombreAtributo nombre del atributo
+     * @return Optional con el valor del atributo
+     */
+    protected Optional<String> obtenerAtributoElemento(By localizador, String nombreAtributo) {
+        return UtileriasComunes.obtenerAtributoElemento(driver, localizador, nombreAtributo);
+    }
+
+    /**
+     * Obtiene el valor de un campo de entrada.
+     *
+     * @param localizador By localizador del campo
+     * @return Optional con el valor del campo
+     */
+    protected Optional<String> obtenerValorCampo(By localizador) {
+        return UtileriasComunes.obtenerValorCampo(driver, localizador);
+    }
+
+    /**
+     * Obtiene el título actual de la página.
+     *
+     * @return título de la página
+     */
+    public String obtenerTituloPagina() {
+        return UtileriasComunes.obtenerTituloPagina(driver);
+    }
+
+    /**
+     * Obtiene la URL actual de la página.
      *
      * @return URL actual
      */
-    protected String obtenerUrlActual() {
-        return driver.getCurrentUrl();
+    public String obtenerUrlActual() {
+        return UtileriasComunes.obtenerUrlActual(driver);
     }
 
-    /**
-     * Navega hacia atrás en el historial del navegador
-     */
-    protected void navegarAtras() {
-        driver.navigate().back();
-        logger.debug("Navegación hacia atrás realizada");
-    }
+    // ==================== MÉTODOS DE ESPERA ====================
 
     /**
-     * Refresca la página actual
-     */
-    protected void refrescarPagina() {
-        driver.navigate().refresh();
-        logger.debug("Página refrescada");
-    }
-
-    /**
-     * Espera a que la página termine de cargar completamente
-     */
-    protected void esperarCargaCompleta() {
-        wait.until(webDriver ->
-                jsExecutor.executeScript("return document.readyState").equals("complete"));
-        logger.debug("Carga completa de página confirmada");
-    }
-
-    /**
-     * Toma una captura de pantalla de la página actual
+     * Espera que un elemento sea visible.
      *
-     * @return Array de bytes con la imagen
+     * @param localizador By localizador del elemento
+     * @param timeoutSegundos timeout en segundos
+     * @return true si el elemento se volvió visible
      */
-    protected byte[] tomarCapturaPantalla() {
-        try {
-            if (driver instanceof org.openqa.selenium.TakesScreenshot) {
-                org.openqa.selenium.TakesScreenshot takesScreenshot =
-                        (org.openqa.selenium.TakesScreenshot) driver;
-                return takesScreenshot.getScreenshotAs(org.openqa.selenium.OutputType.BYTES);
-            }
-        } catch (Exception e) {
-            logger.error("Error al tomar captura de pantalla: {}", e.getMessage());
-        }
-        return new byte[0];
+    protected boolean esperarElementoVisible(By localizador, int timeoutSegundos) {
+        return UtileriasComunes.esperarElementoVisible(driver, localizador, timeoutSegundos);
     }
 
     /**
-     * Verifica si hay mensajes de error visibles en la página
+     * Espera que un elemento no sea visible.
+     *
+     * @param localizador By localizador del elemento
+     * @param timeoutSegundos timeout en segundos
+     * @return true si el elemento dejó de ser visible
+     */
+    protected boolean esperarElementoNoVisible(By localizador, int timeoutSegundos) {
+        return UtileriasComunes.esperarElementoNoVisible(driver, localizador, timeoutSegundos);
+    }
+
+    /**
+     * Espera que aparezca texto específico en un elemento.
+     *
+     * @param localizador By localizador del elemento
+     * @param texto texto esperado
+     * @param timeoutSegundos timeout en segundos
+     * @return true si el texto apareció
+     */
+    protected boolean esperarTextoEnElemento(By localizador, String texto, int timeoutSegundos) {
+        return UtileriasComunes.esperarTextoEnElemento(driver, localizador, texto, timeoutSegundos);
+    }
+
+    /**
+     * Espera una cantidad específica de segundos.
+     *
+     * @param segundos segundos a esperar
+     */
+    protected void esperarSegundos(int segundos) {
+        UtileriasComunes.esperarSegundos(segundos);
+    }
+
+    /**
+     * Espera que la página termine de cargar completamente.
+     * Incluye verificaciones específicas para esta página.
+     */
+    public void esperarCargaPagina() {
+        registrarAccion("Esperando carga completa de página", this.getClass().getSimpleName());
+
+        // Espera base para carga de DOM
+        UtileriasComunes.esperarCargaPagina(driver);
+
+        // Esperar que desaparezcan los spinners de carga comunes
+        esperarElementoNoVisible(SPINNER_CARGA, 5);
+        esperarElementoNoVisible(OVERLAY_CARGA, 5);
+
+        // Verificar que los localizadores únicos estén presentes
+        for (By localizador : obtenerLocalizadoresUnicos()) {
+            if (esperarElementoVisible(localizador, 3)) {
+                break; // Si al menos uno está visible, la página está cargada
+            }
+        }
+
+        logger.debug("Carga de página completada: {}", this.getClass().getSimpleName());
+    }
+
+    // ==================== MÉTODOS DE MANEJO DE ALERTAS Y FRAMES ====================
+
+    /**
+     * Acepta una alerta JavaScript si está presente.
+     *
+     * @param timeoutSegundos timeout para esperar la alerta
+     * @return true si se aceptó la alerta
+     */
+    protected boolean aceptarAlerta(int timeoutSegundos) {
+        registrarAccion("Aceptando alerta JavaScript");
+        return UtileriasComunes.aceptarAlerta(driver, timeoutSegundos);
+    }
+
+    /**
+     * Rechaza una alerta JavaScript si está presente.
+     *
+     * @param timeoutSegundos timeout para esperar la alerta
+     * @return true si se rechazó la alerta
+     */
+    protected boolean rechazarAlerta(int timeoutSegundos) {
+        registrarAccion("Rechazando alerta JavaScript");
+        return UtileriasComunes.rechazarAlerta(driver, timeoutSegundos);
+    }
+
+    /**
+     * Obtiene el texto de una alerta si está presente.
+     *
+     * @param timeoutSegundos timeout para esperar la alerta
+     * @return Optional con el texto de la alerta
+     */
+    protected Optional<String> obtenerTextoAlerta(int timeoutSegundos) {
+        return UtileriasComunes.obtenerTextoAlerta(driver, timeoutSegundos);
+    }
+
+    /**
+     * Cambia al frame por su nombre o ID.
+     *
+     * @param nombreOId nombre o ID del frame
+     * @return true si se cambió exitosamente
+     */
+    protected boolean cambiarAFrame(String nombreOId) {
+        registrarAccion("Cambiando a frame", nombreOId);
+        return UtileriasComunes.cambiarAFramePorNombre(driver, nombreOId);
+    }
+
+    /**
+     * Cambia al frame por elemento.
+     *
+     * @param localizadorFrame By localizador del frame
+     * @return true si se cambió exitosamente
+     */
+    protected boolean cambiarAFrame(By localizadorFrame) {
+        registrarAccion("Cambiando a frame", localizadorFrame.toString());
+        return UtileriasComunes.cambiarAFramePorElemento(driver, localizadorFrame);
+    }
+
+    /**
+     * Regresa al contenido principal.
+     */
+    protected void regresarAContenidoPrincipal() {
+        registrarAccion("Regresando al contenido principal");
+        UtileriasComunes.regresarAContenidoPrincipal(driver);
+    }
+
+    // ==================== MÉTODOS DE CAPTURA Y DIAGNÓSTICO ====================
+
+    /**
+     * Toma una captura de pantalla de la página completa.
+     *
+     * @return byte array con la imagen
+     */
+    public byte[] tomarCapturaPantalla() {
+        registrarAccion("Tomando captura de pantalla", this.getClass().getSimpleName());
+        return UtileriasComunes.tomarCapturaPantalla(driver);
+    }
+
+    /**
+     * Toma captura de pantalla de un elemento específico.
+     *
+     * @param localizador By localizador del elemento
+     * @return byte array con la imagen del elemento
+     */
+    protected byte[] tomarCapturaElemento(By localizador) {
+        registrarAccion("Tomando captura de elemento", localizador.toString());
+        return UtileriasComunes.tomarCapturaElemento(driver, localizador);
+    }
+
+    /**
+     * Obtiene información de diagnóstico de la página.
+     *
+     * @return String con información de diagnóstico
+     */
+    public String obtenerInformacionDiagnostico() {
+        return UtileriasComunes.obtenerInformacionDiagnostico(driver);
+    }
+
+    /**
+     * Ejecuta JavaScript personalizado en la página.
+     *
+     * @param script script de JavaScript
+     * @param argumentos argumentos opcionales
+     * @return resultado de la ejecución
+     */
+    protected Object ejecutarJavaScript(String script, Object... argumentos) {
+        registrarAccion("Ejecutando JavaScript personalizado");
+        return UtileriasComunes.ejecutarJavaScript(driver, script, argumentos);
+    }
+
+    // ==================== MÉTODOS DE VALIDACIÓN COMUNES ====================
+
+    /**
+     * Verifica si hay mensajes de error globales en la página.
      *
      * @return true si hay mensajes de error
      */
-    protected boolean hayMensajesError() {
-        // Selectores comunes para mensajes de error
-        String[] selectoresError = {
-                ".error", ".alert-danger", ".text-danger",
-                "[class*='error']", "[class*='danger']"
-        };
+    public boolean hayMensajesError() {
+        return esElementoVisible(MENSAJE_ERROR_GLOBAL, 2);
+    }
 
-        for (String selector : selectoresError) {
-            if (estaElementoPresente(By.cssSelector(selector))) {
-                return true;
-            }
+    /**
+     * Verifica si hay mensajes de éxito globales en la página.
+     *
+     * @return true si hay mensajes de éxito
+     */
+    public boolean hayMensajesExito() {
+        return esElementoVisible(MENSAJE_EXITO_GLOBAL, 2);
+    }
+
+    /**
+     * Obtiene el texto del mensaje de error global si existe.
+     *
+     * @return Optional con el texto del mensaje de error
+     */
+    public Optional<String> obtenerMensajeError() {
+        if (hayMensajesError()) {
+            return obtenerTextoElemento(MENSAJE_ERROR_GLOBAL);
         }
-        return false;
+        return Optional.empty();
     }
 
     /**
-     * Obtiene mensajes de error visibles en la página
+     * Obtiene el texto del mensaje de éxito global si existe.
      *
-     * @return Texto de los mensajes de error concatenados
+     * @return Optional con el texto del mensaje de éxito
      */
-    protected String obtenerMensajesError() {
-        StringBuilder mensajes = new StringBuilder();
-        String[] selectoresError = {
-                ".error", ".alert-danger", ".text-danger"
-        };
-
-        for (String selector : selectoresError) {
-            try {
-                var elementos = driver.findElements(By.cssSelector(selector));
-                for (var elemento : elementos) {
-                    if (elemento.isDisplayed()) {
-                        mensajes.append(elemento.getText()).append(" ");
-                    }
-                }
-            } catch (Exception e) {
-                // Ignorar errores al buscar elementos
-            }
+    public Optional<String> obtenerMensajeExito() {
+        if (hayMensajesExito()) {
+            return obtenerTextoElemento(MENSAJE_EXITO_GLOBAL);
         }
-
-        return mensajes.toString().trim();
+        return Optional.empty();
     }
 
     /**
-     * Verifica si la página contiene texto específico
+     * Verifica si la página está en estado de carga.
      *
-     * @param texto Texto a buscar
-     * @return true si el texto está presente
+     * @return true si la página está cargando
      */
-    protected boolean contienTexto(String texto) {
-        return driver.getPageSource().contains(texto);
+    public boolean estaCargando() {
+        return esElementoVisible(SPINNER_CARGA, 1) || esElementoVisible(OVERLAY_CARGA, 1);
+    }
+
+    // ==================== MÉTODOS DE ACCIONES ESPECÍFICAS DE PÁGINA ====================
+
+    /**
+     * Presiona la tecla Enter en la página.
+     */
+    protected void presionarEnter() {
+        registrarAccion("Presionando tecla Enter");
+        UtileriasComunes.presionarTecla(driver, Keys.ENTER);
     }
 
     /**
-     * Espera a que aparezca texto específico en la página
-     *
-     * @param texto Texto a esperar
-     * @param timeout Timeout personalizado
-     * @return true si el texto apareció
+     * Presiona la tecla Escape en la página.
      */
-    protected boolean esperarTexto(String texto, Duration timeout) {
+    protected void presionarEscape() {
+        registrarAccion("Presionando tecla Escape");
+        UtileriasComunes.presionarTecla(driver, Keys.ESCAPE);
+    }
+
+    /**
+     * Presiona la tecla Tab en la página.
+     */
+    protected void presionarTab() {
+        registrarAccion("Presionando tecla Tab");
+        UtileriasComunes.presionarTecla(driver, Keys.TAB);
+    }
+
+    /**
+     * Presiona Ctrl+A para seleccionar todo.
+     */
+    protected void seleccionarTodo() {
+        registrarAccion("Seleccionando todo (Ctrl+A)");
+        UtileriasComunes.presionarCombinacionTeclas(driver, Keys.CONTROL, Keys.chord("a"));
+    }
+
+    /**
+     * Presiona Ctrl+C para copiar.
+     */
+    protected void copiar() {
+        registrarAccion("Copiando (Ctrl+C)");
+        UtileriasComunes.presionarCombinacionTeclas(driver, Keys.CONTROL, Keys.chord("c"));
+    }
+
+    /**
+     * Presiona Ctrl+V para pegar.
+     */
+    protected void pegar() {
+        registrarAccion("Pegando (Ctrl+V)");
+        UtileriasComunes.presionarCombinacionTeclas(driver, Keys.CONTROL, Keys.chord("v"));
+    }
+
+    // ==================== MÉTODOS DE UTILIDADES Y LOGGING ====================
+
+    /**
+     * Registra una acción para trazabilidad.
+     *
+     * @param accion descripción de la acción
+     * @param detalles detalles adicionales opcionales
+     */
+    protected void registrarAccion(String accion, String... detalles) {
+        String contexto = "Página: " + this.getClass().getSimpleName();
+        String[] detallesCompletos = new String[detalles.length + 1];
+        detallesCompletos[0] = contexto;
+        System.arraycopy(detalles, 0, detallesCompletos, 1, detalles.length);
+
+        UtileriasComunes.registrarAccionTrazabilidad(accion, detallesCompletos);
+
+        // También registrar en el helper de trazabilidad
         try {
-            WebDriverWait waitPersonalizado = new WebDriverWait(driver, timeout);
-            return waitPersonalizado.until(webDriver -> contienTexto(texto));
+            trazabilidad.registrarPaso(accion, String.join(" | ", detallesCompletos));
         } catch (Exception e) {
-            logger.warn("Texto '{}' no apareció en el tiempo esperado", texto);
+            logger.debug("Error registrando trazabilidad: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Verifica si el driver está disponible y activo.
+     *
+     * @return true si el driver está disponible
+     */
+    protected boolean esDriverDisponible() {
+        try {
+            return driver != null && driver.getWindowHandle() != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Valida que el driver esté disponible antes de realizar operaciones.
+     *
+     * @throws IllegalStateException si el driver no está disponible
+     */
+    protected void validarDriverDisponible() {
+        if (!esDriverDisponible()) {
+            throw new IllegalStateException("WebDriver no está disponible o fue cerrado");
+        }
+    }
+
+    // ==================== MÉTODOS DE CONFIGURACIÓN Y ESTADO ====================
+
+    /**
+     * Obtiene el WebDriver actual.
+     *
+     * @return WebDriver activo
+     */
+    public WebDriver obtenerDriver() {
+        return driver;
+    }
+
+    /**
+     * Obtiene las propiedades de la aplicación.
+     *
+     * @return PropiedadesAplicacion
+     */
+    protected PropiedadesAplicacion obtenerPropiedades() {
+        return propiedades;
+    }
+
+    /**
+     * Obtiene el helper de trazabilidad.
+     *
+     * @return HelperTrazabilidad
+     */
+    protected HelperTrazabilidad obtenerTrazabilidad() {
+        return trazabilidad;
+    }
+
+    /**
+     * Método de limpieza que puede ser sobrescrito por las páginas hijas.
+     * Se ejecuta para limpiar recursos específicos de la página.
+     */
+    public void limpiarRecursos() {
+        logger.debug("Limpiando recursos de página: {}", this.getClass().getSimpleName());
+        // Las páginas hijas pueden sobrescribir este método para limpieza específica
+    }
+
+    /**
+     * Método toString para debugging y logging.
+     *
+     * @return representación en String de la página
+     */
+    @Override
+    public String toString() {
+        return String.format("%s{url=%s, titulo=%s, cargada=%s}",
+                this.getClass().getSimpleName(),
+                obtenerUrlActual(),
+                obtenerTituloPagina(),
+                estaPaginaCargada());
+    }
+
+    /**
+     * Método para verificar el estado de salud de la página.
+     * Útil para diagnósticos y debugging.
+     *
+     * @return true si la página está en buen estado
+     */
+    public boolean verificarSaludPagina() {
+        try {
+            validarDriverDisponible();
+
+            boolean saludable = estaPaginaCargada() &&
+                    !estaCargando() &&
+                    !hayMensajesError();
+
+            logger.debug("Salud de página {}: {}", this.getClass().getSimpleName(), saludable);
+            return saludable;
+
+        } catch (Exception e) {
+            logger.error("Error verificando salud de página: {}", e.getMessage());
             return false;
         }
     }

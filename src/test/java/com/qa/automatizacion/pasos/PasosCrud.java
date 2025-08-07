@@ -1,8 +1,10 @@
-package com.automatizacion.pruebas.pasos;
+package com.qa.automatizacion.pasos;
 
-import com.automatizacion.pruebas.contexto.ContextoPrueba;
-import com.automatizacion.pruebas.modelos.ProductoCrud;
-import com.automatizacion.pruebas.paginas.PaginaCrud;
+import com.qa.automatizacion.utilidades.ContextoPrueba;
+import com.qa.automatizacion.modelo.ProductoCrud;
+import com.qa.automatizacion.paginas.PaginaCrud;
+import com.qa.automatizacion.configuracion.PropiedadesAplicacion;
+import com.qa.automatizacion.configuracion.ConfiguradorNavegador;
 import io.cucumber.java.es.*;
 import io.cucumber.datatable.DataTable;
 import org.slf4j.Logger;
@@ -28,18 +30,25 @@ public class PasosCrud {
     private final ContextoPrueba contexto;
     private PaginaCrud paginaCrud;
     private ProductoCrud productoActual;
+    private final PropiedadesAplicacion propiedades;
 
-    public PasosCrud(ContextoPrueba contexto) {
-        this.contexto = contexto;
+    public PasosCrud() {
+        this.contexto = ContextoPrueba.obtenerInstancia();
+        this.propiedades = PropiedadesAplicacion.obtenerInstancia();
         logger.info("PasosCrud inicializado");
     }
 
-    // Given - Condiciones iniciales
+    // ✅ 3. CORREGIR los métodos para usar las clases correctas:
 
     @Dado("que estoy en la página de gestión CRUD")
     public void queEstoyEnLaPaginaDeGestionCrud() {
-        paginaCrud = new PaginaCrud(contexto.getNavegador());
-        paginaCrud.navegarAPaginaCrud(contexto.getConfiguracion().getUrlBase());
+        paginaCrud = new PaginaCrud();
+
+        // Navegar a la página CRUD usando ConfiguradorNavegador
+        String urlCrud = propiedades.obtenerUrlBase() + "/productos";  // Asumir URL de productos
+        ConfiguradorNavegador.navegarA(urlCrud);
+
+        assertTrue(paginaCrud.estaPaginaCargada(), "La página CRUD no se cargó correctamente");
         logger.info("Usuario navegó a la página de gestión CRUD");
     }
 
@@ -48,6 +57,11 @@ public class PasosCrud {
         Map<String, String> datos = datosProducto.asMap();
         ProductoCrud producto = crearProductoDesdeMap(datos);
 
+        // Asegurar que estamos en la página CRUD
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
         boolean creado = paginaCrud.crearProducto(producto);
         assertTrue(creado, "No se pudo crear el producto prerequisito");
 
@@ -55,31 +69,34 @@ public class PasosCrud {
         logger.info("Producto prerequisito creado: {}", producto.getNombre());
     }
 
-    @Dado("que no existe ningún producto en el sistema")
-    public void queNoExisteNingunProductoEnElSistema() {
-        // En un escenario real, aquí se limpiaría la base de datos
-        // Por ahora, asumimos que la página está limpia
-        logger.info("Sistema limpio - no hay productos existentes");
-    }
-
-    // When - Acciones del usuario
+    // When - Acciones
 
     @Cuando("creo un nuevo producto con los siguientes datos:")
     public void creoUnNuevoProductoConLosSiguientesDatos(DataTable datosProducto) {
         Map<String, String> datos = datosProducto.asMap();
-        productoActual = crearProductoDesdeMap(datos);
+        ProductoCrud producto = crearProductoDesdeMap(datos);
 
-        boolean resultado = paginaCrud.crearProducto(productoActual);
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
+        boolean resultado = paginaCrud.crearProducto(producto);
+
+        contexto.almacenarDato("ultimoProducto", producto);
         contexto.almacenarDato("resultadoOperacion", resultado);
-        contexto.almacenarDato("ultimoProducto", productoActual);
 
         logger.info("Intento de creación de producto: {} - Resultado: {}",
-                productoActual.getNombre(), resultado);
+                producto.getNombre(), resultado);
     }
 
-    @Cuando("busco el producto {string}")
-    public void buscoElProducto(String nombreProducto) {
+    @Cuando("busco un producto por nombre {string}")
+    public void buscoUnProductoPorNombre(String nombreProducto) {
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
         boolean encontrado = paginaCrud.buscarProducto(nombreProducto);
+
         contexto.almacenarDato("productoBuscado", nombreProducto);
         contexto.almacenarDato("productoEncontrado", encontrado);
 
@@ -87,29 +104,53 @@ public class PasosCrud {
     }
 
     @Cuando("edito el producto {string} con los siguientes datos:")
-    public void editoElProductoConLosSiguientesDatos(String nombreOriginal, DataTable datosNuevos) {
-        Map<String, String> datos = datosNuevos.asMap();
-        ProductoCrud productoActualizado = crearProductoDesdeMap(datos);
+    public void editoElProductoConLosSiguientesDatos(String nombreProducto, DataTable nuevosdatos) {
+        Map<String, String> datos = nuevosdatos.asMap();
+        ProductoCrud productoEditado = crearProductoDesdeMap(datos);
 
-        boolean resultado = paginaCrud.editarProducto(nombreOriginal, productoActualizado);
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
+        // Primero buscar el producto
+        boolean encontrado = paginaCrud.buscarProducto(nombreProducto);
+        assertTrue(encontrado, "No se encontró el producto a editar: " + nombreProducto);
+
+        // Luego editarlo
+        boolean resultado = paginaCrud.editarProducto(nombreProducto, productoEditado);
+
+        contexto.almacenarDato("productoEditado", productoEditado);
         contexto.almacenarDato("resultadoOperacion", resultado);
-        contexto.almacenarDato("productoEditado", productoActualizado);
 
-        logger.info("Edición de producto: {} -> {} - Resultado: {}",
-                nombreOriginal, productoActualizado.getNombre(), resultado);
+        logger.info("Edición de producto: {} - Resultado: {}", nombreProducto, resultado);
     }
 
     @Cuando("elimino el producto {string}")
     public void eliminoElProducto(String nombreProducto) {
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
+        // Primero buscar el producto
+        boolean encontrado = paginaCrud.buscarProducto(nombreProducto);
+        assertTrue(encontrado, "No se encontró el producto a eliminar: " + nombreProducto);
+
+        // Luego eliminarlo
         boolean resultado = paginaCrud.eliminarProducto(nombreProducto);
-        contexto.almacenarDato("resultadoOperacion", resultado);
+
         contexto.almacenarDato("productoEliminado", nombreProducto);
+        contexto.almacenarDato("resultadoOperacion", resultado);
 
         logger.info("Eliminación de producto: {} - Resultado: {}", nombreProducto, resultado);
     }
 
-    @Cuando("intento crear un producto sin proporcionar el campo obligatorio {string}")
-    public void intentoCrearUnProductoSinProporcionarElCampoObligatorio(String campoObligatorio) {
+    @Cuando("intento crear un producto sin el campo obligatorio {string}")
+    public void intentoCrearUnProductoSinElCampoObligatorio(String campoObligatorio) {
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
+        // Crear producto con campo faltante
         ProductoCrud productoIncompleto = ProductoCrud.builder()
                 .nombre(campoObligatorio.equals("nombre") ? "" : "Producto Test")
                 .descripcion(campoObligatorio.equals("descripcion") ? "" : "Descripción test")
@@ -118,6 +159,7 @@ public class PasosCrud {
                 .build();
 
         boolean resultado = paginaCrud.crearProducto(productoIncompleto);
+
         contexto.almacenarDato("resultadoOperacion", resultado);
         contexto.almacenarDato("campoFaltante", campoObligatorio);
 
@@ -127,6 +169,10 @@ public class PasosCrud {
 
     @Cuando("busco productos que contengan {string} en el nombre")
     public void buscoProductosQueContenganEnElNombre(String textoBusqueda) {
+        if (paginaCrud == null) {
+            queEstoyEnLaPaginaDeGestionCrud();
+        }
+
         boolean encontrados = paginaCrud.buscarProducto(textoBusqueda);
         List<String> productosEncontrados = paginaCrud.obtenerProductosMostrados();
 

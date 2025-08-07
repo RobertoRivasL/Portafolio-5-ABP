@@ -2,598 +2,652 @@ package com.qa.automatizacion.paginas;
 
 import com.qa.automatizacion.modelo.Usuario;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.WebElement;
 
-import java.util.List;
+import java.util.Optional;
 
 /**
- * Page Object para la página de registro del sistema.
- * Encapsula todos los elementos y acciones relacionadas con el registro de usuarios.
+ * Page Object para la página de registro de usuarios del sistema.
+ * Implementa la nueva arquitectura optimizada usando PaginaBase y UtileriasComunes.
  *
  * Principios aplicados:
- * - Page Object Pattern: Separa la lógica de UI de los tests
- * - Encapsulación: Oculta los detalles de implementación de Selenium
- * - Single Responsibility: Se enfoca únicamente en la página de registro
- * - DRY: Reutiliza funcionalidades de la clase base
+ * - Herencia: Extiende PaginaBase para reutilizar funcionalidades comunes
+ * - DRY: No duplica código, reutiliza métodos de PaginaBase/UtileriasComunes
+ * - Single Responsibility: Se enfoca únicamente en la funcionalidad de registro
+ * - Encapsulación: Expone métodos de alto nivel, oculta detalles de implementación
  *
  * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 1.0.0
+ * @version 2.0.0 - Optimizada con métodos reutilizables
  */
 public class PaginaRegistro extends PaginaBase {
 
-    // ==================== LOCALIZADORES CON FINDBY ====================
+    // ==================== LOCALIZADORES ====================
 
-    // Campos del formulario principal
-    @FindBy(id = "nombre-completo")
-    private WebElement campoNombreCompleto;
+    // Campos de entrada principales
+    private static final By CAMPO_NOMBRE = By.id("nombre");
+    private static final By CAMPO_APELLIDO = By.id("apellido");
+    private static final By CAMPO_EMAIL = By.id("email");
+    private static final By CAMPO_PASSWORD = By.id("password");
+    private static final By CAMPO_CONFIRMAR_PASSWORD = By.id("confirmar-password");
+    private static final By CAMPO_TELEFONO = By.id("telefono");
 
-    @FindBy(id = "email")
-    private WebElement campoEmail;
-
-    @FindBy(id = "nombre-usuario")
-    private WebElement campoNombreUsuario;
-
-    @FindBy(id = "password")
-    private WebElement campoPassword;
-
-    @FindBy(id = "confirmar-password")
-    private WebElement campoConfirmarPassword;
-
-    @FindBy(id = "telefono")
-    private WebElement campoTelefono;
-
-    // Botones principales
-    @FindBy(id = "btn-registrar")
-    private WebElement botonRegistrar;
-
-    @FindBy(id = "btn-cancelar")
-    private WebElement botonCancelar;
-
-    @FindBy(linkText = "¿Ya tienes cuenta? Inicia sesión")
-    private WebElement enlaceIniciarSesion;
+    // Botones
+    private static final By BOTON_REGISTRAR = By.id("btn-registrar");
+    private static final By BOTON_LIMPIAR = By.id("btn-limpiar");
+    private static final By BOTON_CANCELAR = By.id("btn-cancelar");
+    private static final By BOTON_MOSTRAR_PASSWORD = By.cssSelector("[data-testid='toggle-password']");
 
     // Checkboxes y opciones
-    @FindBy(id = "acepto-terminos")
-    private WebElement checkboxTerminos;
+    private static final By CHECKBOX_ACEPTA_TERMINOS = By.id("acepta-terminos");
+    private static final By CHECKBOX_SUSCRIBIR_NEWSLETTER = By.id("suscribir-newsletter");
 
-    @FindBy(id = "acepto-privacidad")
-    private WebElement checkboxPrivacidad;
+    // Mensajes específicos de registro
+    private static final By MENSAJE_REGISTRO_EXITOSO = By.cssSelector("[data-testid='registro-exitoso']");
+    private static final By MENSAJE_ERROR_EMAIL_DUPLICADO = By.cssSelector("[data-testid='error-email-duplicado']");
+    private static final By MENSAJE_ERROR_PASSWORD_DEBIL = By.cssSelector("[data-testid='error-password-debil']");
+    private static final By MENSAJE_ERROR_PASSWORDS_NO_COINCIDEN = By.cssSelector("[data-testid='error-passwords-no-coinciden']");
 
-    @FindBy(id = "recibir-newsletter")
-    private WebElement checkboxNewsletter;
+    // Formulario y contenedores
+    private static final By FORMULARIO_REGISTRO = By.id("form-registro");
+    private static final By CONTENEDOR_REGISTRO = By.cssSelector(".registro-container");
 
-    // Mensajes y alertas
-    @FindBy(css = ".alert-success")
-    private WebElement mensajeExito;
-
-    @FindBy(css = ".alert-error")
-    private WebElement mensajeError;
-
-    // Contenedores
-    @FindBy(id = "form-registro")
-    private WebElement formularioRegistro;
-
-    @FindBy(css = ".registro-container")
-    private WebElement contenedorRegistro;
-
-    // ==================== LOCALIZADORES ESTÁTICOS ====================
-
-    // Campos de entrada adicionales
-    private static final By SELECTOR_ROL = By.id("selector-rol");
-    private static final By CAMPO_FECHA_NACIMIENTO = By.id("fecha-nacimiento");
-    private static final By CAMPO_DIRECCION = By.id("direccion");
-    private static final By CAMPO_CIUDAD = By.id("ciudad");
-
-    // Validaciones y mensajes de error específicos
-    private static final By ERROR_EMAIL_EXISTENTE = By.cssSelector("[data-error='email-existente']");
-    private static final By ERROR_USUARIO_EXISTENTE = By.cssSelector("[data-error='usuario-existente']");
-    private static final By ERROR_PASSWORD_DEBIL = By.cssSelector("[data-error='password-debil']");
-    private static final By ERROR_PASSWORDS_NO_COINCIDEN = By.cssSelector("[data-error='passwords-no-coinciden']");
-
-    // Indicadores de validación
-    private static final By CAMPO_EMAIL_VALIDO = By.cssSelector("#email.valid");
-    private static final By CAMPO_EMAIL_INVALIDO = By.cssSelector("#email.invalid");
-    private static final By CAMPO_PASSWORD_VALIDO = By.cssSelector("#password.valid");
-    private static final By CAMPO_PASSWORD_INVALIDO = By.cssSelector("#password.invalid");
-
-    // Elementos de ayuda
-    private static final By TOOLTIP_PASSWORD = By.cssSelector(".password-help");
-    private static final By FORTALEZA_PASSWORD = By.cssSelector(".password-strength");
-    private static final By CONTADOR_CARACTERES = By.cssSelector(".character-counter");
-
-    // Loading y estados
-    private static final By SPINNER_REGISTRO = By.cssSelector(".spinner-registro");
-    private static final By BOTON_REGISTRAR_DESHABILITADO = By.cssSelector("#btn-registrar:disabled");
-
-    // Enlaces adicionales
+    // Enlaces
+    private static final By ENLACE_LOGIN = By.linkText("¿Ya tienes cuenta? Inicia sesión");
     private static final By ENLACE_TERMINOS = By.linkText("Términos y Condiciones");
-    private static final By ENLACE_PRIVACIDAD = By.linkText("Política de Privacidad");
+    private static final By ENLACE_POLITICA_PRIVACIDAD = By.linkText("Política de Privacidad");
 
-    // ==================== MÉTODOS PRINCIPALES ====================
+    // Elementos usando @FindBy (opcionales, para compatibilidad)
+    @FindBy(id = "nombre")
+    private WebElement campoNombreElement;
+
+    @FindBy(id = "email")
+    private WebElement campoEmailElement;
+
+    @FindBy(id = "btn-registrar")
+    private WebElement botonRegistrarElement;
+
+    // ==================== CONSTRUCTORES ====================
 
     /**
-     * Verifica si la página de registro está completamente cargada.
+     * Constructor que acepta un WebDriver específico.
      *
-     * @return true si la página está cargada
+     * @param driver WebDriver a utilizar
      */
+    public PaginaRegistro(WebDriver driver) {
+        super(driver);
+    }
+
+    /**
+     * Constructor por defecto que usa el driver global.
+     */
+    public PaginaRegistro() {
+        super();
+    }
+
+    // ==================== MÉTODOS ABSTRACTOS IMPLEMENTADOS ====================
+
     @Override
     public boolean estaPaginaCargada() {
-        registrarAccion("Verificando carga de página de registro");
+        return esElementoVisible(FORMULARIO_REGISTRO, 5) &&
+                esElementoVisible(CAMPO_NOMBRE, 2) &&
+                esElementoVisible(CAMPO_EMAIL, 2) &&
+                esElementoVisible(BOTON_REGISTRAR, 2) &&
+                !estaCargando();
+    }
+
+    @Override
+    public String obtenerUrlBase() {
+        return propiedades.obtenerUrlRegistro();
+    }
+
+    @Override
+    protected By[] obtenerLocalizadoresUnicos() {
+        return new By[]{
+                FORMULARIO_REGISTRO,
+                CAMPO_NOMBRE,
+                CAMPO_APELLIDO,
+                BOTON_REGISTRAR
+        };
+    }
+
+    // ==================== MÉTODOS PRINCIPALES DE REGISTRO ====================
+
+    /**
+     * Realiza el proceso completo de registro con un objeto Usuario.
+     *
+     * @param usuario objeto Usuario con los datos completos
+     * @return true si el registro fue exitoso
+     */
+    public boolean registrarUsuario(Usuario usuario) {
+        registrarAccion("Registrando usuario", "Email: " + usuario.getEmail());
 
         try {
-            boolean formularioVisible = formularioRegistro.isDisplayed();
-            boolean camposPresentes = campoNombreCompleto.isDisplayed() &&
-                    campoEmail.isDisplayed() &&
-                    campoPassword.isDisplayed();
-            boolean botonPresente = botonRegistrar.isDisplayed();
+            // Verificar que la página esté cargada
+            if (!estaPaginaCargada()) {
+                logger.error("La página de registro no está completamente cargada");
+                return false;
+            }
 
-            boolean paginaCargada = formularioVisible && camposPresentes && botonPresente;
+            // Limpiar formulario antes de llenar datos
+            limpiarFormulario();
 
-            logger.debug("Página registro cargada: {} (Formulario: {}, Campos: {}, Botón: {})",
-                    paginaCargada, formularioVisible, camposPresentes, botonPresente);
+            // Llenar todos los campos del formulario
+            if (!llenarFormularioCompleto(usuario)) {
+                logger.error("Error llenando el formulario de registro");
+                return false;
+            }
 
-            return paginaCargada;
+            // Aceptar términos y condiciones si es requerido
+            if (!aceptarTerminosYCondiciones()) {
+                logger.error("Error aceptando términos y condiciones");
+                return false;
+            }
+
+            // Hacer clic en el botón de registrar
+            if (!hacerClicEnRegistrar()) {
+                logger.error("Error haciendo clic en botón de registrar");
+                return false;
+            }
+
+            // Verificar resultado del registro
+            return verificarResultadoRegistro();
 
         } catch (Exception e) {
-            logger.error("Error verificando carga de página registro: {}", e.getMessage());
+            logger.error("Error durante el proceso de registro: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * Obtiene la URL esperada para la página de registro.
+     * Realiza registro básico con datos mínimos.
      *
-     * @return URL esperada
+     * @param nombre nombre del usuario
+     * @param apellido apellido del usuario
+     * @param email email del usuario
+     * @param password contraseña del usuario
+     * @return true si el registro fue exitoso
      */
-    @Override
-    public String obtenerUrlEsperada() {
-        return propiedades.obtenerUrlRegistro();
+    public boolean registrarUsuarioBasico(String nombre, String apellido, String email, String password) {
+        Usuario usuario = Usuario.builder()
+                .nombre(nombre)
+                .apellido(apellido)
+                .email(email)
+                .contrasena(password)
+                .build();
+
+        return registrarUsuario(usuario);
     }
 
-    // ==================== MÉTODOS DE INTERACCIÓN ====================
+    // ==================== MÉTODOS DE INGRESO DE DATOS ====================
 
     /**
-     * Completa el formulario de registro con datos de un usuario.
+     * Llena el formulario completo con los datos del usuario.
      *
-     * @param usuario usuario con los datos para el registro
+     * @param usuario objeto Usuario con los datos
+     * @return true si se llenó correctamente
      */
-    public void completarFormularioRegistro(Usuario usuario) {
-        registrarAccion("Completando formulario de registro para: " + usuario.getNombreUsuario());
-
-        ingresarNombreCompleto(usuario.getNombreCompleto());
-        ingresarEmail(usuario.getEmail());
-        ingresarNombreUsuario(usuario.getNombreUsuario());
-        ingresarPassword(usuario.getPassword());
-        confirmarPassword(usuario.getPassword());
-
-        if (usuario.getTelefono() != null && !usuario.getTelefono().isEmpty()) {
-            ingresarTelefono(usuario.getTelefono());
-        }
-
-        logger.info("Formulario de registro completado para usuario: {}", usuario.getNombreUsuario());
-    }
-
-    /**
-     * Ingresa el nombre completo del usuario.
-     *
-     * @param nombreCompleto nombre completo a ingresar
-     */
-    public void ingresarNombreCompleto(String nombreCompleto) {
-        registrarAccion("Ingresando nombre completo: " + nombreCompleto);
+    private boolean llenarFormularioCompleto(Usuario usuario) {
+        registrarAccion("Llenando formulario de registro");
 
         try {
-            campoNombreCompleto.clear();
-            campoNombreCompleto.sendKeys(nombreCompleto);
-            logger.debug("Nombre completo ingresado: {}", nombreCompleto);
+            // Campos obligatorios
+            if (!ingresarNombre(usuario.getNombre())) return false;
+            if (!ingresarApellido(usuario.getApellido())) return false;
+            if (!ingresarEmail(usuario.getEmail())) return false;
+            if (!ingresarPassword(usuario.getContrasena())) return false;
+            if (!confirmarPassword(usuario.getContrasena())) return false;
+
+
+            logger.info("Formulario llenado exitosamente");
+            return true;
+
         } catch (Exception e) {
-            logger.error("Error ingresando nombre completo: {}", e.getMessage());
-            throw new RuntimeException("No se pudo ingresar el nombre completo", e);
+            logger.error("Error llenando formulario: {}", e.getMessage());
+            return false;
         }
     }
 
     /**
-     * Ingresa el email del usuario.
+     * Ingresa el nombre en el campo correspondiente.
+     *
+     * @param nombre nombre a ingresar
+     * @return true si se ingresó correctamente
+     */
+    public boolean ingresarNombre(String nombre) {
+        registrarAccion("Ingresando nombre", nombre);
+        return ingresarTextoSeguro(CAMPO_NOMBRE, nombre, true);
+    }
+
+    /**
+     * Ingresa el apellido en el campo correspondiente.
+     *
+     * @param apellido apellido a ingresar
+     * @return true si se ingresó correctamente
+     */
+    public boolean ingresarApellido(String apellido) {
+        registrarAccion("Ingresando apellido", apellido);
+        return ingresarTextoSeguro(CAMPO_APELLIDO, apellido, true);
+    }
+
+    /**
+     * Ingresa el email en el campo correspondiente.
      *
      * @param email email a ingresar
+     * @return true si se ingresó correctamente
      */
-    public void ingresarEmail(String email) {
-        registrarAccion("Ingresando email: " + email);
-
-        try {
-            campoEmail.clear();
-            campoEmail.sendKeys(email);
-
-            // Esperar a que se valide el email
-            Thread.sleep(500);
-
-            logger.debug("Email ingresado: {}", email);
-        } catch (Exception e) {
-            logger.error("Error ingresando email: {}", e.getMessage());
-            throw new RuntimeException("No se pudo ingresar el email", e);
-        }
+    public boolean ingresarEmail(String email) {
+        registrarAccion("Ingresando email", email);
+        return ingresarTextoSeguro(CAMPO_EMAIL, email, true);
     }
 
     /**
-     * Ingresa el nombre de usuario.
-     *
-     * @param nombreUsuario nombre de usuario a ingresar
-     */
-    public void ingresarNombreUsuario(String nombreUsuario) {
-        registrarAccion("Ingresando nombre de usuario: " + nombreUsuario);
-
-        try {
-            campoNombreUsuario.clear();
-            campoNombreUsuario.sendKeys(nombreUsuario);
-
-            // Esperar validación
-            Thread.sleep(500);
-
-            logger.debug("Nombre de usuario ingresado: {}", nombreUsuario);
-        } catch (Exception e) {
-            logger.error("Error ingresando nombre de usuario: {}", e.getMessage());
-            throw new RuntimeException("No se pudo ingresar el nombre de usuario", e);
-        }
-    }
-
-    /**
-     * Ingresa la contraseña del usuario.
+     * Ingresa la contraseña en el campo correspondiente.
      *
      * @param password contraseña a ingresar
+     * @return true si se ingresó correctamente
      */
-    public void ingresarPassword(String password) {
-        registrarAccion("Ingresando contraseña");
-
-        try {
-            campoPassword.clear();
-            campoPassword.sendKeys(password);
-
-            // Esperar a que se evalúe la fortaleza
-            Thread.sleep(500);
-
-            logger.debug("Contraseña ingresada");
-        } catch (Exception e) {
-            logger.error("Error ingresando contraseña: {}", e.getMessage());
-            throw new RuntimeException("No se pudo ingresar la contraseña", e);
-        }
+    public boolean ingresarPassword(String password) {
+        registrarAccion("Ingresando contraseña", "***");
+        return ingresarTextoSeguro(CAMPO_PASSWORD, password, true);
     }
 
     /**
-     * Confirma la contraseña del usuario.
+     * Ingresa la confirmación de contraseña.
      *
-     * @param password contraseña de confirmación
+     * @param password contraseña a confirmar
+     * @return true si se ingresó correctamente
      */
-    public void confirmarPassword(String password) {
-        registrarAccion("Confirmando contraseña");
-
-        try {
-            campoConfirmarPassword.clear();
-            campoConfirmarPassword.sendKeys(password);
-
-            // Esperar validación de coincidencia
-            Thread.sleep(500);
-
-            logger.debug("Contraseña confirmada");
-        } catch (Exception e) {
-            logger.error("Error confirmando contraseña: {}", e.getMessage());
-            throw new RuntimeException("No se pudo confirmar la contraseña", e);
-        }
+    public boolean confirmarPassword(String password) {
+        registrarAccion("Confirmando contraseña", "***");
+        return ingresarTextoSeguro(CAMPO_CONFIRMAR_PASSWORD, password, true);
     }
 
     /**
-     * Ingresa el teléfono del usuario.
+     * Ingresa el número de teléfono.
      *
      * @param telefono teléfono a ingresar
+     * @return true si se ingresó correctamente
      */
-    public void ingresarTelefono(String telefono) {
-        registrarAccion("Ingresando teléfono: " + telefono);
-
-        try {
-            campoTelefono.clear();
-            campoTelefono.sendKeys(telefono);
-            logger.debug("Teléfono ingresado: {}", telefono);
-        } catch (Exception e) {
-            logger.error("Error ingresando teléfono: {}", e.getMessage());
-            throw new RuntimeException("No se pudo ingresar el teléfono", e);
-        }
+    public boolean ingresarTelefono(String telefono) {
+        registrarAccion("Ingresando teléfono", telefono);
+        return ingresarTextoSeguro(CAMPO_TELEFONO, telefono, true);
     }
 
-    /**
-     * Acepta los términos y condiciones.
-     */
-    public void aceptarTerminosYCondiciones() {
-        registrarAccion("Aceptando términos y condiciones");
-
-        try {
-            if (!checkboxTerminos.isSelected()) {
-                checkboxTerminos.click();
-                logger.debug("Términos y condiciones aceptados");
-            } else {
-                logger.debug("Términos y condiciones ya estaban aceptados");
-            }
-        } catch (Exception e) {
-            logger.error("Error aceptando términos: {}", e.getMessage());
-            throw new RuntimeException("No se pudo aceptar los términos", e);
-        }
-    }
-
-    /**
-     * Acepta la política de privacidad.
-     */
-    public void aceptarPoliticaPrivacidad() {
-        registrarAccion("Aceptando política de privacidad");
-
-        try {
-            if (!checkboxPrivacidad.isSelected()) {
-                checkboxPrivacidad.click();
-                logger.debug("Política de privacidad aceptada");
-            }
-        } catch (Exception e) {
-            logger.error("Error aceptando política de privacidad: {}", e.getMessage());
-            throw new RuntimeException("No se pudo aceptar la política de privacidad", e);
-        }
-    }
-
-    /**
-     * Opta por recibir newsletter (opcional).
-     *
-     * @param recibirNewsletter true para recibir newsletter
-     */
-    public void configurarNewsletter(boolean recibirNewsletter) {
-        registrarAccion("Configurando newsletter: " + recibirNewsletter);
-
-        try {
-            if (recibirNewsletter != checkboxNewsletter.isSelected()) {
-                checkboxNewsletter.click();
-            }
-            logger.debug("Newsletter configurado: {}", recibirNewsletter);
-        } catch (Exception e) {
-            logger.error("Error configurando newsletter: {}", e.getMessage());
-            // No es crítico, continuar
-        }
-    }
+    // ==================== MÉTODOS DE INTERACCIÓN CON ELEMENTOS ====================
 
     /**
      * Hace clic en el botón de registrar.
+     *
+     * @return true si el clic fue exitoso
      */
-    public void hacerClicRegistrar() {
-        registrarAccion("Haciendo clic en botón Registrar");
-
-        try {
-            // Verificar que el botón esté habilitado
-            if (!botonRegistrar.isEnabled()) {
-                throw new RuntimeException("El botón registrar está deshabilitado");
-            }
-
-            botonRegistrar.click();
-            logger.debug("Clic en botón registrar ejecutado");
-
-            // Esperar a que se procese el registro
-            esperarProcesamiento();
-
-        } catch (Exception e) {
-            logger.error("Error haciendo clic en registrar: {}", e.getMessage());
-            throw new RuntimeException("No se pudo hacer clic en registrar", e);
-        }
+    public boolean hacerClicEnRegistrar() {
+        registrarAccion("Haciendo clic en botón registrar");
+        return hacerClicSeguro(BOTON_REGISTRAR, 3);
     }
 
     /**
-     * Cancela el proceso de registro.
+     * Hace clic en el botón de limpiar formulario.
+     *
+     * @return true si el clic fue exitoso
      */
-    public void cancelarRegistro() {
-        registrarAccion("Cancelando registro");
-
-        try {
-            botonCancelar.click();
-            logger.debug("Registro cancelado");
-        } catch (Exception e) {
-            logger.error("Error cancelando registro: {}", e.getMessage());
-            throw new RuntimeException("No se pudo cancelar el registro", e);
-        }
+    public boolean hacerClicEnLimpiar() {
+        registrarAccion("Haciendo clic en limpiar formulario");
+        return hacerClicSeguro(BOTON_LIMPIAR);
     }
 
     /**
-     * Navega al login desde la página de registro.
+     * Hace clic en el botón de cancelar.
+     *
+     * @return true si el clic fue exitoso
      */
-    public void navegarALogin() {
-        registrarAccion("Navegando a login desde registro");
+    public boolean hacerClicEnCancelar() {
+        registrarAccion("Haciendo clic en cancelar");
+        return hacerClicSeguro(BOTON_CANCELAR);
+    }
 
-        try {
-            enlaceIniciarSesion.click();
-            logger.debug("Navegación a login iniciada");
-        } catch (Exception e) {
-            logger.error("Error navegando a login: {}", e.getMessage());
-            throw new RuntimeException("No se pudo navegar al login", e);
+    /**
+     * Hace clic en el enlace de login.
+     *
+     * @return true si el clic fue exitoso
+     */
+    public boolean hacerClicEnLogin() {
+        registrarAccion("Haciendo clic en enlace de login");
+        return hacerClicSeguro(ENLACE_LOGIN);
+    }
+
+    /**
+     * Marca el checkbox de aceptar términos y condiciones.
+     *
+     * @return true si se marcó correctamente
+     */
+    public boolean aceptarTerminosYCondiciones() {
+        registrarAccion("Aceptando términos y condiciones");
+
+        if (!esElementoSeleccionado(CHECKBOX_ACEPTA_TERMINOS)) {
+            return hacerClicSeguro(CHECKBOX_ACEPTA_TERMINOS);
         }
+
+        logger.debug("Términos y condiciones ya estaban aceptados");
+        return true;
+    }
+
+    /**
+     * Marca o desmarca el checkbox de suscribirse al newsletter.
+     *
+     * @param suscribir true para suscribirse, false para no suscribirse
+     * @return true si la acción fue exitosa
+     */
+    public boolean configurarSuscripcionNewsletter(boolean suscribir) {
+        registrarAccion("Configurando suscripción newsletter", "Suscribir: " + suscribir);
+
+        boolean yaSeleccionado = esElementoSeleccionado(CHECKBOX_SUSCRIBIR_NEWSLETTER);
+
+        if (suscribir && !yaSeleccionado) {
+            return hacerClicSeguro(CHECKBOX_SUSCRIBIR_NEWSLETTER);
+        } else if (!suscribir && yaSeleccionado) {
+            return hacerClicSeguro(CHECKBOX_SUSCRIBIR_NEWSLETTER);
+        }
+
+        logger.debug("Configuración de newsletter ya estaba en el estado deseado");
+        return true;
     }
 
     // ==================== MÉTODOS DE VERIFICACIÓN ====================
 
     /**
-     * Verifica si el email ya existe en el sistema.
-     *
-     * @return true si el email ya existe
-     */
-    public boolean emailYaExiste() {
-        return esElementoVisible(ERROR_EMAIL_EXISTENTE);
-    }
-
-    /**
-     * Verifica si el nombre de usuario ya existe.
-     *
-     * @return true si el usuario ya existe
-     */
-    public boolean usuarioYaExiste() {
-        return esElementoVisible(ERROR_USUARIO_EXISTENTE);
-    }
-
-    /**
-     * Verifica si la contraseña es considerada débil.
-     *
-     * @return true si la contraseña es débil
-     */
-    public boolean passwordEsDebil() {
-        return esElementoVisible(ERROR_PASSWORD_DEBIL) || esElementoVisible(CAMPO_PASSWORD_INVALIDO);
-    }
-
-    /**
-     * Verifica si las contraseñas no coinciden.
-     *
-     * @return true si las contraseñas no coinciden
-     */
-    public boolean passwordsNoCoinciden() {
-        return esElementoVisible(ERROR_PASSWORDS_NO_COINCIDEN);
-    }
-
-    /**
-     * Verifica si el registro fue exitoso.
+     * Verifica el resultado del intento de registro.
      *
      * @return true si el registro fue exitoso
      */
-    public boolean registroFueExitoso() {
-        return esElementoVisible(By.cssSelector(".alert-success")) &&
-                obtenerMensajeExito().contains("Registro exitoso");
+    private boolean verificarResultadoRegistro() {
+        registrarAccion("Verificando resultado de registro");
+
+        // Esperar un momento para que aparezcan los mensajes
+        esperarSegundos(2);
+
+        // Verificar si hay mensaje de éxito
+        if (esElementoVisible(MENSAJE_REGISTRO_EXITOSO, 5)) {
+            logger.info("Registro exitoso - mensaje de confirmación visible");
+            return true;
+        }
+
+        // Verificar si cambió la URL (redirección exitosa)
+        String urlActual = obtenerUrlActual();
+        if (!urlActual.contains("/registro")) {
+            logger.info("Registro exitoso - redirección detectada a: {}", urlActual);
+            return true;
+        }
+
+        // Verificar si hay mensajes de error específicos
+        if (hayErrorEmailDuplicado()) {
+            logger.error("Registro fallido - email ya está registrado");
+            return false;
+        }
+
+        if (hayErrorPasswordDebil()) {
+            logger.error("Registro fallido - contraseña demasiado débil");
+            return false;
+        }
+
+        if (hayErrorPasswordsNoCoinciden()) {
+            logger.error("Registro fallido - las contraseñas no coinciden");
+            return false;
+        }
+
+        if (hayMensajesError()) {
+            Optional<String> mensajeError = obtenerMensajeError();
+            logger.error("Registro fallido - error general: {}", mensajeError.orElse("Error desconocido"));
+            return false;
+        }
+
+        // Si seguimos en la página de registro sin mensajes claros
+        if (estaPaginaCargada()) {
+            logger.error("Registro fallido - aún en página de registro sin mensajes claros");
+            return false;
+        }
+
+        logger.info("Registro aparentemente exitoso");
+        return true;
     }
 
     /**
-     * Verifica si el formulario está válido y listo para enviar.
+     * Verifica si hay error de email duplicado.
      *
-     * @return true si el formulario es válido
+     * @return true si hay error de email duplicado
      */
-    public boolean formularioEsValido() {
-        try {
-            boolean camposRequeridos = !campoNombreCompleto.getAttribute("value").trim().isEmpty() &&
-                    !campoEmail.getAttribute("value").trim().isEmpty() &&
-                    !campoPassword.getAttribute("value").trim().isEmpty() &&
-                    !campoConfirmarPassword.getAttribute("value").trim().isEmpty();
+    public boolean hayErrorEmailDuplicado() {
+        return esElementoVisible(MENSAJE_ERROR_EMAIL_DUPLICADO, 2);
+    }
 
-            boolean terminosAceptados = checkboxTerminos.isSelected() && checkboxPrivacidad.isSelected();
+    /**
+     * Verifica si hay error de contraseña débil.
+     *
+     * @return true si hay error de contraseña débil
+     */
+    public boolean hayErrorPasswordDebil() {
+        return esElementoVisible(MENSAJE_ERROR_PASSWORD_DEBIL, 2);
+    }
 
-            boolean botonHabilitado = botonRegistrar.isEnabled();
+    /**
+     * Verifica si hay error de contraseñas que no coinciden.
+     *
+     * @return true si hay error de contraseñas no coincidentes
+     */
+    public boolean hayErrorPasswordsNoCoinciden() {
+        return esElementoVisible(MENSAJE_ERROR_PASSWORDS_NO_COINCIDEN, 2);
+    }
 
-            return camposRequeridos && terminosAceptados && botonHabilitado;
-        } catch (Exception e) {
-            logger.debug("Error verificando validez del formulario: {}", e.getMessage());
-            return false;
-        }
+    /**
+     * Verifica si el formulario de registro está visible.
+     *
+     * @return true si el formulario está visible
+     */
+    public boolean esFormularioVisible() {
+        return esElementoVisible(FORMULARIO_REGISTRO, 2);
+    }
+
+    /**
+     * Verifica si todos los campos obligatorios están habilitados.
+     *
+     * @return true si todos los campos están habilitados
+     */
+    public boolean sonCamposObligatoriosHabilitados() {
+        return esElementoHabilitado(CAMPO_NOMBRE) &&
+                esElementoHabilitado(CAMPO_APELLIDO) &&
+                esElementoHabilitado(CAMPO_EMAIL) &&
+                esElementoHabilitado(CAMPO_PASSWORD) &&
+                esElementoHabilitado(CAMPO_CONFIRMAR_PASSWORD) &&
+                esElementoHabilitado(BOTON_REGISTRAR);
+    }
+
+    /**
+     * Verifica si el checkbox de términos está marcado.
+     *
+     * @return true si está marcado
+     */
+    public boolean estanTerminosAceptados() {
+        return esElementoSeleccionado(CHECKBOX_ACEPTA_TERMINOS);
     }
 
     // ==================== MÉTODOS DE OBTENCIÓN DE DATOS ====================
 
     /**
-     * Obtiene el mensaje de éxito del registro.
+     * Obtiene el valor actual del campo nombre.
      *
-     * @return mensaje de éxito
+     * @return Optional con el valor del nombre
      */
-    public String obtenerMensajeExito() {
-        try {
-            return mensajeExito.isDisplayed() ? mensajeExito.getText().trim() : "";
-        } catch (Exception e) {
-            return "";
-        }
+    public Optional<String> obtenerValorNombre() {
+        return obtenerValorCampo(CAMPO_NOMBRE);
     }
 
     /**
-     * Obtiene el mensaje de error del registro.
+     * Obtiene el valor actual del campo apellido.
      *
-     * @return mensaje de error
+     * @return Optional con el valor del apellido
      */
-    public String obtenerMensajeError() {
-        try {
-            return mensajeError.isDisplayed() ? mensajeError.getText().trim() : "";
-        } catch (Exception e) {
-            return "";
-        }
+    public Optional<String> obtenerValorApellido() {
+        return obtenerValorCampo(CAMPO_APELLIDO);
     }
 
     /**
-     * Obtiene todos los mensajes de validación visibles.
+     * Obtiene el valor actual del campo email.
      *
-     * @return lista de mensajes de validación
+     * @return Optional con el valor del email
      */
-    public List<String> obtenerMensajesValidacion() {
-        List<String> mensajes = new java.util.ArrayList<>();
-
-        try {
-            List<WebElement> elementosError = navegador.findElements(By.cssSelector(".error-message, .invalid-feedback"));
-
-            for (WebElement elemento : elementosError) {
-                if (elemento.isDisplayed() && !elemento.getText().trim().isEmpty()) {
-                    mensajes.add(elemento.getText().trim());
-                }
-            }
-        } catch (Exception e) {
-            logger.debug("Error obteniendo mensajes de validación: {}", e.getMessage());
-        }
-
-        return mensajes;
+    public Optional<String> obtenerValorEmail() {
+        return obtenerValorCampo(CAMPO_EMAIL);
     }
 
     /**
-     * Obtiene la fortaleza actual de la contraseña.
+     * Obtiene el valor actual del campo teléfono.
      *
-     * @return fortaleza de la contraseña (débil, media, fuerte)
+     * @return Optional con el valor del teléfono
      */
-    public String obtenerFortalezaPassword() {
-        try {
-            WebElement indicador = navegador.findElement(FORTALEZA_PASSWORD);
-            if (indicador.isDisplayed()) {
-                return indicador.getText().trim();
-            }
-        } catch (Exception e) {
-            logger.debug("Error obteniendo fortaleza de password: {}", e.getMessage());
-        }
-
-        return "desconocida";
-    }
-
-    // ==================== MÉTODOS DE UTILIDAD ====================
-
-    /**
-     * Espera a que se complete el procesamiento del registro.
-     */
-    private void esperarProcesamiento() {
-        try {
-            // Esperar a que aparezca el spinner si existe
-            if (esElementoPresente(SPINNER_REGISTRO)) {
-                esperarElementoDesaparezca(SPINNER_REGISTRO);
-            } else {
-                // Espera fija si no hay indicador visual
-                Thread.sleep(2000);
-            }
-        } catch (Exception e) {
-            logger.debug("Error esperando procesamiento: {}", e.getMessage());
-        }
+    public Optional<String> obtenerValorTelefono() {
+        return obtenerValorCampo(CAMPO_TELEFONO);
     }
 
     /**
-     * Limpia todos los campos del formulario.
+     * Obtiene el mensaje de error de email duplicado si está presente.
+     *
+     * @return Optional con el mensaje de error
+     */
+    public Optional<String> obtenerMensajeErrorEmailDuplicado() {
+        if (hayErrorEmailDuplicado()) {
+            return obtenerTextoElemento(MENSAJE_ERROR_EMAIL_DUPLICADO);
+        }
+        return Optional.empty();
+    }
+
+    // ==================== MÉTODOS DE VALIDACIÓN ====================
+
+    /**
+     * Valida que las contraseñas coincidan.
+     *
+     * @param password contraseña principal
+     * @param confirmarPassword confirmación de contraseña
+     * @return true si coinciden
+     */
+    public boolean validarCoincidenciaPasswords(String password, String confirmarPassword) {
+        boolean coinciden = password != null && password.equals(confirmarPassword);
+        registrarAccion("Validando coincidencia de contraseñas", "Coinciden: " + coinciden);
+        return coinciden;
+    }
+
+    /**
+     * Valida que todos los campos obligatorios estén llenos.
+     *
+     * @return true si todos los campos obligatorios tienen contenido
+     */
+    public boolean validarCamposObligatoriosLlenos() {
+        Optional<String> nombre = obtenerValorNombre();
+        Optional<String> apellido = obtenerValorApellido();
+        Optional<String> email = obtenerValorEmail();
+
+        boolean todosLlenos = nombre.isPresent() && !nombre.get().trim().isEmpty() &&
+                apellido.isPresent() && !apellido.get().trim().isEmpty() &&
+                email.isPresent() && !email.get().trim().isEmpty();
+
+        registrarAccion("Validando campos obligatorios", "Todos llenos: " + todosLlenos);
+        return todosLlenos;
+    }
+
+    // ==================== MÉTODOS DE LIMPIEZA ====================
+
+    /**
+     * Limpia todos los campos del formulario de registro.
      */
     public void limpiarFormulario() {
         registrarAccion("Limpiando formulario de registro");
 
         try {
-            campoNombreCompleto.clear();
-            campoEmail.clear();
-            campoNombreUsuario.clear();
-            campoPassword.clear();
-            campoConfirmarPassword.clear();
-            campoTelefono.clear();
+            // Limpiar todos los campos de texto
+            ingresarTextoSeguro(CAMPO_NOMBRE, "", true);
+            ingresarTextoSeguro(CAMPO_APELLIDO, "", true);
+            ingresarTextoSeguro(CAMPO_EMAIL, "", true);
+            ingresarTextoSeguro(CAMPO_PASSWORD, "", true);
+            ingresarTextoSeguro(CAMPO_CONFIRMAR_PASSWORD, "", true);
+            ingresarTextoSeguro(CAMPO_TELEFONO, "", true);
 
-            // Desmarcar checkboxes
-            if (checkboxTerminos.isSelected()) {
-                checkboxTerminos.click();
+            // Desmarcar checkboxes si están marcados
+            if (esElementoSeleccionado(CHECKBOX_ACEPTA_TERMINOS)) {
+                hacerClicSeguro(CHECKBOX_ACEPTA_TERMINOS);
             }
-            if (checkboxPrivacidad.isSelected()) {
-                checkboxPrivacidad.click();
-            }
-            if (checkboxNewsletter.isSelected()) {
-                checkboxNewsletter.click();
+            if (esElementoSeleccionado(CHECKBOX_SUSCRIBIR_NEWSLETTER)) {
+                hacerClicSeguro(CHECKBOX_SUSCRIBIR_NEWSLETTER);
             }
 
-            logger.debug("Formulario de registro limpiado");
+            logger.info("Formulario de registro limpiado");
+
         } catch (Exception e) {
             logger.error("Error limpiando formulario: {}", e.getMessage());
         }
+    }
+
+    // ==================== MÉTODOS DE ESPERA ESPECÍFICOS ====================
+
+    /**
+     * Espera que aparezca un mensaje de éxito de registro.
+     *
+     * @param timeoutSegundos timeout en segundos
+     * @return true si apareció el mensaje
+     */
+    public boolean esperarMensajeExito(int timeoutSegundos) {
+        return esperarElementoVisible(MENSAJE_REGISTRO_EXITOSO, timeoutSegundos);
+    }
+
+    /**
+     * Espera que aparezca cualquier mensaje de error.
+     *
+     * @param timeoutSegundos timeout en segundos
+     * @return true si apareció algún mensaje de error
+     */
+    public boolean esperarMensajeError(int timeoutSegundos) {
+        return esperarElementoVisible(MENSAJE_ERROR_EMAIL_DUPLICADO, timeoutSegundos) ||
+                esperarElementoVisible(MENSAJE_ERROR_PASSWORD_DEBIL, timeoutSegundos) ||
+                esperarElementoVisible(MENSAJE_ERROR_PASSWORDS_NO_COINCIDEN, timeoutSegundos) ||
+                esperarElementoVisible(MENSAJE_ERROR_GLOBAL, timeoutSegundos);
+    }
+
+    // ==================== MÉTODOS DE VERIFICACIÓN DE SALUD ====================
+
+    /**
+     * Verifica el estado de salud específico de la página de registro.
+     *
+     * @return true si la página está en buen estado para registro
+     */
+    @Override
+    public boolean verificarSaludPagina() {
+        boolean saludBase = super.verificarSaludPagina();
+
+        if (!saludBase) {
+            return false;
+        }
+
+        // Verificaciones específicas de registro
+        boolean saludRegistro = esFormularioVisible() &&
+                sonCamposObligatoriosHabilitados() &&
+                !hayErrorEmailDuplicado() &&
+                !hayErrorPasswordDebil();
+
+        logger.debug("Salud específica de registro: {}", saludRegistro);
+        return saludRegistro;
+    }
+
+    /**
+     * Limpia recursos específicos de la página de registro.
+     */
+    @Override
+    public void limpiarRecursos() {
+        super.limpiarRecursos();
+
+        // Limpiar formulario si aún está visible
+        if (esFormularioVisible()) {
+            limpiarFormulario();
+        }
+
+        logger.debug("Recursos específicos de PaginaRegistro limpiados");
     }
 }

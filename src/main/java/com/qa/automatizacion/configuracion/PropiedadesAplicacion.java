@@ -350,7 +350,7 @@ public class PropiedadesAplicacion {
      * @param valorDefecto Valor por defecto si no existe la propiedad
      * @return Valor de la propiedad
      */
-    private String obtenerPropiedad(String clave, String valorDefecto) {
+    public String obtenerPropiedad(String clave, String valorDefecto) {
         // Prioridad: System Properties > Archivo Properties > Valor por defecto
         String valor = System.getProperty(clave);
 
@@ -408,4 +408,34 @@ public class PropiedadesAplicacion {
 
         return resumen.toString();
     }
+
+    /**
+     * Obtiene el email del usuario por defecto para pruebas.
+     *
+     * @return email del usuario por defecto
+     */
+    public String obtenerUsuarioDefecto() {
+        return propiedades.getProperty("usuario.defecto.email", "test@test.com");
+    }
+
+    /**
+     * Obtiene la contraseña del usuario por defecto para pruebas.
+     *
+     * @return contraseña del usuario por defecto
+     */
+    public String obtenerPasswordDefecto() {
+        return propiedades.getProperty("usuario.defecto.password", "password123");
+    }
+
+
+    /**
+     * Obtiene la URL del módulo CRUD de la aplicación.
+     *
+     * @return URL del CRUD
+     */
+    public String obtenerUrlCrud() {
+        return propiedades.getProperty("aplicacion.url.crud",
+                obtenerUrlBase() + "/productos");
+    }
+
 }
