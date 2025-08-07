@@ -1,19 +1,25 @@
 package com.qa.automatizacion.modelo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Modelo de datos para representar un Producto en operaciones CRUD
- * Implementa el patrón Builder y encapsulación de datos
+ * Modelo de datos para representar un producto en operaciones CRUD.
+ * Implementa el patrón Builder para una construcción flexible de objetos.
  *
- * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 1.0.0
+ * Principios aplicados:
+ * - Encapsulación: Atributos privados con getters y setters
+ * - Inmutabilidad: Posibilidad de crear objetos inmutables
+ * - Builder Pattern: Construcción flexible de objetos complejos
+ * - Single Responsibility: Se enfoca únicamente en representar un producto
+ *
+ * @author Equipo QA Automatización
+ * @version 1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductoCrud {
@@ -40,177 +46,185 @@ public class ProductoCrud {
     private Boolean activo;
 
     @JsonProperty("fechaCreacion")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaCreacion;
 
     @JsonProperty("fechaModificacion")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaModificacion;
 
-    @JsonProperty("categoria_tipo")
+    @JsonProperty("categoriaProducto")
     private CategoriaProducto categoriaProducto;
 
-    // Constructor por defecto
+    // Constructores
+
+    /**
+     * Constructor por defecto requerido para Jackson
+     */
     public ProductoCrud() {
         this.activo = true;
         this.fechaCreacion = LocalDateTime.now();
         this.stock = 0;
-        this.categoriaProducto = CategoriaProducto.GENERAL;
     }
 
-    // Constructor completo usando Builder
+    /**
+     * Constructor completo para crear un producto con todos los datos
+     */
+    public ProductoCrud(Long id, String nombre, String descripcion, BigDecimal precio,
+                        String categoria, Integer stock, Boolean activo,
+                        LocalDateTime fechaCreacion, LocalDateTime fechaModificacion,
+                        CategoriaProducto categoriaProducto) {
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.precio = precio;
+        this.categoria = categoria;
+        this.stock = stock != null ? stock : 0;
+        this.activo = activo != null ? activo : true;
+        this.fechaCreacion = fechaCreacion != null ? fechaCreacion : LocalDateTime.now();
+        this.fechaModificacion = fechaModificacion;
+        this.categoriaProducto = categoriaProducto;
+    }
+
+    /**
+     * Constructor simplificado para productos básicos
+     */
+    public ProductoCrud(String nombre, String descripcion, BigDecimal precio, String categoria) {
+        this();
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.precio = precio;
+        this.categoria = categoria;
+        this.categoriaProducto = CategoriaProducto.porDescripcion(categoria);
+    }
+
+    /**
+     * Constructor privado para el Builder
+     */
     private ProductoCrud(Builder builder) {
         this.id = builder.id;
         this.nombre = builder.nombre;
         this.descripcion = builder.descripcion;
         this.precio = builder.precio;
         this.categoria = builder.categoria;
-        this.stock = builder.stock != null ? builder.stock : 0;
-        this.activo = builder.activo != null ? builder.activo : true;
-        this.fechaCreacion = builder.fechaCreacion != null ? builder.fechaCreacion : LocalDateTime.now();
+        this.stock = builder.stock;
+        this.activo = builder.activo;
+        this.fechaCreacion = builder.fechaCreacion;
         this.fechaModificacion = builder.fechaModificacion;
-        this.categoriaProducto = builder.categoriaProducto != null ? builder.categoriaProducto : CategoriaProducto.GENERAL;
+        this.categoriaProducto = builder.categoriaProducto;
     }
 
-    // Getters
+    // Getters y Setters
+
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getNombre() {
         return nombre;
     }
 
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
     public String getDescripcion() {
         return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
     }
 
     public BigDecimal getPrecio() {
         return precio;
     }
 
+    public void setPrecio(BigDecimal precio) {
+        this.precio = precio;
+    }
+
     public String getCategoria() {
         return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
+        this.categoriaProducto = CategoriaProducto.porDescripcion(categoria);
     }
 
     public Integer getStock() {
         return stock;
     }
 
-    public Boolean getActivo() {
-        return activo;
-    }
-
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public LocalDateTime getFechaModificacion() {
-        return fechaModificacion;
-    }
-
-    public CategoriaProducto getCategoriaProducto() {
-        return categoriaProducto;
-    }
-
-    // Setters para casos específicos (preferir usar Builder)
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setFechaModificacion(LocalDateTime fechaModificacion) {
-        this.fechaModificacion = fechaModificacion;
-    }
-
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public Boolean getActivo() {
+        return activo;
     }
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
     }
 
-    /**
-     * Verifica si el producto está activo
-     *
-     * @return true si el producto está activo
-     */
-    public boolean estaActivo() {
-        return activo != null && activo;
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
     }
 
-    /**
-     * Verifica si el producto tiene stock disponible
-     *
-     * @return true si hay stock disponible
-     */
-    public boolean tieneStock() {
-        return stock != null && stock > 0;
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
     }
 
-    /**
-     * Obtiene el precio formateado como string
-     *
-     * @return Precio formateado con símbolo de moneda
-     */
-    public String getPrecioFormateado() {
-        if (precio == null) {
-            return "$0.00";
-        }
-        return String.format("$%.2f", precio);
+    public LocalDateTime getFechaModificacion() {
+        return fechaModificacion;
     }
 
-    /**
-     * Verifica si el producto está en una categoría específica
-     *
-     * @param categoria Categoría a verificar
-     * @return true si el producto pertenece a la categoría
-     */
-    public boolean esDeCategoria(String categoria) {
-        return this.categoria != null && this.categoria.equalsIgnoreCase(categoria);
+    public void setFechaModificacion(LocalDateTime fechaModificacion) {
+        this.fechaModificacion = fechaModificacion;
     }
 
-    /**
-     * Verifica si el producto está en una categoría específica (enum)
-     *
-     * @param categoriaProducto Categoría a verificar
-     * @return true si el producto pertenece a la categoría
-     */
-    public boolean esDeCategoria(CategoriaProducto categoriaProducto) {
-        return this.categoriaProducto == categoriaProducto;
+    public CategoriaProducto getCategoriaProducto() {
+        return categoriaProducto;
     }
 
-    /**
-     * Calcula el valor total del stock
-     *
-     * @return Valor total basado en precio y stock
-     */
-    public BigDecimal calcularValorTotalStock() {
-        if (precio == null || stock == null) {
-            return BigDecimal.ZERO;
-        }
-        return precio.multiply(BigDecimal.valueOf(stock));
+    public void setCategoriaProducto(CategoriaProducto categoriaProducto) {
+        this.categoriaProducto = categoriaProducto;
     }
 
+    // Métodos de utilidad
+
     /**
-     * Valida los datos del producto
+     * Verifica si el producto tiene datos básicos válidos
      *
-     * @return true si los datos son válidos
+     * @return true si el producto es válido, false en caso contrario
      */
     public boolean esValido() {
         return nombre != null && !nombre.trim().isEmpty() &&
                 descripcion != null && !descripcion.trim().isEmpty() &&
-                precio != null && precio.compareTo(BigDecimal.ZERO) > 0 &&
+                precio != null && precio.compareTo(BigDecimal.ZERO) >= 0 &&
                 categoria != null && !categoria.trim().isEmpty();
     }
 
     /**
-     * Crea una copia del producto
+     * Actualiza la fecha de modificación al momento actual
+     */
+    public void actualizarFechaModificacion() {
+        this.fechaModificacion = LocalDateTime.now();
+    }
+
+    /**
+     * Crea una copia del producto actual
      *
      * @return Nueva instancia con los mismos datos
      */
-    public ProductoCrud copiar() {
-        return ProductoCrud.builder()
+    public ProductoCrud copia() {
+        return new Builder()
                 .id(this.id)
                 .nombre(this.nombre)
                 .descripcion(this.descripcion)
@@ -224,28 +238,55 @@ public class ProductoCrud {
                 .build();
     }
 
-    /**
-     * Actualiza la fecha de modificación
-     */
-    public void marcarComoModificado() {
-        this.fechaModificacion = LocalDateTime.now();
+    // Métodos de Object
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ProductoCrud that = (ProductoCrud) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(nombre, that.nombre) &&
+                Objects.equals(descripcion, that.descripcion) &&
+                Objects.equals(precio, that.precio) &&
+                Objects.equals(categoria, that.categoria);
     }
 
-    // Método estático para crear Builder
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, nombre, descripcion, precio, categoria);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ProductoCrud{id=%d, nombre='%s', descripcion='%s', precio=%s, categoria='%s', stock=%d, activo=%s}",
+                id, nombre, descripcion, precio, categoria, stock, activo);
+    }
+
+    // Builder Pattern
+
+    /**
+     * Crea un nuevo Builder para construir ProductoCrud
+     *
+     * @return Nueva instancia del Builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
-    // Clase Builder interna
+    /**
+     * Clase Builder para construcción flexible de ProductoCrud
+     */
     public static class Builder {
         private Long id;
         private String nombre;
         private String descripcion;
         private BigDecimal precio;
         private String categoria;
-        private Integer stock;
-        private Boolean activo;
-        private LocalDateTime fechaCreacion;
+        private Integer stock = 0;
+        private Boolean activo = true;
+        private LocalDateTime fechaCreacion = LocalDateTime.now();
         private LocalDateTime fechaModificacion;
         private CategoriaProducto categoriaProducto;
 
@@ -269,13 +310,16 @@ public class ProductoCrud {
             return this;
         }
 
-        public Builder precio(Double precio) {
-            this.precio = precio != null ? BigDecimal.valueOf(precio) : null;
+        public Builder precio(double precio) {
+            this.precio = precio > 0 ? BigDecimal.valueOf(precio) : null;
             return this;
         }
 
         public Builder categoria(String categoria) {
             this.categoria = categoria;
+            if (categoria != null) {
+                this.categoriaProducto = CategoriaProducto.porDescripcion(categoria);
+            }
             return this;
         }
 
@@ -304,7 +348,25 @@ public class ProductoCrud {
             return this;
         }
 
+        /**
+         * Construye el objeto ProductoCrud final
+         *
+         * @return Nueva instancia de ProductoCrud
+         */
         public ProductoCrud build() {
+            // Validaciones antes de construir
+            if (nombre == null || nombre.trim().isEmpty()) {
+                throw new IllegalArgumentException("El nombre del producto es obligatorio");
+            }
+
+            if (precio != null && precio.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("El precio no puede ser negativo");
+            }
+
+            if (stock != null && stock < 0) {
+                throw new IllegalArgumentException("El stock no puede ser negativo");
+            }
+
             return new ProductoCrud(this);
         }
     }
@@ -335,72 +397,150 @@ public class ProductoCrud {
         @JsonProperty("AUTOMOVILES")
         AUTOMOVILES("Automóviles y Repuestos"),
 
+        @JsonProperty("JUGUETES")
+        JUGUETES("Juguetes y Juegos"),
+
+        @JsonProperty("ALIMENTOS")
+        ALIMENTOS("Alimentos y Bebidas"),
+
+        @JsonProperty("MASCOTAS")
+        MASCOTAS("Mascotas y Animales"),
+
+        @JsonProperty("OFICINA")
+        OFICINA("Oficina y Papelería"),
+
+        @JsonProperty("HERRAMIENTAS")
+        HERRAMIENTAS("Herramientas y Mejoras del Hogar"),
+
+        @JsonProperty("MUSICA")
+        MUSICA("Música e Instrumentos"),
+
+        @JsonProperty("ARTE")
+        ARTE("Arte y Manualidades"),
+
         @JsonProperty("GENERAL")
         GENERAL("General");
 
         private final String descripcion;
 
+        /**
+         * Constructor del enum
+         *
+         * @param descripcion Descripción legible de la categoría
+         */
         CategoriaProducto(String descripcion) {
             this.descripcion = descripcion;
         }
 
+        /**
+         * Obtiene la descripción de la categoría
+         *
+         * @return Descripción de la categoría
+         */
         public String getDescripcion() {
             return descripcion;
         }
 
+        /**
+         * Representación en string de la categoría
+         *
+         * @return Descripción de la categoría
+         */
         @Override
         public String toString() {
             return descripcion;
         }
 
         /**
-         * Obtiene la categoría por descripción
+         * Obtiene la categoría por descripción o nombre
          *
-         * @param descripcion Descripción de la categoría
+         * @param descripcion Descripción o nombre de la categoría
          * @return CategoriaProducto correspondiente o GENERAL si no se encuentra
          */
         public static CategoriaProducto porDescripcion(String descripcion) {
-            if (descripcion == null) {
+            if (descripcion == null || descripcion.trim().isEmpty()) {
                 return GENERAL;
             }
 
+            String descripcionLimpia = descripcion.trim();
+
+            // Buscar por descripción exacta (ignorando mayúsculas/minúsculas)
             for (CategoriaProducto categoria : values()) {
-                if (categoria.descripcion.equalsIgnoreCase(descripcion)) {
+                if (categoria.getDescripcion().equalsIgnoreCase(descripcionLimpia)) {
                     return categoria;
                 }
             }
+
+            // Buscar por nombre del enum
+            for (CategoriaProducto categoria : values()) {
+                if (categoria.name().equalsIgnoreCase(descripcionLimpia)) {
+                    return categoria;
+                }
+            }
+
+            // Buscar por palabras clave
+            String descripcionMinusculas = descripcionLimpia.toLowerCase();
+
+            if (descripcionMinusculas.contains("electro") && descripcionMinusculas.contains("domé")) {
+                return ELECTRODOMESTICOS;
+            } else if (descripcionMinusculas.contains("electró") || descripcionMinusculas.contains("electronic")) {
+                return ELECTRONICOS;
+            } else if (descripcionMinusculas.contains("ropa") || descripcionMinusculas.contains("acces")) {
+                return ROPA;
+            } else if (descripcionMinusculas.contains("hogar") || descripcionMinusculas.contains("jardín")) {
+                return HOGAR;
+            } else if (descripcionMinusculas.contains("deporte") || descripcionMinusculas.contains("recreac")) {
+                return DEPORTES;
+            } else if (descripcionMinusculas.contains("libro") || descripcionMinusculas.contains("medi")) {
+                return LIBROS;
+            } else if (descripcionMinusculas.contains("salud") || descripcionMinusculas.contains("belleza")) {
+                return SALUD;
+            } else if (descripcionMinusculas.contains("auto") || descripcionMinusculas.contains("repuesto")) {
+                return AUTOMOVILES;
+            } else if (descripcionMinusculas.contains("juguete") || descripcionMinusculas.contains("juego")) {
+                return JUGUETES;
+            } else if (descripcionMinusculas.contains("alimento") || descripcionMinusculas.contains("bebida")) {
+                return ALIMENTOS;
+            } else if (descripcionMinusculas.contains("mascota") || descripcionMinusculas.contains("animal")) {
+                return MASCOTAS;
+            } else if (descripcionMinusculas.contains("oficina") || descripcionMinusculas.contains("papel")) {
+                return OFICINA;
+            } else if (descripcionMinusculas.contains("herramienta") || descripcionMinusculas.contains("mejora")) {
+                return HERRAMIENTAS;
+            } else if (descripcionMinusculas.contains("música") || descripcionMinusculas.contains("instrumento")) {
+                return MUSICA;
+            } else if (descripcionMinusculas.contains("arte") || descripcionMinusculas.contains("manual")) {
+                return ARTE;
+            }
+
             return GENERAL;
         }
-    }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProductoCrud that = (ProductoCrud) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(nombre, that.nombre) &&
-                Objects.equals(categoria, that.categoria);
-    }
+        /**
+         * Obtiene todas las categorías disponibles como array de strings
+         *
+         * @return Array con las descripciones de todas las categorías
+         */
+        public static String[] obtenerTodasLasDescripciones() {
+            CategoriaProducto[] categorias = values();
+            String[] descripciones = new String[categorias.length];
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, nombre, categoria);
-    }
+            for (int i = 0; i < categorias.length; i++) {
+                descripciones[i] = categorias[i].getDescripcion();
+            }
 
-    @Override
-    public String toString() {
-        return "ProductoCrud{" +
-                "id=" + id +
-                ", nombre='" + nombre + '\'' +
-                ", descripcion='" + descripcion + '\'' +
-                ", precio=" + precio +
-                ", categoria='" + categoria + '\'' +
-                ", stock=" + stock +
-                ", activo=" + activo +
-                ", fechaCreacion=" + fechaCreacion +
-                ", fechaModificacion=" + fechaModificacion +
-                ", categoriaProducto=" + categoriaProducto +
-                '}';
+            return descripciones;
+        }
+
+        /**
+         * Verifica si una descripción corresponde a una categoría válida
+         *
+         * @param descripcion Descripción a verificar
+         * @return true si es una categoría válida
+         */
+        public static boolean esCategoriaValida(String descripcion) {
+            return porDescripcion(descripcion) != GENERAL ||
+                    (descripcion != null && descripcion.equalsIgnoreCase("general"));
+        }
     }
 }

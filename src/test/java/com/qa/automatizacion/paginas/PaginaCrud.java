@@ -1,129 +1,153 @@
-package com.automatizacion.pruebas.paginas;
+package com.qa.automatizacion.paginas;
 
-import com.automatizacion.pruebas.modelos.Usuario;
-import com.automatizacion.pruebas.modelos.ProductoCrud;
-import com.automatizacion.pruebas.utilidades.ManejadorEsperas;
-import com.automatizacion.pruebas.utilidades.AccionesComunes;
-import org.openqa.selenium.By;
+import com.qa.automatizacion.modelo.ProductoCrud;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.By;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Page Object para las operaciones CRUD de la aplicación
- * Implementa el patrón Page Object Model siguiendo principios SOLID
+ * Página para operaciones CRUD de productos.
+ * Implementa el patrón Page Object Model para interacciones con la interfaz de gestión de productos.
  *
- * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 1.0.0
+ * Principios aplicados:
+ * - Page Object Model: Encapsula elementos y acciones de la página
+ * - Single Responsibility: Se enfoca únicamente en operaciones CRUD
+ * - Abstracción: Oculta complejidades de interacción con Selenium
+ *
+ * @author Equipo QA Automatización
+ * @version 1.0
  */
-public class PaginaCrud {
+public class PaginaCrud extends PaginaBase {
 
     private static final Logger logger = LoggerFactory.getLogger(PaginaCrud.class);
 
-    private final WebDriver navegador;
-    private final ManejadorEsperas manejadorEsperas;
-    private final AccionesComunes accionesComunes;
+    // Elementos del formulario de producto
+    @FindBy(id = "nombre")
+    private WebElement campoNombre;
 
-    // Selectores para formularios CRUD
-    @FindBy(id = "btnNuevo")
-    private WebElement botonNuevo;
+    @FindBy(id = "descripcion")
+    private WebElement campoDescripcion;
 
+    @FindBy(id = "precio")
+    private WebElement campoPrecio;
+
+    @FindBy(id = "categoria")
+    private WebElement campoCategoria;
+
+    @FindBy(id = "stock")
+    private WebElement campoStock;
+
+    // Botones de acción
     @FindBy(id = "btnGuardar")
     private WebElement botonGuardar;
 
-    @FindBy(id = "btnEditar")
-    private WebElement botonEditar;
-
-    @FindBy(id = "btnEliminar")
-    private WebElement botonEliminar;
+    @FindBy(id = "btnNuevo")
+    private WebElement botonNuevo;
 
     @FindBy(id = "btnBuscar")
     private WebElement botonBuscar;
 
-    // Campos del formulario
-    @FindBy(id = "inputNombre")
-    private WebElement campoNombre;
+    @FindBy(id = "btnLimpiar")
+    private WebElement botonLimpiar;
 
-    @FindBy(id = "inputDescripcion")
-    private WebElement campoDescripcion;
-
-    @FindBy(id = "inputPrecio")
-    private WebElement campoPrecio;
-
-    @FindBy(id = "inputCategoria")
-    private WebElement campoCategoria;
-
+    // Campo de búsqueda
     @FindBy(id = "campoBusqueda")
     private WebElement campoBusqueda;
 
     // Tabla de resultados
-    @FindBy(id = "tablaResultados")
-    private WebElement tablaResultados;
+    @FindBy(id = "tablaProductos")
+    private WebElement tablaProductos;
 
-    @FindBy(css = "tbody tr")
-    private List<WebElement> filasTabla;
+    @FindBy(css = "#tablaProductos tbody tr")
+    private List<WebElement> filasProductos;
 
-    // Mensajes de retroalimentación
-    @FindBy(id = "mensajeExito")
+    // Mensajes y alertas
+    @FindBy(css = ".alert-success")
     private WebElement mensajeExito;
 
-    @FindBy(id = "mensajeError")
+    @FindBy(css = ".alert-danger")
     private WebElement mensajeError;
 
-    @FindBy(id = "mensajeValidacion")
+    @FindBy(css = ".alert-warning")
+    private WebElement mensajeAdvertencia;
+
+    @FindBy(css = ".validation-message")
     private WebElement mensajeValidacion;
+
+    // Modales y confirmaciones
+    @FindBy(id = "modalConfirmacion")
+    private WebElement modalConfirmacion;
+
+    @FindBy(id = "btnConfirmarEliminar")
+    private WebElement botonConfirmarEliminar;
+
+    @FindBy(id = "btnCancelarEliminar")
+    private WebElement botonCancelarEliminar;
 
     /**
      * Constructor que inicializa la página CRUD
      *
-     * @param navegador Driver de Selenium
+     * @param driver Instancia del WebDriver
      */
-    public PaginaCrud(WebDriver navegador) {
-        this.navegador = navegador;
-        this.manejadorEsperas = new ManejadorEsperas(navegador);
-        this.accionesComunes = new AccionesComunes(navegador);
-        PageFactory.initElements(navegador, this);
-        logger.info("PaginaCrud inicializada correctamente");
+    public PaginaCrud(WebDriver driver) {
+        super(driver);
+        logger.info("Página CRUD inicializada");
     }
 
-    /**
-     * Navega a la página CRUD
-     *
-     * @param urlBase URL base de la aplicación
-     */
-    public void navegarAPaginaCrud(String urlBase) {
-        String urlCrud = urlBase + "/crud";
-        navegador.get(urlCrud);
-        manejadorEsperas.esperarElementoVisible(botonNuevo);
-        logger.info("Navegando a página CRUD: {}", urlCrud);
+    @Override
+    public boolean estaPaginaCargada() {
+        try {
+            esperarElementoVisible(campoNombre);
+            esperarElementoVisible(botonGuardar);
+            esperarElementoVisible(tablaProductos);
+            return true;
+        } catch (Exception e) {
+            logger.error("Error verificando carga de página CRUD: {}", e.getMessage());
+            return false;
+        }
     }
+
+    // Métodos para operaciones CRUD
 
     /**
      * Crea un nuevo producto
      *
-     * @param producto Datos del producto a crear
+     * @param producto ProductoCrud con los datos a crear
      * @return true si la creación fue exitosa
      */
     public boolean crearProducto(ProductoCrud producto) {
         try {
             logger.info("Iniciando creación de producto: {}", producto.getNombre());
 
-            accionesComunes.hacerClickSeguro(botonNuevo);
-            manejadorEsperas.esperarElementoVisible(campoNombre);
+            // Hacer clic en nuevo para limpiar formulario
+            hacerClicSeguro(botonNuevo);
 
+            // Llenar formulario
             llenarFormularioProducto(producto);
-            accionesComunes.hacerClickSeguro(botonGuardar);
 
-            return esperarOperacionExitosa("Producto creado exitosamente");
+            // Guardar producto
+            hacerClicSeguro(botonGuardar);
+
+            // Verificar mensaje de éxito
+            boolean exitoso = esperarMensajeExito();
+
+            if (exitoso) {
+                logger.info("Producto creado exitosamente: {}", producto.getNombre());
+            } else {
+                logger.warn("Error al crear producto: {}", producto.getNombre());
+            }
+
+            return exitoso;
 
         } catch (Exception e) {
-            logger.error("Error al crear producto: {}", e.getMessage());
+            logger.error("Error durante creación de producto: {}", e.getMessage());
             return false;
         }
     }
@@ -138,15 +162,25 @@ public class PaginaCrud {
         try {
             logger.info("Buscando producto: {}", nombreProducto);
 
-            accionesComunes.escribirTextoSeguro(campoBusqueda, nombreProducto);
-            accionesComunes.hacerClickSeguro(botonBuscar);
+            // Escribir en campo de búsqueda
+            escribirTextoSeguro(campoBusqueda, nombreProducto);
 
-            manejadorEsperas.esperarElementoVisible(tablaResultados);
+            // Hacer clic en buscar
+            hacerClicSeguro(botonBuscar);
 
-            return verificarProductoEnTabla(nombreProducto);
+            // Esperar a que se actualice la tabla
+            esperarTiempo(1000);
+
+            // Verificar si el producto aparece en los resultados
+            List<String> productosEncontrados = obtenerProductosMostrados();
+            boolean encontrado = productosEncontrados.stream()
+                    .anyMatch(nombre -> nombre.toLowerCase().contains(nombreProducto.toLowerCase()));
+
+            logger.info("Producto {} {}", nombreProducto, encontrado ? "encontrado" : "no encontrado");
+            return encontrado;
 
         } catch (Exception e) {
-            logger.error("Error al buscar producto: {}", e.getMessage());
+            logger.error("Error durante búsqueda de producto: {}", e.getMessage());
             return false;
         }
     }
@@ -154,28 +188,39 @@ public class PaginaCrud {
     /**
      * Edita un producto existente
      *
-     * @param nombreOriginal Nombre original del producto
-     * @param productoActualizado Datos actualizados del producto
+     * @param nombreProductoOriginal Nombre del producto a editar
+     * @param productosNuevosDatos Nuevos datos del producto
      * @return true si la edición fue exitosa
      */
-    public boolean editarProducto(String nombreOriginal, ProductoCrud productoActualizado) {
+    public boolean editarProducto(String nombreProductoOriginal, ProductoCrud productosNuevosDatos) {
         try {
-            logger.info("Editando producto: {} -> {}", nombreOriginal, productoActualizado.getNombre());
+            logger.info("Editando producto: {} -> {}", nombreProductoOriginal, productosNuevosDatos.getNombre());
 
-            if (!buscarYSeleccionarProducto(nombreOriginal)) {
+            // Buscar y seleccionar el producto
+            if (!buscarYSeleccionarProducto(nombreProductoOriginal)) {
+                logger.warn("No se pudo encontrar el producto para editar: {}", nombreProductoOriginal);
                 return false;
             }
 
-            accionesComunes.hacerClickSeguro(botonEditar);
-            manejadorEsperas.esperarElementoVisible(campoNombre);
+            // Llenar formulario con nuevos datos
+            llenarFormularioProducto(productosNuevosDatos);
 
-            llenarFormularioProducto(productoActualizado);
-            accionesComunes.hacerClickSeguro(botonGuardar);
+            // Guardar cambios
+            hacerClicSeguro(botonGuardar);
 
-            return esperarOperacionExitosa("Producto actualizado exitosamente");
+            // Verificar mensaje de éxito
+            boolean exitoso = esperarMensajeExito();
+
+            if (exitoso) {
+                logger.info("Producto editado exitosamente");
+            } else {
+                logger.warn("Error al editar producto");
+            }
+
+            return exitoso;
 
         } catch (Exception e) {
-            logger.error("Error al editar producto: {}", e.getMessage());
+            logger.error("Error durante edición de producto: {}", e.getMessage());
             return false;
         }
     }
@@ -190,43 +235,200 @@ public class PaginaCrud {
         try {
             logger.info("Eliminando producto: {}", nombreProducto);
 
-            if (!buscarYSeleccionarProducto(nombreProducto)) {
+            // Buscar y hacer clic en botón eliminar del producto
+            WebElement botonEliminar = encontrarBotonEliminarProducto(nombreProducto);
+            if (botonEliminar == null) {
+                logger.warn("No se encontró botón eliminar para producto: {}", nombreProducto);
                 return false;
             }
 
-            accionesComunes.hacerClickSeguro(botonEliminar);
+            // Hacer clic en eliminar
+            hacerClicSeguro(botonEliminar);
 
-            // Confirmar eliminación si aparece modal de confirmación
-            confirmarEliminacion();
+            // Confirmar eliminación en modal
+            if (estaElementoVisible(modalConfirmacion)) {
+                hacerClicSeguro(botonConfirmarEliminar);
+            }
 
-            return esperarOperacionExitosa("Producto eliminado exitosamente");
+            // Verificar mensaje de éxito
+            boolean exitoso = esperarMensajeExito();
+
+            if (exitoso) {
+                logger.info("Producto eliminado exitosamente: {}", nombreProducto);
+            } else {
+                logger.warn("Error al eliminar producto: {}", nombreProducto);
+            }
+
+            return exitoso;
 
         } catch (Exception e) {
-            logger.error("Error al eliminar producto: {}", e.getMessage());
+            logger.error("Error durante eliminación de producto: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    // Métodos de utilidad
+
+    /**
+     * Llena el formulario de producto con los datos proporcionados
+     *
+     * @param producto ProductoCrud con los datos
+     */
+    private void llenarFormularioProducto(ProductoCrud producto) {
+        if (producto.getNombre() != null) {
+            escribirTextoSeguro(campoNombre, producto.getNombre());
+        }
+
+        if (producto.getDescripcion() != null) {
+            escribirTextoSeguro(campoDescripcion, producto.getDescripcion());
+        }
+
+        if (producto.getPrecio() != null) {
+            escribirTextoSeguro(campoPrecio, producto.getPrecio().toString());
+        }
+
+        if (producto.getCategoria() != null) {
+            escribirTextoSeguro(campoCategoria, producto.getCategoria());
+        }
+
+        if (producto.getStock() != null) {
+            escribirTextoSeguro(campoStock, producto.getStock().toString());
+        }
+
+        logger.debug("Formulario llenado con datos del producto");
+    }
+
+    /**
+     * Busca y selecciona un producto en la tabla
+     *
+     * @param nombreProducto Nombre del producto a seleccionar
+     * @return true si se seleccionó correctamente
+     */
+    private boolean buscarYSeleccionarProducto(String nombreProducto) {
+        try {
+            // Primero buscar el producto
+            if (!buscarProducto(nombreProducto)) {
+                return false;
+            }
+
+            // Encontrar y hacer clic en la fila del producto
+            for (WebElement fila : filasProductos) {
+                if (fila.getText().toLowerCase().contains(nombreProducto.toLowerCase())) {
+                    hacerClicSeguro(fila);
+                    return true;
+                }
+            }
+
+            return false;
+
+        } catch (Exception e) {
+            logger.error("Error buscando y seleccionando producto: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * Obtiene la lista de productos mostrados en la tabla
+     * Encuentra el botón eliminar de un producto específico
      *
-     * @return Lista de nombres de productos
+     * @param nombreProducto Nombre del producto
+     * @return WebElement del botón eliminar o null si no se encuentra
      */
-    public List<String> obtenerProductosMostrados() {
-        manejadorEsperas.esperarElementoVisible(tablaResultados);
+    private WebElement encontrarBotonEliminarProducto(String nombreProducto) {
+        try {
+            // Buscar el producto primero
+            if (!buscarProducto(nombreProducto)) {
+                return null;
+            }
 
-        return filasTabla.stream()
-                .map(fila -> fila.findElement(By.cssSelector("td:first-child")).getText())
-                .toList();
+            // Buscar botón eliminar en la fila correspondiente
+            for (WebElement fila : filasProductos) {
+                if (fila.getText().toLowerCase().contains(nombreProducto.toLowerCase())) {
+                    return fila.findElement(By.cssSelector(".btn-eliminar, .btn-delete, [title='Eliminar']"));
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Error encontrando botón eliminar: {}", e.getMessage());
+        }
+
+        return null;
     }
 
     /**
-     * Verifica si existe un mensaje de error
+     * Obtiene la lista de productos mostrados en la tabla
      *
-     * @return true si hay un mensaje de error visible
+     * @return Lista con los nombres de los productos
+     */
+    public List<String> obtenerProductosMostrados() {
+        List<String> productos = new ArrayList<>();
+
+        try {
+            for (WebElement fila : filasProductos) {
+                if (fila.isDisplayed()) {
+                    // Obtener el nombre del producto (generalmente primera columna)
+                    WebElement columnaNombre = fila.findElement(By.cssSelector("td:first-child"));
+                    String nombre = obtenerTextoSeguro(columnaNombre);
+                    if (!nombre.isEmpty()) {
+                        productos.add(nombre);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error obteniendo productos mostrados: {}", e.getMessage());
+        }
+
+        logger.debug("Productos mostrados: {}", productos.size());
+        return productos;
+    }
+
+    /**
+     * Limpia el formulario de producto
+     */
+    public void limpiarFormulario() {
+        try {
+            hacerClicSeguro(botonLimpiar);
+            logger.debug("Formulario limpiado");
+        } catch (Exception e) {
+            logger.error("Error limpiando formulario: {}", e.getMessage());
+        }
+    }
+
+    // Métodos para verificar mensajes
+
+    /**
+     * Verifica si hay un mensaje de éxito visible
+     *
+     * @return true si hay mensaje de éxito
+     */
+    public boolean hayMensajeExito() {
+        return estaElementoVisible(mensajeExito);
+    }
+
+    /**
+     * Verifica si hay un mensaje de error visible
+     *
+     * @return true si hay mensaje de error
      */
     public boolean hayMensajeError() {
-        return accionesComunes.esElementoVisible(mensajeError);
+        return estaElementoVisible(mensajeError);
+    }
+
+    /**
+     * Verifica si hay un mensaje de validación visible
+     *
+     * @return true si hay mensaje de validación
+     */
+    public boolean hayMensajeValidacion() {
+        return estaElementoVisible(mensajeValidacion);
+    }
+
+    /**
+     * Obtiene el texto del mensaje de éxito
+     *
+     * @return Texto del mensaje de éxito
+     */
+    public String obtenerMensajeExito() {
+        return obtenerTextoSeguro(mensajeExito);
     }
 
     /**
@@ -235,19 +437,7 @@ public class PaginaCrud {
      * @return Texto del mensaje de error
      */
     public String obtenerMensajeError() {
-        if (hayMensajeError()) {
-            return mensajeError.getText();
-        }
-        return "";
-    }
-
-    /**
-     * Verifica si hay un mensaje de validación
-     *
-     * @return true si hay un mensaje de validación visible
-     */
-    public boolean hayMensajeValidacion() {
-        return accionesComunes.esElementoVisible(mensajeValidacion);
+        return obtenerTextoSeguro(mensajeError);
     }
 
     /**
@@ -256,90 +446,40 @@ public class PaginaCrud {
      * @return Texto del mensaje de validación
      */
     public String obtenerMensajeValidacion() {
-        if (hayMensajeValidacion()) {
-            return mensajeValidacion.getText();
-        }
-        return "";
-    }
-
-    // Métodos privados de soporte
-
-    /**
-     * Llena el formulario con los datos del producto
-     *
-     * @param producto Datos del producto
-     */
-    private void llenarFormularioProducto(ProductoCrud producto) {
-        accionesComunes.limpiarYEscribir(campoNombre, producto.getNombre());
-        accionesComunes.limpiarYEscribir(campoDescripcion, producto.getDescripcion());
-        accionesComunes.limpiarYEscribir(campoPrecio, producto.getPrecio().toString());
-        accionesComunes.seleccionarOpcion(campoCategoria, producto.getCategoria());
+        return obtenerTextoSeguro(mensajeValidacion);
     }
 
     /**
-     * Busca y selecciona un producto en la tabla
+     * Espera a que aparezca un mensaje de éxito
      *
-     * @param nombreProducto Nombre del producto a seleccionar
-     * @return true si se pudo seleccionar el producto
+     * @return true si apareció el mensaje
      */
-    private boolean buscarYSeleccionarProducto(String nombreProducto) {
-        if (!buscarProducto(nombreProducto)) {
-            return false;
-        }
-
-        Optional<WebElement> filaProducto = filasTabla.stream()
-                .filter(fila -> fila.findElement(By.cssSelector("td:first-child"))
-                        .getText().equals(nombreProducto))
-                .findFirst();
-
-        if (filaProducto.isPresent()) {
-            accionesComunes.hacerClickSeguro(filaProducto.get());
+    private boolean esperarMensajeExito() {
+        try {
+            esperarElementoVisible(mensajeExito);
             return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Verifica si un producto está presente en la tabla
-     *
-     * @param nombreProducto Nombre del producto a verificar
-     * @return true si el producto está en la tabla
-     */
-    private boolean verificarProductoEnTabla(String nombreProducto) {
-        return filasTabla.stream()
-                .anyMatch(fila -> fila.findElement(By.cssSelector("td:first-child"))
-                        .getText().equals(nombreProducto));
-    }
-
-    /**
-     * Confirma la eliminación de un producto
-     */
-    private void confirmarEliminacion() {
-        try {
-            WebElement modalConfirmacion = navegador.findElement(By.id("modalConfirmacion"));
-            if (modalConfirmacion.isDisplayed()) {
-                WebElement botonConfirmar = modalConfirmacion.findElement(By.id("btnConfirmarEliminacion"));
-                accionesComunes.hacerClickSeguro(botonConfirmar);
-            }
         } catch (Exception e) {
-            logger.debug("No se encontró modal de confirmación, continuando...");
-        }
-    }
-
-    /**
-     * Espera a que aparezca un mensaje de operación exitosa
-     *
-     * @param mensajeEsperado Mensaje que se espera ver
-     * @return true si aparece el mensaje de éxito
-     */
-    private boolean esperarOperacionExitosa(String mensajeEsperado) {
-        try {
-            manejadorEsperas.esperarElementoVisible(mensajeExito);
-            return mensajeExito.getText().contains(mensajeEsperado);
-        } catch (Exception e) {
-            logger.error("No se pudo confirmar operación exitosa: {}", e.getMessage());
+            logger.debug("No apareció mensaje de éxito en el tiempo esperado");
             return false;
         }
+    }
+
+    /**
+     * Verifica si la tabla de productos está vacía
+     *
+     * @return true si no hay productos mostrados
+     */
+    public boolean estaTablaVacia() {
+        return filasProductos.isEmpty() ||
+                filasProductos.stream().noneMatch(WebElement::isDisplayed);
+    }
+
+    /**
+     * Obtiene el número de productos mostrados
+     *
+     * @return Cantidad de productos en la tabla
+     */
+    public int obtenerCantidadProductos() {
+        return obtenerProductosMostrados().size();
     }
 }

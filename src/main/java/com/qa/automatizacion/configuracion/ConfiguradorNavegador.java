@@ -14,358 +14,292 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 
 /**
- * Configurador del navegador para las pruebas automatizadas.
- * Implementa el patrón Singleton para gestionar instancias de WebDriver.
+ * Configurador del navegador web para las pruebas automatizadas.
+ * Gestiona la creación, configuración y ciclo de vida del WebDriver.
  *
  * Principios aplicados:
- * - Singleton Pattern: Una sola instancia por hilo de ejecución
- * - Encapsulación: Oculta la lógica de configuración del navegador
- * - Separación de Intereses: Se enfoca únicamente en gestión del navegador
- * - Open/Closed: Abierto para extensión con nuevos navegadores
+ * - Singleton: Una sola instancia del driver por hilo
+ * - Factory Pattern: Crea diferentes tipos de navegadores
+ * - Strategy Pattern: Permite cambiar estrategias de configuración
+ * - Single Responsibility: Se enfoca únicamente en gestión del navegador
  *
- * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 1.0.0
+ * @author Equipo QA Automatización
+ * @version 1.0
  */
 public class ConfiguradorNavegador {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfiguradorNavegador.class);
 
-    // ThreadLocal para soporte de ejecución en paralelo
+    // ThreadLocal para manejo de múltiples hilos en ejecución paralela
     private static final ThreadLocal<WebDriver> driverLocal = new ThreadLocal<>();
 
-    private static final PropiedadesAplicacion propiedades = PropiedadesAplicacion.obtenerInstancia();
-
     // Configuraciones por defecto
-    private static final int TIMEOUT_IMPLICITO_SEGUNDOS = 10;
-    private static final int TIMEOUT_PAGINA_SEGUNDOS = 30;
+    private static final String NAVEGADOR_DEFECTO = "chrome";
+    private static final boolean HEADLESS_DEFECTO = false;
+    private static final Duration TIMEOUT_DEFECTO = Duration.ofSeconds(10);
 
     /**
-     * Constructor privado para prevenir instanciación externa.
+     * Constructor privado para evitar instanciación
      */
     private ConfiguradorNavegador() {
-        // Constructor privado para patrón Singleton
+        throw new UnsupportedOperationException("Clase utilitaria no debe ser instanciada");
     }
 
-    // ==================== GESTIÓN DEL DRIVER ====================
-
     /**
-     * Obtiene la instancia del WebDriver para el hilo actual.
-     * Si no existe, crea una nueva instancia.
+     * Obtiene la instancia del WebDriver para el hilo actual
      *
-     * @return instancia de WebDriver
+     * @return WebDriver configurado y listo para usar
      */
     public static WebDriver obtenerDriver() {
-        if (driverLocal.get() == null) {
-            inicializarDriver();
-        }
-        return driverLocal.get();
-    }
+        WebDriver driver = driverLocal.get();
 
-    /**
-     * Inicializa el WebDriver según la configuración.
-     * Utiliza las propiedades de la aplicación para determinar el navegador.
-     */
-    public static void inicializarDriver() {
-        try {
-            String navegador = propiedades.obtenerPropiedad("navegador.tipo", "chrome");
-            boolean modoHeadless = propiedades.obtenerPropiedadBooleano("navegador.headless", false);
-            boolean maximizar = propiedades.obtenerPropiedadBooleano("navegador.maximizar", true);
-
-            logger.info("Inicializando navegador: {} (headless: {})", navegador, modoHeadless);
-
-            WebDriver driver = crearDriverSegunTipo(navegador, modoHeadless);
-            configurarDriver(driver, maximizar);
+        if (driver == null) {
+            driver = crearDriver();
             driverLocal.set(driver);
-
-            logger.info("Navegador {} inicializado correctamente", navegador);
-
-        } catch (Exception e) {
-            logger.error("Error inicializando el navegador: {}", e.getMessage());
-            throw new RuntimeException("No se pudo inicializar el navegador", e);
+            logger.info("Nuevo driver creado para hilo: {}", Thread.currentThread().getName());
         }
+
+        return driver;
     }
 
     /**
-     * Crea el driver según el tipo especificado.
+     * Crea una nueva instancia del WebDriver según la configuración
      *
-     * @param tipoNavegador tipo de navegador (chrome, firefox, edge)
-     * @param modoHeadless si debe ejecutarse en modo headless
-     * @return instancia de WebDriver configurada
+     * @return WebDriver configurado
      */
-    private static WebDriver crearDriverSegunTipo(String tipoNavegador, boolean modoHeadless) {
-        return switch (tipoNavegador.toLowerCase()) {
-            case "chrome" -> crearDriverChrome(modoHeadless);
-            case "firefox" -> crearDriverFirefox(modoHeadless);
-            case "edge" -> crearDriverEdge(modoHeadless);
+    private static WebDriver crearDriver() {
+        String navegador = System.getProperty("navegador.tipo", NAVEGADOR_DEFECTO);
+        boolean headless = Boolean.parseBoolean(System.getProperty("navegador.headless", "false"));
+
+        WebDriver driver = switch (navegador.toLowerCase()) {
+            case "firefox" -> crearFirefoxDriver(headless);
+            case "edge" -> crearEdgeDriver(headless);
+            case "chrome" -> crearChromeDriver(headless);
             default -> {
-                logger.warn("Navegador '{}' no reconocido. Usando Chrome por defecto.", tipoNavegador);
-                yield crearDriverChrome(modoHeadless);
+                logger.warn("Navegador '{}' no reconocido, usando Chrome por defecto", navegador);
+                yield crearChromeDriver(headless);
             }
         };
+
+        configurarDriver(driver);
+        return driver;
     }
 
     /**
-     * Crea y configura un driver de Chrome.
+     * Crea y configura un driver de Chrome
      *
-     * @param modoHeadless si debe ejecutarse sin interfaz gráfica
-     * @return driver de Chrome configurado
+     * @param headless Si debe ejecutarse en modo headless
+     * @return ChromeDriver configurado
      */
-    private static WebDriver crearDriverChrome(boolean modoHeadless) {
-        WebDriverManager.chromedriver().setup();
+    private static WebDriver crearChromeDriver(boolean headless) {
+        try {
+            WebDriverManager.chromedriver().setup();
 
-        ChromeOptions opciones = new ChromeOptions();
+            ChromeOptions opciones = new ChromeOptions();
 
-        if (modoHeadless) {
-            opciones.addArguments("--headless");
-        }
+            // Configuraciones básicas
+            opciones.addArguments("--disable-web-security");
+            opciones.addArguments("--allow-running-insecure-content");
+            opciones.addArguments("--disable-extensions");
+            opciones.addArguments("--disable-plugins");
+            opciones.addArguments("--disable-images");
+            opciones.addArguments("--disable-javascript");
+            opciones.addArguments("--disable-dev-shm-usage");
+            opciones.addArguments("--no-sandbox");
 
-        // Opciones de seguridad y rendimiento
-        opciones.addArguments(
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--remote-allow-origins=*",
-                "--disable-web-security",
-                "--disable-features=VizDisplayCompositor"
-        );
+            // Configuración de ventana
+            opciones.addArguments("--window-size=1920,1080");
+            opciones.addArguments("--start-maximized");
 
-        // Configuraciones adicionales desde propiedades
-        String argumentosAdicionales = propiedades.obtenerPropiedad("navegador.chrome.argumentos", "");
-        if (!argumentosAdicionales.isEmpty()) {
-            opciones.addArguments(argumentosAdicionales.split(","));
-        }
-
-        logger.debug("Creando driver Chrome con opciones: {}", opciones);
-        return new ChromeDriver(opciones);
-    }
-
-    /**
-     * Crea y configura un driver de Firefox.
-     *
-     * @param modoHeadless si debe ejecutarse sin interfaz gráfica
-     * @return driver de Firefox configurado
-     */
-    private static WebDriver crearDriverFirefox(boolean modoHeadless) {
-        WebDriverManager.firefoxdriver().setup();
-
-        FirefoxOptions opciones = new FirefoxOptions();
-
-        if (modoHeadless) {
-            opciones.addArguments("--headless");
-        }
-
-        logger.debug("Creando driver Firefox con modo headless: {}", modoHeadless);
-        return new FirefoxDriver(opciones);
-    }
-
-    /**
-     * Crea y configura un driver de Edge.
-     *
-     * @param modoHeadless si debe ejecutarse sin interfaz gráfica
-     * @return driver de Edge configurado
-     */
-    private static WebDriver crearDriverEdge(boolean modoHeadless) {
-        WebDriverManager.edgedriver().setup();
-
-        EdgeOptions opciones = new EdgeOptions();
-
-        if (modoHeadless) {
-            opciones.addArguments("--headless");
-        }
-
-        opciones.addArguments("--remote-allow-origins=*");
-
-        logger.debug("Creando driver Edge con modo headless: {}", modoHeadless);
-        return new EdgeDriver(opciones);
-    }
-
-    /**
-     * Aplica configuraciones generales al driver.
-     *
-     * @param driver driver a configurar
-     * @param maximizar si debe maximizar la ventana
-     */
-    private static void configurarDriver(WebDriver driver, boolean maximizar) {
-        // Configurar timeouts
-        int timeoutImplicito = propiedades.obtenerPropiedadEntero("navegador.timeout.implicito", TIMEOUT_IMPLICITO_SEGUNDOS);
-        int timeoutPagina = propiedades.obtenerPropiedadEntero("navegador.timeout.pagina", TIMEOUT_PAGINA_SEGUNDOS);
-
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(timeoutImplicito));
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(timeoutPagina));
-
-        // Configurar ventana
-        if (maximizar) {
-            driver.manage().window().maximize();
-            logger.debug("Ventana maximizada");
-        } else {
-            // Usar tamaño personalizado si se especifica
-            String resolucion = propiedades.obtenerPropiedad("navegador.resolucion", "1920x1080");
-            String[] dimensiones = resolucion.split("x");
-            if (dimensiones.length == 2) {
-                try {
-                    int ancho = Integer.parseInt(dimensiones[0]);
-                    int alto = Integer.parseInt(dimensiones[1]);
-                    driver.manage().window().setSize(new org.openqa.selenium.Dimension(ancho, alto));
-                    logger.debug("Ventana configurada a {}x{}", ancho, alto);
-                } catch (NumberFormatException e) {
-                    logger.warn("Formato de resolución inválido: {}. Usando tamaño por defecto.", resolucion);
-                    driver.manage().window().maximize();
-                }
+            if (headless) {
+                opciones.addArguments("--headless");
+                opciones.addArguments("--disable-gpu");
+                logger.info("Chrome configurado en modo headless");
             }
-        }
 
-        logger.debug("Driver configurado con timeout implícito: {}s, timeout página: {}s",
-                timeoutImplicito, timeoutPagina);
-    }
+            // Configuraciones adicionales para estabilidad
+            opciones.addArguments("--remote-allow-origins=*");
+            opciones.setExperimentalOption("useAutomationExtension", false);
+            opciones.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
-    // ==================== NAVEGACIÓN ====================
+            ChromeDriver driver = new ChromeDriver(opciones);
+            logger.info("ChromeDriver creado exitosamente");
+            return driver;
 
-    /**
-     * Navega a la URL especificada.
-     *
-     * @param url URL de destino
-     */
-    public static void navegarA(String url) {
-        logger.info("Navegando a: {}", url);
-        obtenerDriver().get(url);
-    }
-
-    /**
-     * Navega hacia atrás en el historial del navegador.
-     */
-    public static void navegarAtras() {
-        logger.debug("Navegando hacia atrás");
-        obtenerDriver().navigate().back();
-    }
-
-    /**
-     * Navega hacia adelante en el historial del navegador.
-     */
-    public static void navegarAdelante() {
-        logger.debug("Navegando hacia adelante");
-        obtenerDriver().navigate().forward();
-    }
-
-    /**
-     * Recarga la página actual.
-     */
-    public static void recargarPagina() {
-        logger.debug("Recargando página actual");
-        obtenerDriver().navigate().refresh();
-    }
-
-    // ==================== GESTIÓN DEL CICLO DE VIDA ====================
-
-    /**
-     * Verifica si existe un driver activo para el hilo actual.
-     *
-     * @return true si hay un driver activo, false en caso contrario
-     */
-    public static boolean tieneDriverActivo() {
-        return driverLocal.get() != null;
-    }
-
-    /**
-     * Cierra la ventana actual del navegador.
-     */
-    public static void cerrarVentana() {
-        WebDriver driver = driverLocal.get();
-        if (driver != null) {
-            logger.debug("Cerrando ventana actual del navegador");
-            driver.close();
+        } catch (Exception e) {
+            logger.error("Error creando ChromeDriver: {}", e.getMessage());
+            throw new RuntimeException("No se pudo crear ChromeDriver", e);
         }
     }
 
     /**
-     * Cierra el navegador y limpia el driver del hilo actual.
+     * Crea y configura un driver de Firefox
+     *
+     * @param headless Si debe ejecutarse en modo headless
+     * @return FirefoxDriver configurado
+     */
+    private static WebDriver crearFirefoxDriver(boolean headless) {
+        try {
+            WebDriverManager.firefoxdriver().setup();
+
+            FirefoxOptions opciones = new FirefoxOptions();
+
+            if (headless) {
+                opciones.addArguments("--headless");
+                logger.info("Firefox configurado en modo headless");
+            }
+
+            // Configuraciones adicionales para Firefox
+            opciones.addArguments("--width=1920");
+            opciones.addArguments("--height=1080");
+
+            FirefoxDriver driver = new FirefoxDriver(opciones);
+            logger.info("FirefoxDriver creado exitosamente");
+            return driver;
+
+        } catch (Exception e) {
+            logger.error("Error creando FirefoxDriver: {}", e.getMessage());
+            throw new RuntimeException("No se pudo crear FirefoxDriver", e);
+        }
+    }
+
+    /**
+     * Crea y configura un driver de Edge
+     *
+     * @param headless Si debe ejecutarse en modo headless
+     * @return EdgeDriver configurado
+     */
+    private static WebDriver crearEdgeDriver(boolean headless) {
+        try {
+            WebDriverManager.edgedriver().setup();
+
+            EdgeOptions opciones = new EdgeOptions();
+
+            // Configuraciones básicas
+            opciones.addArguments("--disable-web-security");
+            opciones.addArguments("--allow-running-insecure-content");
+            opciones.addArguments("--disable-extensions");
+            opciones.addArguments("--window-size=1920,1080");
+
+            if (headless) {
+                opciones.addArguments("--headless");
+                opciones.addArguments("--disable-gpu");
+                logger.info("Edge configurado en modo headless");
+            }
+
+            EdgeDriver driver = new EdgeDriver(opciones);
+            logger.info("EdgeDriver creado exitosamente");
+            return driver;
+
+        } catch (Exception e) {
+            logger.error("Error creando EdgeDriver: {}", e.getMessage());
+            throw new RuntimeException("No se pudo crear EdgeDriver", e);
+        }
+    }
+
+    /**
+     * Configura el driver con timeouts y otras configuraciones comunes
+     *
+     * @param driver WebDriver a configurar
+     */
+    private static void configurarDriver(WebDriver driver) {
+        try {
+            // Configurar timeouts
+            driver.manage().timeouts().implicitlyWait(TIMEOUT_DEFECTO);
+            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
+            driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30));
+
+            // Maximizar ventana si no es headless
+            boolean headless = Boolean.parseBoolean(System.getProperty("navegador.headless", "false"));
+            if (!headless) {
+                driver.manage().window().maximize();
+            }
+
+            logger.debug("Driver configurado con timeouts y ventana maximizada");
+
+        } catch (Exception e) {
+            logger.warn("Error configurando driver: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Cierra el driver del hilo actual
      */
     public static void cerrarDriver() {
         WebDriver driver = driverLocal.get();
+
         if (driver != null) {
             try {
-                logger.info("Cerrando navegador");
                 driver.quit();
+                logger.info("Driver cerrado para hilo: {}", Thread.currentThread().getName());
             } catch (Exception e) {
-                logger.warn("Error cerrando el navegador: {}", e.getMessage());
+                logger.warn("Error cerrando driver: {}", e.getMessage());
             } finally {
                 driverLocal.remove();
-                logger.debug("Driver removido del ThreadLocal");
             }
         }
     }
 
     /**
-     * Cierra todos los drivers activos.
-     * Útil para limpieza global al finalizar todas las pruebas.
+     * Cierra todos los drivers activos (para limpieza global)
      */
     public static void cerrarTodosLosDrivers() {
-        logger.info("Iniciando cierre de todos los drivers activos");
+        try {
+            cerrarDriver();
 
-        // Cerrar driver del hilo actual
-        cerrarDriver();
+            // Adicional: limpiar procesos orphanos si es necesario
+            Runtime.getRuntime().exec("taskkill /f /im chromedriver.exe").waitFor();
+            Runtime.getRuntime().exec("taskkill /f /im geckodriver.exe").waitFor();
+            Runtime.getRuntime().exec("taskkill /f /im msedgedriver.exe").waitFor();
 
-        // Limpiar referencias del ThreadLocal
-        driverLocal.remove();
-
-        logger.info("Todos los drivers han sido cerrados");
-    }
-
-    // ==================== UTILIDADES ====================
-
-    /**
-     * Obtiene la URL actual del navegador.
-     *
-     * @return URL actual o cadena vacía si no hay driver activo
-     */
-    public static String obtenerUrlActual() {
-        WebDriver driver = driverLocal.get();
-        return driver != null ? driver.getCurrentUrl() : "";
-    }
-
-    /**
-     * Obtiene el título de la página actual.
-     *
-     * @return título de la página o cadena vacía si no hay driver activo
-     */
-    public static String obtenerTituloPagina() {
-        WebDriver driver = driverLocal.get();
-        return driver != null ? driver.getTitle() : "";
-    }
-
-    /**
-     * Toma una captura de pantalla de la página actual.
-     *
-     * @return bytes de la imagen o null si no es posible
-     */
-    public static byte[] tomarCapturaPantalla() {
-        WebDriver driver = driverLocal.get();
-        if (driver instanceof org.openqa.selenium.TakesScreenshot) {
-            try {
-                return ((org.openqa.selenium.TakesScreenshot) driver)
-                        .getScreenshotAs(org.openqa.selenium.OutputType.BYTES);
-            } catch (Exception e) {
-                logger.error("Error tomando captura de pantalla: {}", e.getMessage());
-            }
+        } catch (Exception e) {
+            logger.debug("Error en limpieza adicional de drivers: {}", e.getMessage());
         }
-        return null;
     }
 
     /**
-     * Obtiene información del navegador para diagnóstico.
+     * Verifica si hay un driver activo en el hilo actual
      *
-     * @return información del estado actual del navegador
+     * @return true si hay un driver activo
      */
-    public static String obtenerInformacionDiagnostico() {
+    public static boolean hayDriverActivo() {
         WebDriver driver = driverLocal.get();
+
         if (driver == null) {
-            return "No hay driver activo";
+            return false;
         }
 
-        StringBuilder info = new StringBuilder();
-        info.append("URL actual: ").append(driver.getCurrentUrl()).append("\n");
-        info.append("Título: ").append(driver.getTitle()).append("\n");
-        info.append("Ventanas abiertas: ").append(driver.getWindowHandles().size()).append("\n");
+        try {
+            // Verificar que el driver responde
+            driver.getTitle();
+            return true;
+        } catch (Exception e) {
+            logger.debug("Driver no responde, se considera inactivo: {}", e.getMessage());
+            driverLocal.remove();
+            return false;
+        }
+    }
 
-        return info.toString();
+    /**
+     * Reinicia el driver del hilo actual
+     *
+     * @return Nuevo WebDriver configurado
+     */
+    public static WebDriver reiniciarDriver() {
+        cerrarDriver();
+        return obtenerDriver();
+    }
+
+    /**
+     * Obtiene información sobre la configuración actual del navegador
+     *
+     * @return String con información de configuración
+     */
+    public static String obtenerConfiguracionActual() {
+        String navegador = System.getProperty("navegador.tipo", NAVEGADOR_DEFECTO);
+        boolean headless = Boolean.parseBoolean(System.getProperty("navegador.headless", "false"));
+
+        return String.format("Navegador: %s, Headless: %s, Hilo: %s",
+                navegador, headless, Thread.currentThread().getName());
     }
 }

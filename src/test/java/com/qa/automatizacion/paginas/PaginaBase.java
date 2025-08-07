@@ -1,547 +1,395 @@
 package com.qa.automatizacion.paginas;
 
-import com.qa.automatizacion.configuracion.ConfiguradorNavegador;
-import com.qa.automatizacion.configuracion.PropiedadesAplicacion;
-import com.qa.automatizacion.utilidades.HelperTrazabilidad;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.interactions.Actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.List;
 
 /**
- * Clase base para todas las páginas del sistema.
- * Implementa funcionalidades comunes y el patrón Page Object.
+ * Clase base para todas las páginas del patrón Page Object Model.
+ * Proporciona funcionalidades comunes para interactuar con elementos web.
  *
  * Principios aplicados:
- * - Template Method Pattern: Define métodos base que las subclases implementan
- * - DRY: Evita repetición de código común en todas las páginas
- * - Encapsulación: Oculta la complejidad de Selenium de las pruebas
- * - Single Responsibility: Se enfoca en funcionalidades básicas de página
- * - Open/Closed: Abierto para extensión, cerrado para modificación
+ * - Template Method: Define el esqueleto de operaciones comunes
+ * - DRY: Evita repetición de código en las páginas
+ * - Abstracción: Encapsula complejidades de Selenium
+ * - Single Responsibility: Se enfoca en operaciones básicas de página
  *
- * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 1.0.0
+ * @author Equipo QA Automatización
+ * @version 1.0
  */
 public abstract class PaginaBase {
 
     protected static final Logger logger = LoggerFactory.getLogger(PaginaBase.class);
 
-    // Dependencias
-    protected final WebDriver navegador;
-    protected final WebDriverWait espera;
-    protected final WebDriverWait esperaLarga;
-    protected final PropiedadesAplicacion propiedades;
-    protected final HelperTrazabilidad trazabilidad;
-    protected final Actions acciones;
-    protected final JavascriptExecutor ejecutorJS;
+    protected WebDriver driver;
+    protected WebDriverWait wait;
+    protected Actions actions;
+    protected JavascriptExecutor jsExecutor;
 
-    // Configuraciones de tiempo
-    private static final int TIMEOUT_ESTANDAR = 10;
-    private static final int TIMEOUT_LARGO = 30;
-    private static final int TIMEOUT_CORTO = 5;
-
-    // ==================== CONSTRUCTOR ====================
+    // Configuración de timeouts
+    protected static final Duration TIMEOUT_DEFECTO = Duration.ofSeconds(10);
+    protected static final Duration TIMEOUT_LARGO = Duration.ofSeconds(30);
+    protected static final Duration TIMEOUT_CORTO = Duration.ofSeconds(5);
 
     /**
-     * Constructor base que inicializa todas las dependencias comunes.
+     * Constructor base que inicializa los componentes comunes
+     *
+     * @param driver Instancia del WebDriver
      */
-    protected PaginaBase() {
-        this.navegador = ConfiguradorNavegador.obtenerDriver();
-        this.propiedades = PropiedadesAplicacion.obtenerInstancia();
-        this.trazabilidad = new HelperTrazabilidad();
+    protected PaginaBase(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, TIMEOUT_DEFECTO);
+        this.actions = new Actions(driver);
+        this.jsExecutor = (JavascriptExecutor) driver;
 
-        // Configurar timeouts desde propiedades
-        int timeoutEstandar = propiedades.obtenerPropiedadEntero("selenium.timeout.estandar", TIMEOUT_ESTANDAR);
-        int timeoutLargo = propiedades.obtenerPropiedadEntero("selenium.timeout.largo", TIMEOUT_LARGO);
+        // Inicializar elementos de la página con PageFactory
+        PageFactory.initElements(driver, this);
 
-        this.espera = new WebDriverWait(navegador, Duration.ofSeconds(timeoutEstandar));
-        this.esperaLarga = new WebDriverWait(navegador, Duration.ofSeconds(timeoutLargo));
-        this.acciones = new Actions(navegador);
-        this.ejecutorJS = (JavascriptExecutor) navegador;
-
-        // Inicializar elementos de la página usando PageFactory
-        PageFactory.initElements(navegador, this);
-
-        logger.debug("PaginaBase inicializada para: {}", this.getClass().getSimpleName());
+        logger.debug("Página base inicializada: {}", this.getClass().getSimpleName());
     }
 
-    // ==================== MÉTODOS ABSTRACTOS ====================
-
     /**
-     * Verifica si la página está completamente cargada.
-     * Cada página debe implementar su propia lógica de verificación.
+     * Método abstracto para verificar que la página esté cargada
+     * Debe ser implementado por cada página específica
      *
-     * @return true si la página está cargada, false en caso contrario
+     * @return true si la página está cargada correctamente
      */
     public abstract boolean estaPaginaCargada();
 
+    // Métodos para interactuar con elementos
+
     /**
-     * Obtiene la URL esperada para esta página.
-     * Usado para validación y navegación.
+     * Espera a que un elemento sea visible y clickeable
      *
-     * @return URL esperada de la página
+     * @param elemento WebElement a esperar
+     * @return El mismo WebElement para encadenamiento
      */
-    public abstract String obtenerUrlEsperada();
-
-    // ==================== MÉTODOS DE NAVEGACIÓN ====================
-
-    /**
-     * Navega a esta página y espera a que esté completamente cargada.
-     */
-    public void navegarAPagina() {
-        String urlDestino = obtenerUrlEsperada();
-        logger.info("Navegando a página: {} ({})", this.getClass().getSimpleName(), urlDestino);
-
-        navegador.get(urlDestino);
-        esperarCargaCompletaPagina();
-
-        if (!estaPaginaCargada()) {
-            throw new RuntimeException("La página " + this.getClass().getSimpleName() + " no se cargó correctamente");
-        }
-
-        logger.debug("Navegación exitosa a: {}", this.getClass().getSimpleName());
+    protected WebElement esperarElementoClickeable(WebElement elemento) {
+        return wait.until(ExpectedConditions.elementToBeClickable(elemento));
     }
 
     /**
-     * Verifica si estamos actualmente en esta página.
+     * Espera a que un elemento sea visible
      *
-     * @return true si estamos en la página correcta
+     * @param elemento WebElement a esperar
+     * @return El mismo WebElement para encadenamiento
      */
-    public boolean estamosEnEstaPagina() {
-        try {
-            String urlActual = navegador.getCurrentUrl();
-            String urlEsperada = obtenerUrlEsperada();
-
-            // Comparación flexible que permite parámetros de consulta
-            boolean enPaginaCorrecta = urlActual.contains(extraerRutaPrincipal(urlEsperada));
-
-            if (enPaginaCorrecta) {
-                enPaginaCorrecta = estaPaginaCargada();
-            }
-
-            logger.debug("¿Estamos en {}? {} (URL actual: {}, esperada: {})",
-                    this.getClass().getSimpleName(), enPaginaCorrecta, urlActual, urlEsperada);
-
-            return enPaginaCorrecta;
-
-        } catch (Exception e) {
-            logger.error("Error verificando ubicación de página: {}", e.getMessage());
-            return false;
-        }
+    protected WebElement esperarElementoVisible(WebElement elemento) {
+        return wait.until(ExpectedConditions.visibilityOf(elemento));
     }
-
-    private String extraerRutaPrincipal(String url) {
-        try {
-            // Extraer la ruta principal sin parámetros
-            int indexParametros = url.indexOf('?');
-            return indexParametros > 0 ? url.substring(0, indexParametros) : url;
-        } catch (Exception e) {
-            return url;
-        }
-    }
-
-    // ==================== MÉTODOS DE ESPERA ====================
 
     /**
-     * Espera a que un elemento esté visible.
+     * Espera a que un elemento sea visible usando localizador
      *
-     * @param localizador localizador del elemento
-     * @return el elemento una vez que está visible
+     * @param localizador By localizador del elemento
+     * @return WebElement encontrado
      */
     protected WebElement esperarElementoVisible(By localizador) {
-        try {
-            logger.debug("Esperando elemento visible: {}", localizador);
-            return espera.until(ExpectedConditions.visibilityOfElementLocated(localizador));
-        } catch (TimeoutException e) {
-            logger.error("Timeout esperando elemento visible: {}", localizador);
-            throw new RuntimeException("Elemento no se hizo visible: " + localizador, e);
-        }
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(localizador));
     }
 
     /**
-     * Espera a que un elemento esté presente en el DOM.
+     * Hace clic en un elemento de forma segura
      *
-     * @param localizador localizador del elemento
-     * @return el elemento una vez que está presente
+     * @param elemento WebElement a hacer clic
      */
-    protected WebElement esperarElementoPresente(By localizador) {
+    protected void hacerClicSeguro(WebElement elemento) {
         try {
-            logger.debug("Esperando elemento presente: {}", localizador);
-            return espera.until(ExpectedConditions.presenceOfElementLocated(localizador));
-        } catch (TimeoutException e) {
-            logger.error("Timeout esperando elemento presente: {}", localizador);
-            throw new RuntimeException("Elemento no está presente: " + localizador, e);
-        }
-    }
-
-    /**
-     * Espera a que un elemento sea clickeable.
-     *
-     * @param localizador localizador del elemento
-     * @return el elemento una vez que es clickeable
-     */
-    protected WebElement esperarElementoClickeable(By localizador) {
-        try {
-            logger.debug("Esperando elemento clickeable: {}", localizador);
-            return espera.until(ExpectedConditions.elementToBeClickable(localizador));
-        } catch (TimeoutException e) {
-            logger.error("Timeout esperando elemento clickeable: {}", localizador);
-            throw new RuntimeException("Elemento no es clickeable: " + localizador, e);
-        }
-    }
-
-    /**
-     * Espera a que un elemento desaparezca.
-     *
-     * @param localizador localizador del elemento
-     */
-    protected void esperarElementoDesaparezca(By localizador) {
-        try {
-            logger.debug("Esperando que elemento desaparezca: {}", localizador);
-            espera.until(ExpectedConditions.invisibilityOfElementLocated(localizador));
-        } catch (TimeoutException e) {
-            logger.warn("Elemento no desapareció en el tiempo esperado: {}", localizador);
-        }
-    }
-
-    /**
-     * Espera a que la página esté completamente cargada.
-     */
-    protected void esperarCargaCompletaPagina() {
-        logger.debug("Esperando carga completa de página");
-
-        try {
-            // Esperar a que el DOM esté listo
-            esperaLarga.until(webDriver ->
-                    ejecutorJS.executeScript("return document.readyState").equals("complete"));
-
-            // Esperar a que no haya requests AJAX pendientes (si se usa jQuery)
-            try {
-                esperaLarga.until(webDriver ->
-                        ejecutorJS.executeScript("return window.jQuery != undefined ? jQuery.active == 0 : true"));
-            } catch (Exception e) {
-                // jQuery puede no estar disponible, continuar
-                logger.debug("jQuery no disponible, continuando con carga de página");
-            }
-
-            // Pequeña pausa adicional para elementos dinámicos
-            Thread.sleep(500);
-
+            esperarElementoClickeable(elemento).click();
+            logger.debug("Clic realizado en elemento: {}", elemento.getTagName());
         } catch (Exception e) {
-            logger.warn("Error esperando carga completa de página: {}", e.getMessage());
+            logger.warn("Clic normal falló, intentando con JavaScript: {}", e.getMessage());
+            hacerClicConJavascript(elemento);
         }
     }
 
-    // ==================== MÉTODOS DE VERIFICACIÓN ====================
+    /**
+     * Hace clic usando JavaScript
+     *
+     * @param elemento WebElement a hacer clic
+     */
+    protected void hacerClicConJavascript(WebElement elemento) {
+        jsExecutor.executeScript("arguments[0].click();", elemento);
+        logger.debug("Clic con JavaScript realizado");
+    }
 
     /**
-     * Verifica si un elemento está visible.
+     * Escribe texto en un elemento de forma segura
      *
-     * @param localizador localizador del elemento
-     * @return true si el elemento está visible
+     * @param elemento WebElement donde escribir
+     * @param texto Texto a escribir
      */
-    protected boolean esElementoVisible(By localizador) {
+    protected void escribirTextoSeguro(WebElement elemento, String texto) {
         try {
-            WebElement elemento = navegador.findElement(localizador);
-            return elemento.isDisplayed();
-        } catch (NoSuchElementException e) {
-            logger.debug("Elemento no encontrado: {}", localizador);
-            return false;
+            esperarElementoVisible(elemento);
+            elemento.clear();
+            elemento.sendKeys(texto);
+            logger.debug("Texto '{}' escrito en elemento", texto);
         } catch (Exception e) {
-            logger.debug("Error verificando visibilidad de elemento {}: {}", localizador, e.getMessage());
-            return false;
+            logger.warn("Error al escribir texto: {}", e.getMessage());
+            escribirTextoConJavascript(elemento, texto);
         }
     }
 
     /**
-     * Verifica si un elemento está presente en el DOM.
+     * Escribe texto usando JavaScript
      *
-     * @param localizador localizador del elemento
-     * @return true si el elemento está presente
+     * @param elemento WebElement donde escribir
+     * @param texto Texto a escribir
      */
-    protected boolean esElementoPresente(By localizador) {
-        try {
-            navegador.findElement(localizador);
-            return true;
-        } catch (NoSuchElementException e) {
-            logger.debug("Elemento no presente: {}", localizador);
-            return false;
-        } catch (Exception e) {
-            logger.debug("Error verificando presencia de elemento {}: {}", localizador, e.getMessage());
-            return false;
-        }
+    protected void escribirTextoConJavascript(WebElement elemento, String texto) {
+        jsExecutor.executeScript("arguments[0].value = arguments[1];", elemento, texto);
+        logger.debug("Texto '{}' escrito con JavaScript", texto);
     }
 
     /**
-     * Verifica si un elemento está habilitado.
+     * Obtiene el texto de un elemento de forma segura
      *
-     * @param localizador localizador del elemento
-     * @return true si el elemento está habilitado
+     * @param elemento WebElement del cual obtener texto
+     * @return Texto del elemento o cadena vacía si hay error
      */
-    protected boolean esElementoHabilitado(By localizador) {
+    protected String obtenerTextoSeguro(WebElement elemento) {
         try {
-            WebElement elemento = navegador.findElement(localizador);
-            return elemento.isEnabled();
-        } catch (NoSuchElementException e) {
-            logger.debug("Elemento no encontrado para verificar habilitación: {}", localizador);
-            return false;
-        } catch (Exception e) {
-            logger.debug("Error verificando habilitación de elemento {}: {}", localizador, e.getMessage());
-            return false;
-        }
-    }
-
-    // ==================== MÉTODOS DE INTERACCIÓN ====================
-
-    /**
-     * Hace clic en un elemento de forma segura.
-     *
-     * @param localizador localizador del elemento
-     */
-    protected void hacerClicSeguro(By localizador) {
-        logger.debug("Haciendo clic en elemento: {}", localizador);
-
-        try {
-            WebElement elemento = esperarElementoClickeable(localizador);
-
-            // Intentar scroll al elemento si no está visible
-            scrollHastaElemento(elemento);
-
-            elemento.click();
-            logger.debug("Clic exitoso en: {}", localizador);
-
-        } catch (Exception e) {
-            logger.error("Error haciendo clic en {}: {}", localizador, e.getMessage());
-
-            // Intentar clic con JavaScript como fallback
-            try {
-                WebElement elemento = navegador.findElement(localizador);
-                ejecutorJS.executeScript("arguments[0].click();", elemento);
-                logger.debug("Clic con JavaScript exitoso en: {}", localizador);
-            } catch (Exception jsE) {
-                logger.error("Error con clic JavaScript en {}: {}", localizador, jsE.getMessage());
-                throw new RuntimeException("No se pudo hacer clic en el elemento: " + localizador, e);
-            }
-        }
-    }
-
-    /**
-     * Ingresa texto en un campo de forma segura.
-     *
-     * @param localizador localizador del campo
-     * @param texto texto a ingresar
-     */
-    protected void ingresarTextoSeguro(By localizador, String texto) {
-        logger.debug("Ingresando texto en campo: {}", localizador);
-
-        try {
-            WebElement campo = esperarElementoVisible(localizador);
-
-            // Limpiar campo primero
-            campo.clear();
-
-            // Ingresar nuevo texto
-            campo.sendKeys(texto);
-
-            // Verificar que el texto se ingresó correctamente
-            String valorActual = campo.getAttribute("value");
-            if (!texto.equals(valorActual)) {
-                logger.warn("Texto ingresado no coincide. Esperado: '{}', Actual: '{}'", texto, valorActual);
-            }
-
-            logger.debug("Texto ingresado exitosamente en: {}", localizador);
-
-        } catch (Exception e) {
-            logger.error("Error ingresando texto en {}: {}", localizador, e.getMessage());
-            throw new RuntimeException("No se pudo ingresar texto en el campo: " + localizador, e);
-        }
-    }
-
-    /**
-     * Selecciona una opción de un dropdown por texto visible.
-     *
-     * @param localizador localizador del dropdown
-     * @param textoOpcion texto de la opción a seleccionar
-     */
-    protected void seleccionarOpcionPorTexto(By localizador, String textoOpcion) {
-        logger.debug("Seleccionando opción '{}' en dropdown: {}", textoOpcion, localizador);
-
-        try {
-            WebElement dropdown = esperarElementoVisible(localizador);
-            Select select = new Select(dropdown);
-            select.selectByVisibleText(textoOpcion);
-
-            logger.debug("Opción seleccionada exitosamente: {}", textoOpcion);
-
-        } catch (Exception e) {
-            logger.error("Error seleccionando opción '{}' en {}: {}", textoOpcion, localizador, e.getMessage());
-            throw new RuntimeException("No se pudo seleccionar la opción: " + textoOpcion, e);
-        }
-    }
-
-    /**
-     * Realiza scroll hasta un elemento.
-     *
-     * @param elemento elemento al que hacer scroll
-     */
-    protected void scrollHastaElemento(WebElement elemento) {
-        try {
-            ejecutorJS.executeScript("arguments[0].scrollIntoView({block: 'center'});", elemento);
-            Thread.sleep(300); // Pequeña pausa para que termine el scroll
-        } catch (Exception e) {
-            logger.debug("Error haciendo scroll al elemento: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Obtiene el texto de un elemento.
-     *
-     * @param localizador localizador del elemento
-     * @return texto del elemento o cadena vacía si no se encuentra
-     */
-    protected String obtenerTextoElemento(By localizador) {
-        try {
-            WebElement elemento = esperarElementoVisible(localizador);
-            String texto = elemento.getText().trim();
-            logger.debug("Texto obtenido de {}: '{}'", localizador, texto);
+            esperarElementoVisible(elemento);
+            String texto = elemento.getText();
+            logger.debug("Texto obtenido: '{}'", texto);
             return texto;
         } catch (Exception e) {
-            logger.debug("Error obteniendo texto de {}: {}", localizador, e.getMessage());
+            logger.warn("Error al obtener texto: {}", e.getMessage());
             return "";
         }
     }
 
     /**
-     * Obtiene el valor del atributo de un elemento.
+     * Verifica si un elemento está presente en la página
      *
-     * @param localizador localizador del elemento
-     * @param nombreAtributo nombre del atributo
-     * @return valor del atributo o cadena vacía si no se encuentra
+     * @param localizador By localizador del elemento
+     * @return true si el elemento está presente
      */
-    protected String obtenerAtributoElemento(By localizador, String nombreAtributo) {
+    protected boolean estaElementoPresente(By localizador) {
         try {
-            WebElement elemento = esperarElementoPresente(localizador);
-            String valor = elemento.getAttribute(nombreAtributo);
-            logger.debug("Atributo '{}' de {}: '{}'", nombreAtributo, localizador, valor);
-            return valor != null ? valor : "";
+            driver.findElement(localizador);
+            return true;
         } catch (Exception e) {
-            logger.debug("Error obteniendo atributo '{}' de {}: {}", nombreAtributo, localizador, e.getMessage());
-            return "";
-        }
-    }
-
-    // ==================== MÉTODOS DE UTILIDAD ====================
-
-    /**
-     * Registra una acción realizada en la página para trazabilidad.
-     *
-     * @param descripcionAccion descripción de la acción realizada
-     */
-    protected void registrarAccion(String descripcionAccion) {
-        try {
-            String paginaActual = this.getClass().getSimpleName();
-            trazabilidad.registrarAccion(paginaActual, descripcionAccion);
-            logger.debug("Acción registrada en {}: {}", paginaActual, descripcionAccion);
-        } catch (Exception e) {
-            logger.warn("Error registrando acción: {}", e.getMessage());
+            return false;
         }
     }
 
     /**
-     * Toma una captura de pantalla de la página actual.
+     * Verifica si un elemento está visible
      *
-     * @return bytes de la imagen o null si no es posible
+     * @param elemento WebElement a verificar
+     * @return true si el elemento está visible
      */
-    protected byte[] tomarCapturaPantalla() {
-        return ConfiguradorNavegador.tomarCapturaPantalla();
-    }
-
-    /**
-     * Ejecuta JavaScript en la página.
-     *
-     * @param script script a ejecutar
-     * @param argumentos argumentos del script
-     * @return resultado de la ejecución
-     */
-    protected Object ejecutarJavaScript(String script, Object... argumentos) {
+    protected boolean estaElementoVisible(WebElement elemento) {
         try {
-            return ejecutorJS.executeScript(script, argumentos);
+            return elemento.isDisplayed();
         } catch (Exception e) {
-            logger.error("Error ejecutando JavaScript: {}", e.getMessage());
-            return null;
+            return false;
         }
     }
 
     /**
-     * Obtiene todos los elementos que coinciden con un localizador.
+     * Espera a que un elemento desaparezca
      *
-     * @param localizador localizador de los elementos
-     * @return lista de elementos encontrados
+     * @param localizador By localizador del elemento
+     * @return true si el elemento desapareció
      */
-    protected List<WebElement> obtenerElementos(By localizador) {
+    protected boolean esperarElementoDesaparezca(By localizador) {
         try {
-            return navegador.findElements(localizador);
+            return wait.until(ExpectedConditions.invisibilityOfElementLocated(localizador));
         } catch (Exception e) {
-            logger.debug("Error obteniendo elementos {}: {}", localizador, e.getMessage());
-            return List.of();
+            logger.warn("Elemento no desapareció en el tiempo esperado: {}", localizador);
+            return false;
         }
     }
 
     /**
-     * Cuenta los elementos que coinciden con un localizador.
+     * Desplaza la página hasta un elemento
      *
-     * @param localizador localizador de los elementos
-     * @return número de elementos encontrados
+     * @param elemento WebElement al cual desplazarse
      */
-    protected int contarElementos(By localizador) {
-        return obtenerElementos(localizador).size();
-    }
-
-    // ==================== MÉTODOS DE INFORMACIÓN ====================
-
-    /**
-     * Obtiene el título actual de la página.
-     *
-     * @return título de la página
-     */
-    public String obtenerTituloPagina() {
-        return navegador.getTitle();
+    protected void desplazarseAElemento(WebElement elemento) {
+        jsExecutor.executeScript("arguments[0].scrollIntoView(true);", elemento);
+        logger.debug("Desplazamiento realizado hacia elemento");
     }
 
     /**
-     * Obtiene la URL actual.
+     * Realiza hover sobre un elemento
+     *
+     * @param elemento WebElement sobre el cual hacer hover
+     */
+    protected void hacerHover(WebElement elemento) {
+        actions.moveToElement(elemento).perform();
+        logger.debug("Hover realizado sobre elemento");
+    }
+
+    /**
+     * Espera un tiempo específico (usar con moderación)
+     *
+     * @param milisegundos Tiempo a esperar en milisegundos
+     */
+    protected void esperarTiempo(long milisegundos) {
+        try {
+            Thread.sleep(milisegundos);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Espera interrumpida: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Ejecuta JavaScript personalizado
+     *
+     * @param script Script de JavaScript a ejecutar
+     * @param argumentos Argumentos para el script
+     * @return Resultado de la ejecución
+     */
+    protected Object ejecutarJavascript(String script, Object... argumentos) {
+        return jsExecutor.executeScript(script, argumentos);
+    }
+
+    /**
+     * Obtiene el título de la página actual
+     *
+     * @return Título de la página
+     */
+    protected String obtenerTituloPagina() {
+        return driver.getTitle();
+    }
+
+    /**
+     * Obtiene la URL actual
      *
      * @return URL actual
      */
-    public String obtenerUrlActual() {
-        return navegador.getCurrentUrl();
+    protected String obtenerUrlActual() {
+        return driver.getCurrentUrl();
     }
 
     /**
-     * Obtiene información de diagnóstico de la página.
-     *
-     * @return información útil para debugging
+     * Navega hacia atrás en el historial del navegador
      */
-    public String obtenerInformacionDiagnostico() {
-        StringBuilder info = new StringBuilder();
-        info.append("Página: ").append(this.getClass().getSimpleName()).append("\n");
-        info.append("URL actual: ").append(obtenerUrlActual()).append("\n");
-        info.append("URL esperada: ").append(obtenerUrlEsperada()).append("\n");
-        info.append("Título: ").append(obtenerTituloPagina()).append("\n");
-        info.append("Página cargada: ").append(estaPaginaCargada()).append("\n");
+    protected void navegarAtras() {
+        driver.navigate().back();
+        logger.debug("Navegación hacia atrás realizada");
+    }
 
-        return info.toString();
+    /**
+     * Refresca la página actual
+     */
+    protected void refrescarPagina() {
+        driver.navigate().refresh();
+        logger.debug("Página refrescada");
+    }
+
+    /**
+     * Espera a que la página termine de cargar completamente
+     */
+    protected void esperarCargaCompleta() {
+        wait.until(webDriver ->
+                jsExecutor.executeScript("return document.readyState").equals("complete"));
+        logger.debug("Carga completa de página confirmada");
+    }
+
+    /**
+     * Toma una captura de pantalla de la página actual
+     *
+     * @return Array de bytes con la imagen
+     */
+    protected byte[] tomarCapturaPantalla() {
+        try {
+            if (driver instanceof org.openqa.selenium.TakesScreenshot) {
+                org.openqa.selenium.TakesScreenshot takesScreenshot =
+                        (org.openqa.selenium.TakesScreenshot) driver;
+                return takesScreenshot.getScreenshotAs(org.openqa.selenium.OutputType.BYTES);
+            }
+        } catch (Exception e) {
+            logger.error("Error al tomar captura de pantalla: {}", e.getMessage());
+        }
+        return new byte[0];
+    }
+
+    /**
+     * Verifica si hay mensajes de error visibles en la página
+     *
+     * @return true si hay mensajes de error
+     */
+    protected boolean hayMensajesError() {
+        // Selectores comunes para mensajes de error
+        String[] selectoresError = {
+                ".error", ".alert-danger", ".text-danger",
+                "[class*='error']", "[class*='danger']"
+        };
+
+        for (String selector : selectoresError) {
+            if (estaElementoPresente(By.cssSelector(selector))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Obtiene mensajes de error visibles en la página
+     *
+     * @return Texto de los mensajes de error concatenados
+     */
+    protected String obtenerMensajesError() {
+        StringBuilder mensajes = new StringBuilder();
+        String[] selectoresError = {
+                ".error", ".alert-danger", ".text-danger"
+        };
+
+        for (String selector : selectoresError) {
+            try {
+                var elementos = driver.findElements(By.cssSelector(selector));
+                for (var elemento : elementos) {
+                    if (elemento.isDisplayed()) {
+                        mensajes.append(elemento.getText()).append(" ");
+                    }
+                }
+            } catch (Exception e) {
+                // Ignorar errores al buscar elementos
+            }
+        }
+
+        return mensajes.toString().trim();
+    }
+
+    /**
+     * Verifica si la página contiene texto específico
+     *
+     * @param texto Texto a buscar
+     * @return true si el texto está presente
+     */
+    protected boolean contienTexto(String texto) {
+        return driver.getPageSource().contains(texto);
+    }
+
+    /**
+     * Espera a que aparezca texto específico en la página
+     *
+     * @param texto Texto a esperar
+     * @param timeout Timeout personalizado
+     * @return true si el texto apareció
+     */
+    protected boolean esperarTexto(String texto, Duration timeout) {
+        try {
+            WebDriverWait waitPersonalizado = new WebDriverWait(driver, timeout);
+            return waitPersonalizado.until(webDriver -> contienTexto(texto));
+        } catch (Exception e) {
+            logger.warn("Texto '{}' no apareció en el tiempo esperado", texto);
+            return false;
+        }
     }
 }
