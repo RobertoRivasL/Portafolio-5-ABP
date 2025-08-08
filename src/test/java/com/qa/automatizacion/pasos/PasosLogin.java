@@ -1,766 +1,606 @@
 package com.qa.automatizacion.pasos;
 
-import com.qa.automatizacion.configuracion.PropiedadesAplicacion;
-import com.qa.automatizacion.modelo.Usuario;
 import com.qa.automatizacion.paginas.PaginaLogin;
-import com.qa.automatizacion.utilidades.HelperTrazabilidad;
-import com.qa.automatizacion.utilidades.UtileriasComunes;
-import io.cucumber.datatable.DataTable;
+import com.qa.automatizacion.paginas.PaginaDashboard;
+import com.qa.automatizacion.utilidades.Utileria;
+import com.qa.automatizacion.modelo.Usuario;
+
 import io.cucumber.java.es.*;
-import org.openqa.selenium.By;
+import io.cucumber.datatable.DataTable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Step Definitions optimizados para los escenarios de login.
- * Utiliza la nueva arquitectura con métodos centralizados y reutilizables.
- *
- * Principios aplicados:
- * - DRY: Reutiliza métodos de UtileriasComunes y PaginaLogin optimizada
- * - Single Responsibility: Se enfoca únicamente en los pasos de login
- * - Composition over Inheritance: Usa composición en lugar de herencia múltiple
- * - Dependency Injection: Recibe dependencias en constructor
- * - Open/Closed: Abierto para extensión, cerrado para modificación
+ * Step Definitions para los escenarios de login.
+ * Implementa los pasos en español usando la sintaxis Gherkin.
  *
  * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 2.0.0 - Optimizado con métodos reutilizables centralizados
+ * @version 2.0.0
  */
 public class PasosLogin {
 
     private static final Logger logger = LoggerFactory.getLogger(PasosLogin.class);
 
-    // Dependencias inyectadas o inicializadas
-    private final PropiedadesAplicacion propiedades;
-    private final HelperTrazabilidad trazabilidad;
+    private final Utileria utileria;
     private final PaginaLogin paginaLogin;
+    private final PaginaDashboard paginaDashboard;
 
-    // Variables de contexto para el escenario actual
-    private String emailUsuario;
-    private String passwordUsuario;
-    private boolean recordarSesion;
-    private Usuario usuarioContexto;
-    private long tiempoInicioLogin;
-    private boolean loginExitoso;
+    private Usuario usuarioActual;
+    private String mensajeErrorEsperado;
 
-    // ==================== CONSTRUCTOR ====================
-
-    /**
-     * Constructor que inicializa todas las dependencias necesarias.
-     * Sigue el patrón de inyección de dependencias para mejor testabilidad.
-     */
     public PasosLogin() {
-        this.propiedades = PropiedadesAplicacion.obtenerInstancia();
-        this.trazabilidad = new HelperTrazabilidad();
-        this.paginaLogin = new PaginaLogin(); // Usa el constructor optimizado
+        this.utileria = Utileria.obtenerInstancia();
+        this.paginaLogin = new PaginaLogin();
+        this.paginaDashboard = new PaginaDashboard();
 
-        // Inicializar variables de contexto
-        this.loginExitoso = false;
-        this.recordarSesion = false;
-
-        logger.debug("PasosLogin inicializado con arquitectura optimizada");
+        logger.debug("PasosLogin inicializados");
     }
 
     // ==================== PASOS DADO (GIVEN) ====================
 
     @Dado("que el usuario está en la página de login")
     public void elUsuarioEstaEnLaPaginaDeLogin() {
-        registrarInicioAccion("Navegando a página de login");
+        logger.info("=== PASO: Usuario está en la página de login ===");
+        utileria.registrarPaso("HU-001", "Navegación a página de login");
 
         try {
-            // Navegar a la página usando el método optimizado
             paginaLogin.navegarAPagina();
-
-            // Verificar que la página está completamente cargada
-            assertTrue(paginaLogin.estaPaginaCargada(),
+            assertTrue(paginaLogin.esPaginaCargada(),
                     "La página de login no se cargó correctamente");
-
-            // Verificar salud de la página
-            assertTrue(paginaLogin.verificarSaludPagina(),
-                    "La página de login no está en un estado saludable");
-
-            registrarFinAccion("Usuario en página de login", "Éxito");
+            logger.info("Usuario navegó exitosamente a la página de login");
 
         } catch (Exception e) {
-            registrarFinAccion("Error navegando a login", e.getMessage());
-            fail("Error navegando a la página de login: " + e.getMessage());
+            logger.error("Error navegando a página de login: {}", e.getMessage());
+            utileria.capturarScreenshotError("navegacion_login_error");
+            throw new RuntimeException("Error navegando a login: " + e.getMessage(), e);
         }
-    }
-
-    @Dado("que el usuario tiene credenciales válidas")
-    public void elUsuarioTieneCredencialesValidas() {
-        registrarInicioAccion("Configurando credenciales válidas por defecto");
-
-        // Usar credenciales por defecto desde propiedades
-        this.emailUsuario = propiedades.obtenerUsuarioDefecto();
-        this.passwordUsuario = propiedades.obtenerPasswordDefecto();
-
-        // Validar formato de credenciales
-        assertTrue(paginaLogin.esFormatoEmailValido(emailUsuario),
-                "El formato del email no es válido: " + emailUsuario);
-
-        // Crear objeto usuario para contexto
-        this.usuarioContexto = Usuario.builder()
-                .email(emailUsuario)
-                .contrasena(passwordUsuario)
-                .build();
-
-        registrarFinAccion("Credenciales configuradas",
-                "Email: " + emailUsuario + ", Usuario: " + usuarioContexto.getId());
-    }
-
-    @Dado("que el usuario tiene las siguientes credenciales:")
-    public void elUsuarioTieneLasSiguientesCredenciales(DataTable credenciales) {
-        registrarInicioAccion("Configurando credenciales desde DataTable");
-
-        Map<String, String> datos = credenciales.asMap();
-
-        // Extraer y validar credenciales
-        this.emailUsuario = datos.get("email");
-        this.passwordUsuario = datos.get("password");
-
-        assertNotNull(emailUsuario, "Email no puede ser null");
-        assertNotNull(passwordUsuario, "Password no puede ser null");
-        assertFalse(emailUsuario.trim().isEmpty(), "Email no puede estar vacío");
-        assertFalse(passwordUsuario.trim().isEmpty(), "Password no puede estar vacío");
-
-        // Validar formato de email
-        assertTrue(paginaLogin.esFormatoEmailValido(emailUsuario),
-                "Formato de email inválido: " + emailUsuario);
-
-        // Configurar opción de recordar si está presente
-        if (datos.containsKey("recordar")) {
-            this.recordarSesion = Boolean.parseBoolean(datos.get("recordar"));
-        }
-
-        // Crear objeto usuario completo
-        this.usuarioContexto = Usuario.builder()
-                .email(emailUsuario)
-                .contrasena(passwordUsuario)
-                .nombre(datos.getOrDefault("nombre", "Usuario Test"))
-                .apellido(datos.getOrDefault("apellido", "Prueba"))
-                .build();
-
-        registrarFinAccion("Credenciales desde DataTable configuradas",
-                "Email: " + emailUsuario + ", Recordar: " + recordarSesion);
-    }
-
-    @Dado("que el formulario de login está visible y habilitado")
-    public void elFormularioDeLoginEstaVisibleYHabilitado() {
-        registrarInicioAccion("Verificando estado del formulario de login");
-
-        // Verificar visibilidad del formulario
-        assertTrue(paginaLogin.esFormularioVisible(),
-                "El formulario de login no está visible");
-
-        // Verificar que los campos estén habilitados
-        assertTrue(paginaLogin.esCampoEmailHabilitado(),
-                "El campo de email no está habilitado");
-        assertTrue(paginaLogin.esCampoPasswordHabilitado(),
-                "El campo de contraseña no está habilitado");
-        assertTrue(paginaLogin.esBotonLoginHabilitado(),
-                "El botón de login no está habilitado");
-
-        // Verificar que no haya mensajes de error previos
-        assertFalse(paginaLogin.hayErrorCredenciales(),
-                "Hay errores de credenciales previos");
-        assertFalse(paginaLogin.hayCuentaBloqueada(),
-                "La cuenta aparece como bloqueada");
-
-        registrarFinAccion("Formulario verificado", "Todos los elementos están disponibles");
     }
 
     @Dado("que el sistema está funcionando correctamente")
     public void elSistemaEstaFuncionandoCorrectamente() {
-        registrarInicioAccion("Verificando funcionamiento del sistema");
+        logger.info("=== PASO: Verificando que el sistema funciona correctamente ===");
+        utileria.registrarPaso("HU-001", "Verificación de sistema");
 
         try {
-            // Verificar conectividad básica
-            String urlActual = paginaLogin.obtenerUrlActual();
-            assertNotNull(urlActual, "No se puede obtener la URL actual");
-            assertTrue(urlActual.contains(propiedades.obtenerUrlBase()),
-                    "La URL no corresponde al sistema esperado");
-
-            // Verificar que la página responde
-            String titulo = paginaLogin.obtenerTituloPagina();
-            assertFalse(titulo.isEmpty(), "El título de la página está vacío");
-
-            // Verificar que no hay overlays de carga
-            assertFalse(paginaLogin.estaCargando(),
-                    "El sistema aún está en estado de carga");
-
-            // Verificar salud general de la página
-            assertTrue(paginaLogin.verificarSaludPagina(),
-                    "La página no está en un estado saludable");
-
-            registrarFinAccion("Sistema funcionando", "Todas las verificaciones pasaron");
+            paginaLogin.validarPaginaListaParaLogin();
+            assertFalse(paginaLogin.hayErroresPrevios(),
+                    "El sistema tiene errores previos");
+            logger.info("Sistema verificado como funcional");
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando sistema", e.getMessage());
-            fail("Error verificando el funcionamiento del sistema: " + e.getMessage());
+            logger.error("Error verificando sistema: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_sistema_error");
+            throw new RuntimeException("Sistema no está funcionando: " + e.getMessage(), e);
         }
+    }
+
+    @Dado("que el usuario tiene credenciales válidas")
+    public void elUsuarioTieneCredencialesValidas(DataTable tablaCredenciales) {
+        logger.info("=== PASO: Usuario tiene credenciales válidas ===");
+        utileria.registrarPaso("HU-001", "Configuración de credenciales válidas");
+
+        try {
+            List<Map<String, String>> credenciales = tablaCredenciales.asMaps();
+
+            if (credenciales.isEmpty()) {
+                throw new IllegalArgumentException("No se proporcionaron credenciales");
+            }
+
+            Map<String, String> primerCredencial = credenciales.get(0);
+            String email = primerCredencial.get("email");
+            String password = primerCredencial.get("password");
+
+            assertTrue(paginaLogin.validarCredenciales(email, password),
+                    "Las credenciales proporcionadas no tienen formato válido");
+
+            this.usuarioActual = new Usuario();
+            this.usuarioActual.setEmail(email);
+            this.usuarioActual.setPassword(password);
+
+            logger.info("Credenciales válidas configuradas para email: {}", email);
+
+        } catch (Exception e) {
+            logger.error("Error configurando credenciales: {}", e.getMessage());
+            throw new RuntimeException("Error en credenciales: " + e.getMessage(), e);
+        }
+    }
+
+    @Dado("que el usuario tiene credenciales inválidas")
+    public void elUsuarioTieneCredencialesInvalidas(DataTable tablaCredenciales) {
+        logger.info("=== PASO: Usuario tiene credenciales inválidas ===");
+        utileria.registrarPaso("HU-002", "Configuración de credenciales inválidas");
+
+        try {
+            List<Map<String, String>> credenciales = tablaCredenciales.asMaps();
+            Map<String, String> primerCredencial = credenciales.get(0);
+
+            String email = primerCredencial.get("email");
+            String password = primerCredencial.get("password");
+
+            this.usuarioActual = new Usuario();
+            this.usuarioActual.setEmail(email);
+            this.usuarioActual.setPassword(password);
+
+            logger.info("Credenciales inválidas configuradas");
+
+        } catch (Exception e) {
+            logger.error("Error configurando credenciales inválidas: {}", e.getMessage());
+            throw new RuntimeException("Error en credenciales inválidas: " + e.getMessage(), e);
+        }
+    }
+
+    @Dado("que el usuario quiere recordar su sesión")
+    public void elUsuarioQuiereRecordarSuSesion() {
+        logger.info("=== PASO: Usuario quiere recordar sesión ===");
+        utileria.registrarPaso("HU-003", "Configuración de recordar sesión");
+
+        if (usuarioActual != null) {
+            usuarioActual.setRecordarSesion(true);
+        }
+
+        logger.info("Configurado para recordar sesión");
     }
 
     // ==================== PASOS CUANDO (WHEN) ====================
 
     @Cuando("el usuario ingresa sus credenciales")
     public void elUsuarioIngresaSusCredenciales() {
-        registrarInicioAccion("Ingresando credenciales", "Email: " + emailUsuario);
-
-        assertNotNull(emailUsuario, "Email no está configurado en el contexto");
-        assertNotNull(passwordUsuario, "Password no está configurado en el contexto");
-
-        this.tiempoInicioLogin = System.currentTimeMillis();
+        logger.info("=== PASO: Usuario ingresa credenciales ===");
+        utileria.registrarPaso("HU-001", "Ingreso de credenciales");
 
         try {
-            // Limpiar formulario antes de ingresar credenciales
-            paginaLogin.limpiarFormulario();
+            if (usuarioActual == null) {
+                throw new IllegalStateException("No hay credenciales configuradas");
+            }
 
-            // Ingresar credenciales usando métodos optimizados
-            boolean credencialesIngresadas = paginaLogin.ingresarCredenciales(emailUsuario, passwordUsuario);
+            paginaLogin.ingresarCredenciales(
+                    usuarioActual.getEmail(),
+                    usuarioActual.getPassword()
+            );
 
-            assertTrue(credencialesIngresadas,
-                    "No se pudieron ingresar las credenciales correctamente");
-
-            // Verificar que las credenciales se ingresaron correctamente
-            Optional<String> emailIngresado = paginaLogin.obtenerValorEmail();
-            assertTrue(emailIngresado.isPresent(), "Email no se ingresó correctamente");
-            assertEquals(emailUsuario, emailIngresado.get(),
-                    "El email ingresado no coincide con el esperado");
-
-            registrarFinAccion("Credenciales ingresadas", "Verificación exitosa");
+            logger.info("Credenciales ingresadas para: {}", usuarioActual.getEmail());
 
         } catch (Exception e) {
-            registrarFinAccion("Error ingresando credenciales", e.getMessage());
-            fail("Error ingresando credenciales: " + e.getMessage());
+            logger.error("Error ingresando credenciales: {}", e.getMessage());
+            utileria.capturarScreenshotError("ingreso_credenciales_error");
+            throw new RuntimeException("Error ingresando credenciales: " + e.getMessage(), e);
         }
     }
 
-    @Cuando("el usuario marca la opción {string}")
-    public void elUsuarioMarcaLaOpcion(String opcion) {
-        registrarInicioAccion("Marcando opción", opcion);
+    @Cuando("ingresa el email {string}")
+    public void ingresaElEmail(String email) {
+        logger.info("=== PASO: Ingresando email específico: {} ===", email);
+        utileria.registrarPaso("HU-002", "Ingreso de email específico");
 
         try {
-            switch (opcion.toLowerCase()) {
-                case "recordar sesión":
-                case "recordar mi sesión":
-                case "mantener sesión activa":
-                    boolean marcado = paginaLogin.marcarRecordarSesion();
-                    assertTrue(marcado, "No se pudo marcar la opción de recordar sesión");
-                    this.recordarSesion = true;
-                    break;
+            paginaLogin.ingresarEmail(email);
 
-                default:
-                    fail("Opción no reconocida: " + opcion);
+            if (usuarioActual == null) {
+                usuarioActual = new Usuario();
             }
+            usuarioActual.setEmail(email);
 
-            registrarFinAccion("Opción marcada", opcion + " - Éxito");
+            logger.info("Email específico ingresado: {}", email);
 
         } catch (Exception e) {
-            registrarFinAccion("Error marcando opción", e.getMessage());
-            fail("Error marcando la opción '" + opcion + "': " + e.getMessage());
+            logger.error("Error ingresando email específico: {}", e.getMessage());
+            utileria.capturarScreenshotError("ingreso_email_especifico_error");
+            throw new RuntimeException("Error ingresando email: " + e.getMessage(), e);
+        }
+    }
+
+    @Cuando("ingresa la contraseña {string}")
+    public void ingresaLaContrasena(String password) {
+        logger.info("=== PASO: Ingresando contraseña específica ===");
+        utileria.registrarPaso("HU-002", "Ingreso de contraseña específica");
+
+        try {
+            paginaLogin.ingresarPassword(password);
+
+            if (usuarioActual == null) {
+                usuarioActual = new Usuario();
+            }
+            usuarioActual.setPassword(password);
+
+            logger.info("Contraseña específica ingresada");
+
+        } catch (Exception e) {
+            logger.error("Error ingresando contraseña específica: {}", e.getMessage());
+            utileria.capturarScreenshotError("ingreso_password_especifico_error");
+            throw new RuntimeException("Error ingresando contraseña: " + e.getMessage(), e);
         }
     }
 
     @Cuando("hace clic en el botón {string}")
     public void haceClicEnElBoton(String nombreBoton) {
-        registrarInicioAccion("Haciendo clic en botón", nombreBoton);
+        logger.info("=== PASO: Haciendo clic en botón: {} ===", nombreBoton);
+        utileria.registrarPaso("HU-001", "Clic en botón " + nombreBoton);
 
         try {
-            boolean clicExitoso = false;
-
             switch (nombreBoton.toLowerCase()) {
                 case "iniciar sesión":
                 case "login":
                 case "entrar":
-                case "acceder":
-                    clicExitoso = paginaLogin.hacerClicEnLogin();
+                    paginaLogin.hacerClickLogin();
                     break;
-
-                case "olvidé mi contraseña":
-                case "recuperar contraseña":
-                case "¿olvidaste tu contraseña?":
-                    clicExitoso = paginaLogin.hacerClicEnOlvidoPassword();
-                    break;
-
                 case "registrarse":
-                case "crear cuenta":
                 case "registro":
-                    clicExitoso = paginaLogin.hacerClicEnRegistro();
+                    paginaLogin.navegarARegistro();
                     break;
-
+                case "olvidaste tu contraseña":
+                case "recuperar contraseña":
+                    paginaLogin.navegarARecuperarPassword();
+                    break;
                 default:
-                    fail("Botón no reconocido: " + nombreBoton);
+                    throw new IllegalArgumentException("Botón no reconocido: " + nombreBoton);
             }
 
-            assertTrue(clicExitoso, "No se pudo hacer clic en el botón: " + nombreBoton);
+            logger.info("Clic ejecutado en botón: {}", nombreBoton);
 
-            // Si es el botón de login, esperar respuesta del sistema
-            if (nombreBoton.toLowerCase().contains("iniciar") ||
-                    nombreBoton.toLowerCase().contains("login")) {
+        } catch (Exception e) {
+            logger.error("Error haciendo clic en botón '{}': {}", nombreBoton, e.getMessage());
+            utileria.capturarScreenshotError("click_boton_error");
+            throw new RuntimeException("Error en clic de botón: " + e.getMessage(), e);
+        }
+    }
 
-                // Esperar un momento para que el sistema procese
-                UtileriasComunes.esperarSegundos(2);
+    @Cuando("selecciona recordar sesión")
+    public void seleccionaRecordarSesion() {
+        logger.info("=== PASO: Seleccionando recordar sesión ===");
+        utileria.registrarPaso("HU-003", "Selección de recordar sesión");
+
+        try {
+            paginaLogin.marcarRecordarSesion();
+
+            if (usuarioActual != null) {
+                usuarioActual.setRecordarSesion(true);
             }
 
-            registrarFinAccion("Clic en botón exitoso", nombreBoton);
+            logger.info("Recordar sesión seleccionado");
 
         } catch (Exception e) {
-            registrarFinAccion("Error haciendo clic", e.getMessage());
-            fail("Error haciendo clic en el botón '" + nombreBoton + "': " + e.getMessage());
+            logger.error("Error seleccionando recordar sesión: {}", e.getMessage());
+            utileria.capturarScreenshotError("recordar_sesion_error");
+            throw new RuntimeException("Error seleccionando recordar sesión: " + e.getMessage(), e);
         }
     }
 
-    @Cuando("el usuario intenta hacer login con credenciales incorrectas")
-    public void elUsuarioIntentaHacerLoginConCredencialesIncorrectas() {
-        registrarInicioAccion("Intentando login con credenciales incorrectas");
-
-        // Configurar credenciales incorrectas
-        this.emailUsuario = "usuario.inexistente@test.com";
-        this.passwordUsuario = "passwordIncorrecto123";
-
-        this.tiempoInicioLogin = System.currentTimeMillis();
+    @Cuando("intenta realizar login")
+    public void intentaRealizarLogin() {
+        logger.info("=== PASO: Intentando realizar login ===");
+        utileria.registrarPaso("HU-002", "Intento de login");
 
         try {
-            // Intentar login sabiendo que fallará
-            this.loginExitoso = paginaLogin.iniciarSesion(emailUsuario, passwordUsuario);
+            if (usuarioActual == null) {
+                throw new IllegalStateException("No hay usuario configurado para login");
+            }
 
-            // Esperar respuesta del sistema
-            UtileriasComunes.esperarSegundos(3);
+            boolean recordarSesion = usuarioActual.isRecordarSesion();
 
-            registrarFinAccion("Intento de login incorrecto completado",
-                    "Resultado: " + (loginExitoso ? "Exitoso" : "Fallido"));
+            paginaLogin.realizarLogin(
+                    usuarioActual.getEmail(),
+                    usuarioActual.getPassword(),
+                    recordarSesion
+            );
+
+            logger.info("Intento de login ejecutado");
 
         } catch (Exception e) {
-            registrarFinAccion("Error en intento de login", e.getMessage());
-            // No fallar aquí porque esperamos que el login falle
+            logger.error("Error en intento de login: {}", e.getMessage());
+            utileria.capturarScreenshotError("intento_login_error");
         }
     }
 
-    @Cuando("el usuario deja los campos vacíos")
-    public void elUsuarioDejaLosCamposVacios() {
-        registrarInicioAccion("Dejando campos vacíos");
+    @Cuando("espera {int} segundos")
+    public void espera(int segundos) {
+        logger.info("=== PASO: Esperando {} segundos ===", segundos);
+        utileria.registrarPaso("ACTUAL", "Espera de " + segundos + " segundos");
 
-        try {
-            // Limpiar formulario completamente
-            paginaLogin.limpiarFormulario();
+        utileria.pausa(segundos * 1000L);
 
-            // Verificar que los campos están efectivamente vacíos
-            Optional<String> valorEmail = paginaLogin.obtenerValorEmail();
-            Optional<String> valorPassword = paginaLogin.obtenerValorPassword();
-
-            assertTrue(valorEmail.isEmpty() || valorEmail.get().trim().isEmpty(),
-                    "El campo email no está vacío");
-            assertTrue(valorPassword.isEmpty() || valorPassword.get().trim().isEmpty(),
-                    "El campo password no está vacío");
-
-            // Configurar contexto para campos vacíos
-            this.emailUsuario = "";
-            this.passwordUsuario = "";
-
-            registrarFinAccion("Campos vacíos configurados", "Éxito");
-
-        } catch (Exception e) {
-            registrarFinAccion("Error dejando campos vacíos", e.getMessage());
-            fail("Error configurando campos vacíos: " + e.getMessage());
-        }
-    }
-
-    @Cuando("el usuario espera {int} segundos")
-    public void elUsuarioEsperaSegundos(int segundos) {
-        registrarInicioAccion("Esperando tiempo específico", segundos + " segundos");
-
-        UtileriasComunes.esperarSegundos(segundos);
-
-        registrarFinAccion("Espera completada", segundos + " segundos");
+        logger.info("Espera de {} segundos completada", segundos);
     }
 
     // ==================== PASOS ENTONCES (THEN) ====================
 
     @Entonces("el usuario debe ser redirigido al dashboard")
     public void elUsuarioDebeSerRedirigidoAlDashboard() {
-        registrarInicioAccion("Verificando redirección al dashboard");
+        logger.info("=== PASO: Verificando redirección al dashboard ===");
+        utileria.registrarPaso("HU-001", "Verificación de redirección al dashboard");
 
         try {
-            // Esperar redirección con timeout
-            boolean redireccionExitosa = paginaLogin.esperarRedireccionLogin(10);
-            assertTrue(redireccionExitosa, "No hubo redirección después del login");
+            paginaLogin.esperarProcesoLogin(15);
 
-            // Verificar que la URL cambió al dashboard
-            String urlActual = paginaLogin.obtenerUrlActual();
-            String urlDashboard = propiedades.obtenerUrlDashboard();
+            assertFalse(utileria.verificarUrl("login"),
+                    "Usuario sigue en página de login después del login exitoso");
 
-            assertTrue(urlActual.contains("dashboard") || urlActual.equals(urlDashboard),
-                    "La URL no corresponde al dashboard. URL actual: " + urlActual);
+            assertTrue(utileria.verificarUrl("dashboard"),
+                    "Usuario no fue redirigido al dashboard");
 
-            // Marcar login como exitoso
-            this.loginExitoso = true;
+            paginaDashboard.esperarCargaCompletaPagina();
+            assertTrue(paginaDashboard.esPaginaCargada(),
+                    "Dashboard no se cargó correctamente");
 
-            registrarFinAccion("Redirección al dashboard verificada", "URL: " + urlActual);
+            logger.info("Redirección al dashboard verificada exitosamente");
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando redirección", e.getMessage());
-            fail("Error verificando redirección al dashboard: " + e.getMessage());
+            logger.error("Error verificando redirección al dashboard: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_dashboard_error");
+            throw new RuntimeException("Error en redirección al dashboard: " + e.getMessage(), e);
         }
     }
 
     @Entonces("debe ver el mensaje de bienvenida {string}")
     public void debeVerElMensajeDeBienvenida(String mensajeEsperado) {
-        registrarInicioAccion("Verificando mensaje de bienvenida", mensajeEsperado);
+        logger.info("=== PASO: Verificando mensaje de bienvenida: {} ===", mensajeEsperado);
+        utileria.registrarPaso("HU-001", "Verificación de mensaje de bienvenida");
 
         try {
-            // Esperar que aparezca el mensaje de éxito
-            boolean mensajeVisible = paginaLogin.esperarMensajeExito(5);
-            assertTrue(mensajeVisible, "No apareció mensaje de éxito/bienvenida");
+            assertTrue(paginaDashboard.hayMensajeBienvenida(),
+                    "No se encontró mensaje de bienvenida en el dashboard");
 
-            // Verificar contenido del mensaje
-            Optional<String> mensajeExito = paginaLogin.obtenerMensajeExito();
-            assertTrue(mensajeExito.isPresent(), "No se pudo obtener el mensaje de éxito");
+            String mensajeActual = paginaDashboard.obtenerMensajeBienvenida();
 
-            String mensajeActual = mensajeExito.get();
-            assertTrue(mensajeActual.contains(mensajeEsperado) ||
-                            mensajeEsperado.contains(mensajeActual),
-                    "El mensaje no contiene el texto esperado. " +
-                            "Esperado: '" + mensajeEsperado + "', " +
-                            "Actual: '" + mensajeActual + "'");
+            assertTrue(mensajeActual.contains(mensajeEsperado),
+                    String.format("Mensaje de bienvenida no contiene el texto esperado. " +
+                            "Esperado: '%s', Actual: '%s'", mensajeEsperado, mensajeActual));
 
-            registrarFinAccion("Mensaje de bienvenida verificado",
-                    "Esperado: " + mensajeEsperado + ", Actual: " + mensajeActual);
+            logger.info("Mensaje de bienvenida verificado: {}", mensajeActual);
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando mensaje", e.getMessage());
-            fail("Error verificando mensaje de bienvenida: " + e.getMessage());
+            logger.error("Error verificando mensaje de bienvenida: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_bienvenida_error");
+            throw new RuntimeException("Error verificando mensaje de bienvenida: " + e.getMessage(), e);
         }
     }
 
     @Entonces("debe ver su nombre de usuario en la barra superior")
     public void debeVerSuNombreDeUsuarioEnLaBarraSuperior() {
-        registrarInicioAccion("Verificando nombre de usuario en barra superior");
+        logger.info("=== PASO: Verificando nombre de usuario en barra superior ===");
+        utileria.registrarPaso("HU-001", "Verificación de nombre de usuario");
 
         try {
-            // Localizador para la barra superior con nombre de usuario
-            By barraSuperior = By.cssSelector(".navbar .user-info, .header .username, [data-testid='user-display']");
+            assertTrue(paginaDashboard.hayInformacionUsuario(),
+                    "No se encontró información de usuario en la barra superior");
 
-            // Esperar que aparezca el nombre de usuario
-            boolean nombreVisible = UtileriasComunes.esperarElementoVisible(
-                    paginaLogin.obtenerDriver(), barraSuperior, 8);
-            assertTrue(nombreVisible, "No se encontró el nombre de usuario en la barra superior");
+            String nombreUsuario = paginaDashboard.obtenerNombreUsuario();
 
-            // Obtener y verificar el texto del nombre
-            Optional<String> textoUsuario = UtileriasComunes.obtenerTextoElemento(
-                    paginaLogin.obtenerDriver(), barraSuperior);
-            assertTrue(textoUsuario.isPresent(), "No se pudo obtener el texto del usuario");
+            assertFalse(nombreUsuario.isEmpty(),
+                    "Nombre de usuario está vacío en la barra superior");
 
-            String nombreMostrado = textoUsuario.get();
-            assertFalse(nombreMostrado.trim().isEmpty(), "El nombre de usuario está vacío");
-
-            // Si tenemos contexto del usuario, verificar que coincida
-            if (usuarioContexto != null && usuarioContexto.getNombre() != null) {
-                assertTrue(nombreMostrado.contains(usuarioContexto.getNombre()) ||
-                                nombreMostrado.contains(emailUsuario),
-                        "El nombre mostrado no coincide con el usuario logueado. " +
-                                "Mostrado: '" + nombreMostrado + "', Esperado: '" +
-                                (usuarioContexto.getNombre() != null ? usuarioContexto.getNombre() : emailUsuario) + "'");
+            if (usuarioActual != null && usuarioActual.getEmail() != null) {
+                String emailEsperado = usuarioActual.getEmail();
+                assertTrue(nombreUsuario.contains(emailEsperado) ||
+                                emailEsperado.contains(nombreUsuario.toLowerCase()),
+                        String.format("Nombre de usuario '%s' no es consistente con email '%s'",
+                                nombreUsuario, emailEsperado));
             }
 
-            registrarFinAccion("Nombre de usuario verificado", "Nombre: " + nombreMostrado);
+            logger.info("Nombre de usuario verificado en barra superior: {}", nombreUsuario);
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando nombre de usuario", e.getMessage());
-            fail("Error verificando nombre de usuario en barra superior: " + e.getMessage());
+            logger.error("Error verificando nombre de usuario: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_nombre_usuario_error");
+            throw new RuntimeException("Error verificando nombre de usuario: " + e.getMessage(), e);
         }
     }
 
-    @Entonces("debe ver un mensaje de error indicando {string}")
-    public void debeVerUnMensajeDeErrorIndicando(String tipoError) {
-        registrarInicioAccion("Verificando mensaje de error", tipoError);
+    @Entonces("debe ver un mensaje de error")
+    public void debeVerUnMensajeDeError() {
+        logger.info("=== PASO: Verificando presencia de mensaje de error ===");
+        utileria.registrarPaso("HU-002", "Verificación de mensaje de error");
 
         try {
-            // Esperar que aparezca algún mensaje de error
-            boolean errorVisible = paginaLogin.esperarMensajeError(5);
-            assertTrue(errorVisible, "No apareció ningún mensaje de error");
+            boolean hayError = paginaLogin.esperarMensajeError(10);
 
-            Optional<String> mensajeError = Optional.empty();
+            assertTrue(hayError, "No se mostró mensaje de error cuando se esperaba");
+            assertTrue(paginaLogin.hayMensajeError(), "Mensaje de error no está visible");
 
-            switch (tipoError.toLowerCase()) {
-                case "credenciales incorrectas":
-                case "email o contraseña incorrectos":
-                case "datos incorrectos":
-                    assertTrue(paginaLogin.hayErrorCredenciales(),
-                            "No hay mensaje de error de credenciales");
-                    mensajeError = paginaLogin.obtenerMensajeErrorCredenciales();
-                    break;
+            String mensajeError = paginaLogin.obtenerMensajeError();
+            logger.info("Mensaje de error verificado: {}", mensajeError);
 
-                case "cuenta bloqueada":
-                case "usuario bloqueado":
-                case "acceso bloqueado":
-                    assertTrue(paginaLogin.hayCuentaBloqueada(),
-                            "No hay mensaje de cuenta bloqueada");
-                    mensajeError = paginaLogin.obtenerMensajeCuentaBloqueada();
-                    break;
+        } catch (Exception e) {
+            logger.error("Error verificando mensaje de error: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_error_esperado");
+            throw new RuntimeException("Error verificando mensaje de error: " + e.getMessage(), e);
+        }
+    }
 
-                case "campos obligatorios":
-                case "datos requeridos":
-                case "campos vacíos":
-                    assertTrue(paginaLogin.hayMensajesError(),
-                            "No hay mensajes de error generales");
-                    mensajeError = paginaLogin.obtenerMensajeError();
-                    break;
+    @Entonces("debe ver el mensaje {string}")
+    public void debeVerElMensaje(String mensajeEsperado) {
+        logger.info("=== PASO: Verificando mensaje específico: {} ===", mensajeEsperado);
+        utileria.registrarPaso("HU-002", "Verificación de mensaje específico");
 
-                default:
-                    // Verificar mensaje de error general
-                    assertTrue(paginaLogin.hayMensajesError(),
-                            "No hay mensajes de error para el tipo: " + tipoError);
-                    mensajeError = paginaLogin.obtenerMensajeError();
+        try {
+            if (mensajeEsperado.toLowerCase().contains("error") ||
+                    mensajeEsperado.toLowerCase().contains("incorrecto") ||
+                    mensajeEsperado.toLowerCase().contains("inválido")) {
+
+                assertTrue(paginaLogin.hayMensajeError(),
+                        "No se encontró mensaje de error cuando se esperaba");
+
+                String mensajeActual = paginaLogin.obtenerMensajeError();
+                assertTrue(mensajeActual.contains(mensajeEsperado) ||
+                                mensajeEsperado.contains(mensajeActual),
+                        String.format("Mensaje de error no coincide. Esperado: '%s', Actual: '%s'",
+                                mensajeEsperado, mensajeActual));
+
+            } else if (mensajeEsperado.toLowerCase().contains("éxito") ||
+                    mensajeEsperado.toLowerCase().contains("bienvenido")) {
+
+                assertTrue(paginaDashboard.hayMensajeBienvenida() || paginaLogin.hayMensajeExito(),
+                        "No se encontró mensaje de éxito cuando se esperaba");
+
+            } else {
+                boolean encontrado = paginaLogin.hayMensajeError() ||
+                        paginaLogin.hayMensajeExito() ||
+                        paginaLogin.hayMensajeAdvertencia();
+
+                assertTrue(encontrado, "No se encontró ningún mensaje cuando se esperaba: " + mensajeEsperado);
             }
 
-            assertTrue(mensajeError.isPresent(),
-                    "No se pudo obtener el mensaje de error específico");
-
-            String mensajeActual = mensajeError.get().toLowerCase();
-            String tipoEsperado = tipoError.toLowerCase();
-
-            assertTrue(mensajeActual.contains(tipoEsperado) ||
-                            contieneTerminosRelacionados(mensajeActual, tipoEsperado),
-                    "El mensaje de error no contiene los términos esperados. " +
-                            "Tipo esperado: '" + tipoError + "', " +
-                            "Mensaje actual: '" + mensajeError.get() + "'");
-
-            registrarFinAccion("Mensaje de error verificado",
-                    "Tipo: " + tipoError + ", Mensaje: " + mensajeError.get());
+            logger.info("Mensaje específico verificado: {}", mensajeEsperado);
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando mensaje de error", e.getMessage());
-            fail("Error verificando mensaje de error '" + tipoError + "': " + e.getMessage());
+            logger.error("Error verificando mensaje específico: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_mensaje_especifico_error");
+            throw new RuntimeException("Error verificando mensaje: " + e.getMessage(), e);
         }
     }
 
-    @Entonces("el usuario permanece en la página de login")
-    public void elUsuarioPermaneceEnLaPaginaDeLogin() {
-        registrarInicioAccion("Verificando que permanece en página de login");
+    @Entonces("debe permanecer en la página de login")
+    public void debePermanecer_en_la_página_de_login() {
+        logger.info("=== PASO: Verificando permanencia en página de login ===");
+        utileria.registrarPaso("HU-002", "Verificación de permanencia en login");
 
         try {
-            // Esperar un momento para posibles redirecciones
-            UtileriasComunes.esperarSegundos(3);
+            utileria.pausa(3000);
 
-            // Verificar que seguimos en la página de login
-            String urlActual = paginaLogin.obtenerUrlActual();
-            assertTrue(urlActual.contains("/login"),
-                    "La URL no indica que estamos en la página de login. URL actual: " + urlActual);
+            assertTrue(utileria.verificarUrl("login"),
+                    "Usuario no permaneció en página de login como se esperaba");
 
-            // Verificar que el formulario sigue visible
-            assertTrue(paginaLogin.estaPaginaCargada(),
-                    "La página de login no está completamente cargada");
-            assertTrue(paginaLogin.esFormularioVisible(),
-                    "El formulario de login no está visible");
+            assertTrue(paginaLogin.esPaginaCargada(),
+                    "Página de login no está cargada correctamente");
 
-            // Marcar login como fallido
-            this.loginExitoso = false;
-
-            registrarFinAccion("Permanencia en login verificada", "URL: " + urlActual);
+            logger.info("Permanencia en página de login verificada");
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando permanencia", e.getMessage());
-            fail("Error verificando que permanece en página de login: " + e.getMessage());
+            logger.error("Error verificando permanencia en login: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_permanencia_login_error");
+            throw new RuntimeException("Error verificando permanencia en login: " + e.getMessage(), e);
         }
     }
 
-    @Entonces("los campos deben estar habilitados para nuevo intento")
-    public void losCamposDebenEstarHabilitadosParaNuevoIntento() {
-        registrarInicioAccion("Verificando campos habilitados para reintento");
+    @Entonces("los campos deben estar vacíos")
+    public void losCamposDebenEstarVacios() {
+        logger.info("=== PASO: Verificando que los campos están vacíos ===");
+        utileria.registrarPaso("HU-002", "Verificación de campos vacíos");
 
         try {
-            // Verificar que los campos estén habilitados
-            assertTrue(paginaLogin.esCampoEmailHabilitado(),
-                    "El campo email no está habilitado para reintento");
-            assertTrue(paginaLogin.esCampoPasswordHabilitado(),
-                    "El campo password no está habilitado para reintento");
-            assertTrue(paginaLogin.esBotonLoginHabilitado(),
-                    "El botón login no está habilitado para reintento");
+            String emailActual = paginaLogin.obtenerEmailIngresado();
+            assertTrue(emailActual == null || emailActual.trim().isEmpty(),
+                    "Campo email no está vacío: " + emailActual);
 
-            // Verificar que no hay bloqueos temporales
-            assertFalse(paginaLogin.hayCuentaBloqueada(),
-                    "La cuenta aparece bloqueada, impidiendo reintentos");
-
-            registrarFinAccion("Campos habilitados verificados", "Listos para reintento");
+            logger.info("Campos vacíos verificados");
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando campos", e.getMessage());
-            fail("Error verificando que los campos están habilitados: " + e.getMessage());
+            logger.error("Error verificando campos vacíos: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_campos_vacios_error");
+            throw new RuntimeException("Error verificando campos vacíos: " + e.getMessage(), e);
         }
     }
 
-    @Entonces("el tiempo de login debe ser menor a {int} segundos")
-    public void elTiempoDeLoginDebeSerMenorASegundos(int segundosMaximos) {
-        registrarInicioAccion("Verificando tiempo de login", "Máximo: " + segundosMaximos + "s");
+    @Entonces("el checkbox de recordar sesión debe estar marcado")
+    public void elCheckboxDeRecordarSesionDebeEstarMarcado() {
+        logger.info("=== PASO: Verificando checkbox recordar sesión marcado ===");
+        utileria.registrarPaso("HU-003", "Verificación de checkbox marcado");
 
         try {
-            assertTrue(tiempoInicioLogin > 0, "No se registró el inicio del login");
+            assertTrue(paginaLogin.esRecordarSesionMarcado(),
+                    "Checkbox de recordar sesión no está marcado");
 
-            long tiempoTranscurrido = (System.currentTimeMillis() - tiempoInicioLogin) / 1000;
-
-            assertTrue(tiempoTranscurrido <= segundosMaximos,
-                    "El login tardó más de lo esperado. " +
-                            "Tiempo transcurrido: " + tiempoTranscurrido + "s, " +
-                            "Máximo permitido: " + segundosMaximos + "s");
-
-            registrarFinAccion("Tiempo de login verificado",
-                    "Transcurrido: " + tiempoTranscurrido + "s, Límite: " + segundosMaximos + "s");
+            logger.info("Checkbox recordar sesión verificado como marcado");
 
         } catch (Exception e) {
-            registrarFinAccion("Error verificando tiempo", e.getMessage());
-            fail("Error verificando tiempo de login: " + e.getMessage());
+            logger.error("Error verificando checkbox: {}", e.getMessage());
+            utileria.capturarScreenshotError("verificacion_checkbox_error");
+            throw new RuntimeException("Error verificando checkbox: " + e.getMessage(), e);
         }
     }
 
-    // ==================== MÉTODOS Y (AND) / PERO (BUT) ====================
+    // ==================== PASOS Y (AND) ====================
 
-    @Y("el sistema está funcionando correctamente")
-    public void yElSistemaEstaFuncionandoCorrectamente() {
-        elSistemaEstaFuncionandoCorrectamente();
-    }
-
-    @Y("que el usuario tiene credenciales válidas")
-    public void yQueElUsuarioTieneCredencialesValidas() {
-        elUsuarioTieneCredencialesValidas();
-    }
-
-    @Y("hace clic en el botón {string}")
-    public void yHaceClicEnElBoton(String nombreBoton) {
-        haceClicEnElBoton(nombreBoton);
-    }
-
-    @Y("debe ver su nombre de usuario en la barra superior")
-    public void yDebeVerSuNombreDeUsuarioEnLaBarraSuperior() {
-        debeVerSuNombreDeUsuarioEnLaBarraSuperior();
-    }
-
-    @Pero("debe ver un mensaje de error indicando {string}")
-    public void peroDebeVerUnMensajeDeErrorIndicando(String tipoError) {
-        debeVerUnMensajeDeErrorIndicando(tipoError);
-    }
-
-    @Pero("el usuario permanece en la página de login")
-    public void peroElUsuarioPermaneceEnLaPaginaDeLogin() {
-        elUsuarioPermaneceEnLaPaginaDeLogin();
-    }
-
-    // ==================== MÉTODOS DE UTILIDADES PRIVADAS ====================
-
-    /**
-     * Registra el inicio de una acción para trazabilidad.
-     *
-     * @param accion descripción de la acción
-     * @param detalles detalles adicionales
-     */
-    private void registrarInicioAccion(String accion, String... detalles) {
-        String contexto = "Step: " + accion;
-        String detalleCompleto = detalles.length > 0 ? String.join(" | ", detalles) : "";
-
-        logger.info("INICIANDO: {} {}", accion, detalleCompleto);
-        UtileriasComunes.registrarAccionTrazabilidad("INICIO - " + accion, contexto, detalleCompleto);
+    @Y("el formulario está habilitado")
+    public void elFormularioEstaHabilitado() {
+        logger.info("=== PASO: Verificando formulario habilitado ===");
+        utileria.registrarPaso("ACTUAL", "Verificación de formulario habilitado");
 
         try {
-            trazabilidad.registrarPaso(accion, contexto + " | " + detalleCompleto);
+            assertTrue(paginaLogin.esFormularioHabilitado(),
+                    "El formulario de login no está habilitado");
+
+            logger.info("Formulario habilitado verificado");
+
         } catch (Exception e) {
-            logger.debug("Error registrando trazabilidad de inicio: {}", e.getMessage());
+            logger.error("Error verificando formulario habilitado: {}", e.getMessage());
+            throw new RuntimeException("Formulario no habilitado: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Registra el fin de una acción para trazabilidad.
-     *
-     * @param accion descripción de la acción
-     * @param resultado resultado de la acción
-     */
-    private void registrarFinAccion(String accion, String resultado) {
-        logger.info("COMPLETADO: {} - {}", accion, resultado);
-        UtileriasComunes.registrarAccionTrazabilidad("FIN - " + accion, resultado);
+    @Y("no hay errores previos en la página")
+    public void noHayErroresPreviosEnLaPagina() {
+        logger.info("=== PASO: Verificando ausencia de errores previos ===");
+        utileria.registrarPaso("ACTUAL", "Verificación de ausencia de errores");
 
         try {
-            trazabilidad.registrarResultado(accion, resultado);
+            assertFalse(paginaLogin.hayErroresPrevios(),
+                    "Hay errores previos en la página de login");
+
+            logger.info("Ausencia de errores previos verificada");
+
         } catch (Exception e) {
-            logger.debug("Error registrando resultado en trazabilidad: {}", e.getMessage());
+            logger.error("Error verificando ausencia de errores: {}", e.getMessage());
+            throw new RuntimeException("Hay errores previos: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Verifica si un mensaje contiene términos relacionados al tipo de error.
-     *
-     * @param mensaje mensaje actual
-     * @param tipoEsperado tipo de error esperado
-     * @return true si contiene términos relacionados
-     */
-    private boolean contieneTerminosRelacionados(String mensaje, String tipoEsperado) {
-        String[][] terminosRelacionados = {
-                {"credenciales", "email", "contraseña", "password", "usuario", "login", "acceso"},
-                {"bloqueada", "bloqueado", "suspendida", "deshabilitada", "inactiva"},
-                {"obligatorios", "requeridos", "vacíos", "necesarios", "faltantes", "completo"}
-        };
+    @Y("el título de la página es correcto")
+    public void elTituloDeLaPaginaEsCorrecto() {
+        logger.info("=== PASO: Verificando título de página ===");
+        utileria.registrarPaso("ACTUAL", "Verificación de título");
 
-        for (String[] grupo : terminosRelacionados) {
-            for (String termino : grupo) {
-                if (tipoEsperado.contains(termino) && mensaje.contains(termino)) {
-                    return true;
-                }
-            }
+        try {
+            String tituloEsperado = paginaLogin.obtenerTituloEsperado();
+            assertTrue(utileria.verificarTituloPagina(tituloEsperado),
+                    "El título de la página no es correcto");
+
+            logger.info("Título de página verificado");
+
+        } catch (Exception e) {
+            logger.error("Error verificando título: {}", e.getMessage());
+            throw new RuntimeException("Título incorrecto: " + e.getMessage(), e);
         }
-
-        return false;
     }
 
-    /**
-     * Obtiene el contexto del usuario actual.
-     *
-     * @return Usuario en contexto o null si no hay
-     */
-    public Usuario obtenerUsuarioContexto() {
-        return usuarioContexto;
+    // ==================== MÉTODOS DE UTILIDAD ====================
+
+    private void configurarUsuario(String email, String password) {
+        this.usuarioActual = new Usuario();
+        this.usuarioActual.setEmail(email);
+        this.usuarioActual.setPassword(password);
+        this.usuarioActual.setRecordarSesion(false);
     }
 
-    /**
-     * Verifica si el último login fue exitoso.
-     *
-     * @return true si el login fue exitoso
-     */
-    public boolean fueLoginExitoso() {
-        return loginExitoso;
+    public void limpiarEstado() {
+        logger.debug("Limpiando estado de pasos login");
+
+        this.usuarioActual = null;
+        this.mensajeErrorEsperado = null;
+
+        try {
+            paginaLogin.limpiar();
+        } catch (Exception e) {
+            logger.warn("Error limpiando página login: {}", e.getMessage());
+        }
     }
 
-    /**
-     * Obtiene el tiempo transcurrido desde el inicio del login.
-     *
-     * @return tiempo en milisegundos o 0 si no se ha iniciado
-     */
-    public long obtenerTiempoLogin() {
-        return tiempoInicioLogin > 0 ? System.currentTimeMillis() - tiempoInicioLogin : 0;
-    }
+    public String obtenerEstadoDebug() {
+        try {
+            return String.format(
+                    "Estado PasosLogin - Usuario: %s | Página Login: %s | Página Dashboard: %s",
+                    usuarioActual != null ? usuarioActual.getEmail() : "null",
+                    paginaLogin.obtenerEstadoCompleto(),
+                    paginaDashboard != null ? paginaDashboard.obtenerInformacionDebug() : "N/A"
+            );
 
-    /**
-     * Limpia el contexto del escenario actual.
-     * Útil para limpiar entre escenarios o al finalizar.
-     */
-    public void limpiarContexto() {
-        logger.debug("Limpiando contexto de PasosLogin");
-
-        this.emailUsuario = null;
-        this.passwordUsuario = null;
-        this.usuarioContexto = null;
-        this.loginExitoso = false;
-        this.recordarSesion = false;
-        this.tiempoInicioLogin = 0;
-
-        // Limpiar página si está disponible
-        if (paginaLogin != null) {
-            try {
-                paginaLogin.limpiarRecursos();
-            } catch (Exception e) {
-                logger.debug("Error limpiando recursos de página: {}", e.getMessage());
-            }
+        } catch (Exception e) {
+            return "Error obteniendo estado debug: " + e.getMessage();
         }
     }
 }

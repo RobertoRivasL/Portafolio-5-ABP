@@ -43,7 +43,8 @@ public class EjecutorRegressionTests {
             key = FILTER_TAGS_PROPERTY_NAME,
             value = "@Regression and not @WIP and not @Blocked"
     )
-    static void filtroTags() {}
+    static void filtroTags() {
+    }
 
     // ==================== CONFIGURACIÓN DE FEATURES ====================
 
@@ -54,7 +55,8 @@ public class EjecutorRegressionTests {
             key = GLUE_PROPERTY_NAME,
             value = "com.qa.automatizacion.pasos,com.qa.automatizacion.hooks"
     )
-    static void configurarGlue() {}
+    static void configurarGlue() {
+    }
 
     /**
      * Directorio de features: Ubicación de los archivos .feature
@@ -63,7 +65,8 @@ public class EjecutorRegressionTests {
             key = FEATURES_PROPERTY_NAME,
             value = "src/test/resources/features"
     )
-    static void configurarFeatures() {}
+    static void configurarFeatures() {
+    }
 
     // ==================== CONFIGURACIÓN DE PLUGINS Y REPORTES ====================
 
@@ -74,7 +77,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PROPERTY_NAME,
             value = "html:reportes/html/regression-report.html"
     )
-    static void configurarReporteHtml() {}
+    static void configurarReporteHtml() {
+    }
 
     /**
      * Plugin para reporte JSON (integración con herramientas externas)
@@ -83,7 +87,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PROPERTY_NAME,
             value = "json:reportes/json/regression-report.json"
     )
-    static void configurarReporteJson() {}
+    static void configurarReporteJson() {
+    }
 
     /**
      * Plugin para reporte JUnit (compatibilidad con CI/CD)
@@ -92,7 +97,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PROPERTY_NAME,
             value = "junit:reportes/junit/regression-report.xml"
     )
-    static void configurarReporteJunit() {}
+    static void configurarReporteJunit() {
+    }
 
     /**
      * Plugin para salida detallada en consola
@@ -101,7 +107,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PROPERTY_NAME,
             value = "pretty"
     )
-    static void configurarSalidaConsola() {}
+    static void configurarSalidaConsola() {
+    }
 
     /**
      * Plugin para reporte de uso (análisis de pasos no utilizados)
@@ -110,7 +117,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PROPERTY_NAME,
             value = "usage:reportes/usage/regression-usage.json"
     )
-    static void configurarReporteUsage() {}
+    static void configurarReporteUsage() {
+    }
 
     /**
      * Plugin para timeline de ejecución
@@ -119,7 +127,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PROPERTY_NAME,
             value = "timeline:reportes/timeline/regression-timeline.html"
     )
-    static void configurarTimeline() {}
+    static void configurarTimeline() {
+    }
 
     // ==================== CONFIGURACIÓN DE COMPORTAMIENTO ====================
 
@@ -131,7 +140,8 @@ public class EjecutorRegressionTests {
             key = EXECUTION_DRY_RUN_PROPERTY_NAME,
             value = "false"
     )
-    static void configurarEjecucionCompleta() {}
+    static void configurarEjecucionCompleta() {
+    }
 
     /**
      * Configurar para mostrar snippets de pasos faltantes
@@ -140,7 +150,8 @@ public class EjecutorRegressionTests {
             key = PLUGIN_PUBLISH_ENABLED_PROPERTY_NAME,
             value = "false"
     )
-    static void deshabilitarPublicacion() {}
+    static void deshabilitarPublicacion() {
+    }
 
     /**
      * Configurar modo estricto para validar que todos los pasos estén definidos
@@ -149,7 +160,8 @@ public class EjecutorRegressionTests {
             key = EXECUTION_STRICT_PROPERTY_NAME,
             value = "true"
     )
-    static void configurarModoEstricto() {}
+    static void configurarModoEstricto() {
+    }
 
     // ==================== CONFIGURACIÓN DE PARALELIZACIÓN ====================
 
@@ -161,7 +173,8 @@ public class EjecutorRegressionTests {
             key = PARALLEL_EXECUTION_ENABLED_PROPERTY_NAME,
             value = "true"
     )
-    static void habilitarParalelizacion() {}
+    static void habilitarParalelizacion() {
+    }
 
     /**
      * Configurar estrategia de paralelización
@@ -170,7 +183,8 @@ public class EjecutorRegressionTests {
             key = "cucumber.execution.parallel.config.strategy",
             value = "dynamic"
     )
-    static void configurarEstrategiaParalela() {}
+    static void configurarEstrategiaParalela() {
+    }
 
     /**
      * Número de threads paralelos
@@ -180,7 +194,8 @@ public class EjecutorRegressionTests {
             key = "cucumber.execution.parallel.config.fixed.parallelism",
             value = "4"
     )
-    static void configurarNumeroThreads() {}
+    static void configurarNumeroThreads() {
+    }
 
     // ==================== CONFIGURACIÓN DE ORDENAMIENTO ====================
 
@@ -192,7 +207,8 @@ public class EjecutorRegressionTests {
             key = "cucumber.execution.order",
             value = "lexical"
     )
-    static void configurarOrdenEjecucion() {}
+    static void configurarOrdenEjecucion() {
+    }
 
     // ==================== CONFIGURACIÓN DE SNIPPETS ====================
 
@@ -203,7 +219,8 @@ public class EjecutorRegressionTests {
             key = SNIPPET_TYPE_PROPERTY_NAME,
             value = "camelcase"
     )
-    static void configurarSnippets() {}
+    static void configurarSnippets() {
+    }
 
     // ==================== CONFIGURACIÓN DE TRANSFORMACIÓN ====================
 
@@ -214,7 +231,8 @@ public class EjecutorRegressionTests {
             key = OBJECT_FACTORY_PROPERTY_NAME,
             value = "io.cucumber.core.objectfactory.DefaultObjectFactory"
     )
-    static void configurarObjectFactory() {}
+    static void configurarObjectFactory() {
+    }
 
     // ==================== MÉTODOS DE UTILIDAD ESTÁTICOS ====================
 
@@ -267,5 +285,7 @@ public class EjecutorRegressionTests {
                 System.err.println("ADVERTENCIA: Propiedad no configurada: " + propiedad);
             }
         }
+    }
+}
 
         // Validar directorios de reportes

@@ -1,353 +1,682 @@
 package com.qa.automatizacion.utilidades;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Helper para gestionar la trazabilidad entre escenarios y historias de usuario.
- * Permite rastrear qué escenarios cubren qué requerimientos funcionales.
+ * Helper centralizado para gestión de trazabilidad con historias de usuario.
+ * Rastrea la ejecución de escenarios y su relación con historias de usuario.
+ *
+ * Funcionalidades:
+ * - Mapeo de escenarios con historias de usuario
+ * - Registro de pasos ejecutados por historia
+ * - Generación de reportes de trazabilidad
+ * - Métricas de cobertura de historias
+ * - Seguimiento de resultados por historia
  *
  * Principios aplicados:
- * - Single Responsibility: Se enfoca únicamente en trazabilidad
- * - Observer Pattern: Registra eventos de ejecución de escenarios
- * - Strategy Pattern: Permite diferentes formatos de reporte
+ * - Singleton Pattern: Una sola instancia para toda la ejecución
+ * - Observer Pattern: Registra eventos de ejecución
+ * - Strategy Pattern: Diferentes formatos de reporte
+ * - Thread-Safe: Uso de ConcurrentHashMap para concurrencia
  *
- * @author Equipo QA Automatización
- * @version 1.0
+ * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
+ * @version 2.0.0
  */
 public class HelperTrazabilidad {
 
     private static final Logger logger = LoggerFactory.getLogger(HelperTrazabilidad.class);
 
-    // ==================== VARIABLES FALTANTES ====================
+    // Instancia única (Singleton)
+    private static HelperTrazabilidad instancia;
 
-    // Lista para almacenar todos los pasos ejecutados
-    private final List<RegistroPaso> pasosEjecutados;
+    // Datos de trazabilidad thread-safe
+    private final Map<String, HistoriaUsuario> historiasUsuario = new ConcurrentHashMap<>();
+    private final Map<String, EscenarioEjecucion> escenariosEjecutados = new ConcurrentHashMap<>();
+    private final List<EventoTrazabilidad> eventosEjecucion = Collections.synchronizedList(new ArrayList<>());
 
-    // Map para almacenar las historias de usuario
-    private final Map<String, RegistroHistoriaUsuario> registrosHistorias;
+    // Configuración
+    private final ObjectMapper objectMapper;
+    private LocalDateTime inicioSesion;
+    private LocalDateTime finSesion;
+    private String archivoReporte = "trazabilidad-reporte.json";
 
-    // Variables para estadísticas
-    private LocalDateTime inicioEjecucion;
-    private String idEjecucionActual;
-
-    // ==================== CONSTRUCTOR ====================
-
-    /**
-     * Constructor que inicializa las estructuras de datos.
-     */
-    public HelperTrazabilidad() {
-        this.pasosEjecutados = new ArrayList<>();
-        this.registrosHistorias = new HashMap<>();
-        this.inicioEjecucion = LocalDateTime.now();
-        this.idEjecucionActual = "EXEC-" + System.currentTimeMillis();
-
-        cargarHistoriasUsuario();
-        logger.debug("HelperTrazabilidad inicializado con ID: {}", idEjecucionActual);
-    }
-
-    // ==================== CLASES INTERNAS FALTANTES ====================
+    // Métricas de sesión
+    private int totalEscenariosEjecutados = 0;
+    private int totalEscenariosPasados = 0;
+    private int totalEscenariosFallidos = 0;
 
     /**
-     * Clase interna para representar un paso ejecutado.
+     * Constructor privado para Singleton Pattern.
      */
-    private static class RegistroPaso {
-        String idHistoriaUsuario;
-        String descripcion;
-        LocalDateTime timestamp;
-        String thread;
-        EstadoPaso estado;
-        String mensajeError;
+    private HelperTrazabilidad() {
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        // Constructor por defecto
-        public RegistroPaso() {
-            this.timestamp = LocalDateTime.now();
-            this.thread = Thread.currentThread().getName();
-            this.estado = EstadoPaso.EJECUTADO;
-        }
+        logger.debug("HelperTrazabilidad inicializado");
     }
 
     /**
-     * Clase interna para representar una historia de usuario.
-     */
-    private static class RegistroHistoriaUsuario {
-        String id;
-        String titulo;
-        String descripcion;
-        List<String> criteriosAceptacion;
-        String prioridad;
-        String estado;
-        int pasosEjecutados;
-        int pasosFallidos;
-        LocalDateTime ultimaEjecucion;
-
-        // Constructor por defecto
-        public RegistroHistoriaUsuario() {
-            this.criteriosAceptacion = new ArrayList<>();
-            this.pasosEjecutados = 0;
-            this.pasosFallidos = 0;
-            this.estado = "Pendiente";
-            this.prioridad = "Media";
-        }
-    }
-
-    /**
-     * Enum para representar el estado de un paso.
-     */
-    private enum EstadoPaso {
-        EJECUTADO, FALLIDO, OMITIDO, PENDIENTE
-    }
-
-    // ==================== MÉTODO PARA CARGAR HISTORIAS ====================
-
-    /**
-     * Carga las historias de usuario predefinidas.
-     */
-    private void cargarHistoriasUsuario() {
-        // HU-001: Autenticación de Usuario
-        RegistroHistoriaUsuario hu001 = new RegistroHistoriaUsuario();
-        hu001.id = "HU-001";
-        hu001.titulo = "Autenticación de Usuario";
-        hu001.descripcion = "Como usuario del sistema quiero poder iniciar sesión con mis credenciales para acceder a las funcionalidades";
-        hu001.criteriosAceptacion = List.of(
-                "El usuario puede ingresar email y contraseña",
-                "El sistema valida las credenciales",
-                "Se muestra mensaje de error para credenciales inválidas",
-                "Se redirige al dashboard para credenciales válidas"
-        );
-        hu001.prioridad = "Alta";
-        hu001.estado = "En Desarrollo";
-        registrosHistorias.put(hu001.id, hu001);
-
-        // HU-002: Registro de Nuevo Usuario
-        RegistroHistoriaUsuario hu002 = new RegistroHistoriaUsuario();
-        hu002.id = "HU-002";
-        hu002.titulo = "Registro de Nuevo Usuario";
-        hu002.descripcion = "Como visitante del sitio web quiero poder registrarme en el sistema para obtener acceso a las funcionalidades";
-        hu002.criteriosAceptacion = List.of(
-                "Formulario con campos obligatorios",
-                "Validación de formato de email",
-                "Confirmación de contraseña",
-                "Prevención de usuarios duplicados"
-        );
-        hu002.prioridad = "Alta";
-        hu002.estado = "En Desarrollo";
-        registrosHistorias.put(hu002.id, hu002);
-
-        // HU-003: Gestión de Productos (CRUD)
-        RegistroHistoriaUsuario hu003 = new RegistroHistoriaUsuario();
-        hu003.id = "HU-003";
-        hu003.titulo = "Gestión de Productos (CRUD)";
-        hu003.descripcion = "Como usuario autenticado quiero gestionar productos en el sistema para mantener actualizado el catálogo";
-        hu003.criteriosAceptacion = List.of(
-                "Crear nuevos productos",
-                "Visualizar lista de productos",
-                "Editar productos existentes",
-                "Eliminar productos"
-        );
-        hu003.prioridad = "Media";
-        hu003.estado = "En Desarrollo";
-        registrosHistorias.put(hu003.id, hu003);
-
-        logger.debug("Historias de usuario cargadas: {}", registrosHistorias.size());
-    }
-
-    // ==================== MÉTODOS PRINCIPALES ====================
-
-    /**
-     * Registra un paso de ejecución asociado a una historia de usuario.
-     * Este método es llamado desde los Step Definitions para trazabilidad.
+     * Obtiene la instancia única del helper (Singleton Pattern).
      *
-     * @param idHistoriaUsuario ID de la historia de usuario (ej: "HU-001")
-     * @param descripcionPaso descripción del paso ejecutado
+     * @return instancia única de HelperTrazabilidad
      */
-    public void registrarPaso(String idHistoriaUsuario, String descripcionPaso) {
-        if (idHistoriaUsuario == null || descripcionPaso == null) {
-            logger.warn("ID de historia o descripción del paso es nulo - omitiendo registro");
-            return;
+    public static synchronized HelperTrazabilidad obtenerInstancia() {
+        if (instancia == null) {
+            instancia = new HelperTrazabilidad();
         }
+        return instancia;
+    }
 
+    // ==================== GESTIÓN DE SESIÓN ====================
+
+    /**
+     * Inicializa una nueva sesión de ejecución.
+     */
+    public void inicializarSesionEjecucion() {
+        this.inicioSesion = LocalDateTime.now();
+
+        logger.info("🎯 Sesión de trazabilidad iniciada: {}",
+                inicioSesion.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        // Registrar evento
+        registrarEvento("SESION_INICIADA", "Inicio de sesión de ejecución", null);
+    }
+
+    /**
+     * Finaliza la sesión de ejecución y genera reportes.
+     */
+    public void finalizarSesionEjecucion() {
+        this.finSesion = LocalDateTime.now();
+
+        logger.info("🏁 Sesión de trazabilidad finalizada: {}",
+                finSesion.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        // Registrar evento
+        registrarEvento("SESION_FINALIZADA", "Fin de sesión de ejecución", null);
+
+        // Generar reportes
         try {
-            // Crear registro del paso
-            RegistroPaso paso = new RegistroPaso();
-            paso.idHistoriaUsuario = idHistoriaUsuario;
-            paso.descripcion = descripcionPaso;
-            paso.estado = EstadoPaso.EJECUTADO;
-
-            // Agregar a la lista de pasos
-            pasosEjecutados.add(paso);
-
-            // Actualizar estadísticas de la historia
-            actualizarEstadisticasHistoria(idHistoriaUsuario);
-
-            logger.debug("Paso registrado - HU: {}, Descripción: {}", idHistoriaUsuario, descripcionPaso);
+            generarReporteTrazabilidad();
+            generarResumenEjecucion();
 
         } catch (Exception e) {
-            logger.error("Error registrando paso para HU {}: {}", idHistoriaUsuario, e.getMessage());
+            logger.error("Error generando reportes de trazabilidad: {}", e.getMessage(), e);
         }
     }
 
+    // ==================== GESTIÓN DE ESCENARIOS ====================
+
     /**
-     * Registra un paso fallido con información del error.
+     * Registra el inicio de un escenario.
      *
-     * @param idHistoriaUsuario ID de la historia de usuario
-     * @param descripcionPaso descripción del paso que falló
-     * @param error excepción o error ocurrido
+     * @param historiaUsuario ID de la historia de usuario
+     * @param nombreEscenario nombre del escenario
      */
-    public void registrarPasoFallido(String idHistoriaUsuario, String descripcionPaso, Throwable error) {
-        try {
-            RegistroPaso paso = new RegistroPaso();
-            paso.idHistoriaUsuario = idHistoriaUsuario;
-            paso.descripcion = descripcionPaso;
-            paso.estado = EstadoPaso.FALLIDO;
-            paso.mensajeError = error != null ? error.getMessage() : "Error desconocido";
+    public void iniciarEscenario(String historiaUsuario, String nombreEscenario) {
+        logger.debug("📋 Iniciando escenario: {} - {}", historiaUsuario, nombreEscenario);
 
-            pasosEjecutados.add(paso);
-            actualizarEstadisticasHistoria(idHistoriaUsuario);
+        // Crear o actualizar historia de usuario
+        HistoriaUsuario hu = historiasUsuario.computeIfAbsent(historiaUsuario,
+                k -> new HistoriaUsuario(k));
 
-            logger.error("Paso fallido registrado - HU: {}, Error: {}", idHistoriaUsuario, paso.mensajeError);
+        // Crear ejecución de escenario
+        EscenarioEjecucion escenario = new EscenarioEjecucion(
+                nombreEscenario, historiaUsuario, LocalDateTime.now());
 
-        } catch (Exception e) {
-            logger.error("Error registrando paso fallido: {}", e.getMessage());
-        }
+        String claveEscenario = generarClaveEscenario(historiaUsuario, nombreEscenario);
+        escenariosEjecutados.put(claveEscenario, escenario);
+
+        // Agregar a historia de usuario
+        hu.agregarEscenario(escenario);
+
+        // Registrar evento
+        registrarEvento("ESCENARIO_INICIADO", nombreEscenario, historiaUsuario);
+
+        totalEscenariosEjecutados++;
     }
 
     /**
-     * Actualiza las estadísticas de una historia de usuario.
+     * Registra la finalización de un escenario.
      *
-     * @param idHistoriaUsuario ID de la historia
+     * @param historiaUsuario ID de la historia de usuario
+     * @param resultado resultado del escenario (PASSED, FAILED, SKIPPED)
      */
-    private void actualizarEstadisticasHistoria(String idHistoriaUsuario) {
-        RegistroHistoriaUsuario historia = registrosHistorias.get(idHistoriaUsuario);
-        if (historia != null) {
-            // Contar pasos por estado para esta historia
-            long pasosEjecutados = this.pasosEjecutados.stream()
-                    .filter(p -> idHistoriaUsuario.equals(p.idHistoriaUsuario))
-                    .filter(p -> p.estado == EstadoPaso.EJECUTADO)
-                    .count();
+    public void finalizarEscenario(String historiaUsuario, String resultado) {
+        logger.debug("📋 Finalizando escenario: {} - {}", historiaUsuario, resultado);
 
-            long pasosFallidos = this.pasosEjecutados.stream()
-                    .filter(p -> idHistoriaUsuario.equals(p.idHistoriaUsuario))
-                    .filter(p -> p.estado == EstadoPaso.FALLIDO)
-                    .count();
+        // Buscar escenario actual de esta historia
+        EscenarioEjecucion escenarioActual = encontrarEscenarioActual(historiaUsuario);
 
-            historia.pasosEjecutados = (int) pasosEjecutados;
-            historia.pasosFallidos = (int) pasosFallidos;
-            historia.ultimaEjecucion = LocalDateTime.now();
+        if (escenarioActual != null) {
+            escenarioActual.finalizarEjecucion(resultado);
 
-            // Actualizar estado general
-            if (pasosFallidos > 0) {
-                historia.estado = "Fallido";
-            } else if (pasosEjecutados > 0) {
-                historia.estado = "En Ejecución";
-            }
-        }
-    }
-
-    /**
-     * Obtiene estadísticas de ejecución para reporting.
-     *
-     * @return mapa con estadísticas
-     */
-    public Map<String, Object> obtenerEstadisticas() {
-        Map<String, Object> estadisticas = new HashMap<>();
-
-        estadisticas.put("totalPasos", pasosEjecutados.size());
-        estadisticas.put("pasosExitosos",
-                pasosEjecutados.stream().filter(p -> p.estado == EstadoPaso.EJECUTADO).count());
-        estadisticas.put("pasosFallidos",
-                pasosEjecutados.stream().filter(p -> p.estado == EstadoPaso.FALLIDO).count());
-        estadisticas.put("totalHistorias", registrosHistorias.size());
-        estadisticas.put("inicioEjecucion", inicioEjecucion);
-        estadisticas.put("idEjecucion", idEjecucionActual);
-
-        return estadisticas;
-    }
-
-    /**
-     * Registra el resultado de una acción específica.
-     * Versión simplificada compatible con la estructura actual.
-     *
-     * @param accion descripción de la acción ejecutada
-     * @param resultado resultado obtenido de la acción
-     */
-    public void registrarResultado(String accion, String resultado) {
-        try {
-            String timestamp = java.time.LocalDateTime.now()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-            String entrada = String.format("[%s] RESULTADO - %s: %s", timestamp, accion, resultado);
-
-            logger.info("Registrando resultado: {} -> {}", accion, resultado);
-            logger.debug("Entrada de trazabilidad: {}", entrada);
-
-            // Si tienes algún sistema de almacenamiento de trazabilidad, agrégalo aquí
-            // Por ahora solo loggeamos el resultado
-
-        } catch (Exception e) {
-            logger.error("Error registrando resultado: {}", e.getMessage(), e);
-        }
-    }
-
-// Si necesitas variables adicionales, agrega estas al inicio de tu clase HelperTrazabilidad:
-
-    // Variables de clase (agregar al inicio de la clase si no existen)
-    private final java.util.Map<String, Object> registrosEscenarios = new java.util.concurrent.ConcurrentHashMap<>();
-    private final java.util.List<String> historialAcciones = new java.util.ArrayList<>();
-
-    /**
-     * Registra una acción en el historial de trazabilidad.
-     *
-     * @param accion descripción de la acción
-     * @param detalles detalles adicionales de la acción
-     */
-    public void registrarAccion(String accion, String detalles) {
-        try {
-            String timestamp = java.time.LocalDateTime.now()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-            String entrada = String.format("[%s] ACCION - %s: %s", timestamp, accion, detalles);
-
-            synchronized (historialAcciones) {
-                historialAcciones.add(entrada);
+            // Actualizar métricas
+            if ("PASSED".equalsIgnoreCase(resultado)) {
+                totalEscenariosPasados++;
+            } else {
+                totalEscenariosFallidos++;
             }
 
-            logger.info("Acción registrada: {} - {}", accion, detalles);
+            // Registrar evento
+            registrarEvento("ESCENARIO_FINALIZADO",
+                    escenarioActual.getNombre() + " - " + resultado, historiaUsuario);
 
-        } catch (Exception e) {
-            logger.error("Error registrando acción: {}", e.getMessage(), e);
+            logger.debug("Escenario finalizado: {} con resultado: {}",
+                    escenarioActual.getNombre(), resultado);
+        } else {
+            logger.warn("No se encontró escenario activo para historia: {}", historiaUsuario);
         }
     }
 
     /**
-     * Obtiene el historial completo de acciones registradas.
+     * Registra un paso ejecutado.
      *
-     * @return lista con todas las acciones registradas
+     * @param historiaUsuario ID de la historia de usuario
+     * @param descripcionPaso descripción del paso
      */
-    public java.util.List<String> obtenerHistorialAcciones() {
-        synchronized (historialAcciones) {
-            return new java.util.ArrayList<>(historialAcciones);
+    public void registrarPaso(String historiaUsuario, String descripcionPaso) {
+        logger.debug("📝 Registrando paso [{}]: {}", historiaUsuario, descripcionPaso);
+
+        // Buscar escenario actual
+        EscenarioEjecucion escenarioActual = encontrarEscenarioActual(historiaUsuario);
+
+        if (escenarioActual != null) {
+            PasoEjecucion paso = new PasoEjecucion(descripcionPaso, LocalDateTime.now());
+            escenarioActual.agregarPaso(paso);
+
+            // Registrar evento
+            registrarEvento("PASO_EJECUTADO", descripcionPaso, historiaUsuario);
         }
     }
 
     /**
-     * Limpia el historial de acciones.
+     * Registra una acción específica.
+     *
+     * @param accion tipo de acción
+     * @param detalle detalle de la acción
      */
-    public void limpiarHistorial() {
-        synchronized (historialAcciones) {
-            historialAcciones.clear();
-        }
-        registrosEscenarios.clear();
-        logger.info("Historial de trazabilidad limpiado");
+    public void registrarAccion(String accion, String detalle) {
+        registrarEvento(accion, detalle, "ACTUAL");
     }
 
+    /**
+     * Registra navegación a una URL.
+     *
+     * @param url URL de destino
+     */
+    public void registrarNavegacion(String url) {
+        registrarEvento("NAVEGACION", "Navegando a: " + url, "ACTUAL");
+    }
+
+    // ==================== GESTIÓN DE DATOS ====================
+
+    /**
+     * Encuentra el escenario actual de una historia de usuario.
+     */
+    private EscenarioEjecucion encontrarEscenarioActual(String historiaUsuario) {
+        return escenariosEjecutados.values().stream()
+                .filter(escenario -> historiaUsuario.equals(escenario.getHistoriaUsuario()))
+                .filter(escenario -> escenario.getFin() == null) // Escenario aún en ejecución
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Genera clave única para un escenario.
+     */
+    private String generarClaveEscenario(String historiaUsuario, String nombreEscenario) {
+        return historiaUsuario + "_" + nombreEscenario.replaceAll("[^a-zA-Z0-9]", "_") +
+                "_" + System.currentTimeMillis();
+    }
+
+    /**
+     * Registra un evento de trazabilidad.
+     */
+    private void registrarEvento(String tipo, String descripcion, String historiaUsuario) {
+        EventoTrazabilidad evento = new EventoTrazabilidad(
+                tipo, descripcion, historiaUsuario, LocalDateTime.now());
+        eventosEjecucion.add(evento);
+    }
+
+    // ==================== GENERACIÓN DE REPORTES ====================
+
+    /**
+     * Genera el reporte completo de trazabilidad.
+     */
+    public void generarReporteTrazabilidad() {
+        try {
+            logger.info("📊 Generando reporte de trazabilidad");
+
+            // Crear estructura del reporte
+            Map<String, Object> reporte = new HashMap<>();
+            reporte.put("metadata", crearMetadataReporte());
+            reporte.put("metricas", crearMetricasReporte());
+            reporte.put("historias_usuario", crearResumenHistorias());
+            reporte.put("escenarios", crearResumenEscenarios());
+            reporte.put("eventos", eventosEjecucion);
+
+            // Escribir archivo JSON
+            Path rutaReporte = Paths.get("reportes", archivoReporte);
+            Files.createDirectories(rutaReporte.getParent());
+
+            objectMapper.writeValue(rutaReporte.toFile(), reporte);
+
+            logger.info("✅ Reporte de trazabilidad generado: {}", rutaReporte.toAbsolutePath());
+
+        } catch (IOException e) {
+            logger.error("Error generando reporte de trazabilidad: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Crea metadata del reporte.
+     */
+    private Map<String, Object> crearMetadataReporte() {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("fecha_generacion", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        metadata.put("inicio_sesion", inicioSesion != null ?
+                inicioSesion.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null);
+        metadata.put("fin_sesion", finSesion != null ?
+                finSesion.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null);
+        metadata.put("duracion_sesion_minutos", calcularDuracionSesion());
+        metadata.put("version_reporte", "2.0.0");
+        metadata.put("generado_por", "HelperTrazabilidad");
+
+        return metadata;
+    }
+
+    /**
+     * Crea métricas del reporte.
+     */
+    private Map<String, Object> crearMetricasReporte() {
+        Map<String, Object> metricas = new HashMap<>();
+
+        // Métricas básicas
+        metricas.put("total_historias_usuario", historiasUsuario.size());
+        metricas.put("total_escenarios_ejecutados", totalEscenariosEjecutados);
+        metricas.put("total_escenarios_pasados", totalEscenariosPasados);
+        metricas.put("total_escenarios_fallidos", totalEscenariosFallidos);
+
+        // Porcentajes
+        if (totalEscenariosEjecutados > 0) {
+            double porcentajeExito = (double) totalEscenariosPasados / totalEscenariosEjecutados * 100;
+            metricas.put("porcentaje_exito", Math.round(porcentajeExito * 100.0) / 100.0);
+        }
+
+        // Métricas por historia de usuario
+        metricas.put("historias_completamente_cubiertas", contarHistoriasCompletamenteCubiertas());
+        metricas.put("historias_parcialmente_cubiertas", contarHistoriasParcialmenteCubiertas());
+        metricas.put("historias_sin_cobertura", contarHistoriasSinCobertura());
+
+        // Estadísticas de pasos
+        metricas.put("total_pasos_ejecutados", contarTotalPasos());
+        metricas.put("promedio_pasos_por_escenario", calcularPromedioPasosPorEscenario());
+
+        return metricas;
+    }
+
+    /**
+     * Crea resumen de historias de usuario.
+     */
+    private List<Map<String, Object>> crearResumenHistorias() {
+        List<Map<String, Object>> resumen = new ArrayList<>();
+
+        for (HistoriaUsuario hu : historiasUsuario.values()) {
+            Map<String, Object> historiaMap = new HashMap<>();
+            historiaMap.put("id", hu.getId());
+            historiaMap.put("total_escenarios", hu.getEscenarios().size());
+            historiaMap.put("escenarios_pasados", hu.contarEscenariosPorEstado("PASSED"));
+            historiaMap.put("escenarios_fallidos", hu.contarEscenariosPorEstado("FAILED"));
+            historiaMap.put("estado_cobertura", determinarEstadoCobertura(hu));
+            historiaMap.put("primer_ejecucion", hu.obtenerPrimeraEjecucion());
+            historiaMap.put("ultima_ejecucion", hu.obtenerUltimaEjecucion());
+
+            resumen.add(historiaMap);
+        }
+
+        return resumen;
+    }
+
+    /**
+     * Crea resumen de escenarios.
+     */
+    private List<Map<String, Object>> crearResumenEscenarios() {
+        List<Map<String, Object>> resumen = new ArrayList<>();
+
+        for (EscenarioEjecucion escenario : escenariosEjecutados.values()) {
+            if (escenario.getFin() != null) { // Solo escenarios completados
+                Map<String, Object> escenarioMap = new HashMap<>();
+                escenarioMap.put("nombre", escenario.getNombre());
+                escenarioMap.put("historia_usuario", escenario.getHistoriaUsuario());
+                escenarioMap.put("resultado", escenario.getResultado());
+                escenarioMap.put("inicio", escenario.getInicio().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                escenarioMap.put("fin", escenario.getFin().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                escenarioMap.put("duracion_segundos", escenario.obtenerDuracionSegundos());
+                escenarioMap.put("total_pasos", escenario.getPasos().size());
+
+                resumen.add(escenarioMap);
+            }
+        }
+
+        return resumen;
+    }
+
+    /**
+     * Genera resumen ejecutivo de la ejecución.
+     */
+    public void generarResumenEjecucion() {
+        try {
+            logger.info("📈 Generando resumen ejecutivo");
+
+            StringBuilder resumen = new StringBuilder();
+            resumen.append("=".repeat(80)).append("\n");
+            resumen.append("RESUMEN EJECUTIVO DE TRAZABILIDAD BDD").append("\n");
+            resumen.append("=".repeat(80)).append("\n");
+
+            // Información general
+            resumen.append(String.format("Fecha: %s%n",
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
+            resumen.append(String.format("Duración de sesión: %d minutos%n", calcularDuracionSesion()));
+            resumen.append("\n");
+
+            // Métricas principales
+            resumen.append("MÉTRICAS PRINCIPALES:\n");
+            resumen.append(String.format("• Total de historias de usuario: %d%n", historiasUsuario.size()));
+            resumen.append(String.format("• Total de escenarios ejecutados: %d%n", totalEscenariosEjecutados));
+            resumen.append(String.format("• Escenarios exitosos: %d%n", totalEscenariosPasados));
+            resumen.append(String.format("• Escenarios fallidos: %d%n", totalEscenariosFallidos));
+
+            if (totalEscenariosEjecutados > 0) {
+                double porcentaje = (double) totalEscenariosPasados / totalEscenariosEjecutados * 100;
+                resumen.append(String.format("• Porcentaje de éxito: %.2f%%%n", porcentaje));
+            }
+            resumen.append("\n");
+
+            // Cobertura de historias
+            resumen.append("COBERTURA DE HISTORIAS DE USUARIO:\n");
+            resumen.append(String.format("• Completamente cubiertas: %d%n", contarHistoriasCompletamenteCubiertas()));
+            resumen.append(String.format("• Parcialmente cubiertas: %d%n", contarHistoriasParcialmenteCubiertas()));
+            resumen.append(String.format("• Sin cobertura: %d%n", contarHistoriasSinCobertura()));
+            resumen.append("\n");
+
+            // Top historias por escenarios
+            resumen.append("TOP 5 HISTORIAS CON MÁS ESCENARIOS:\n");
+            historiasUsuario.values().stream()
+                    .sorted((h1, h2) -> Integer.compare(h2.getEscenarios().size(), h1.getEscenarios().size()))
+                    .limit(5)
+                    .forEach(hu -> resumen.append(String.format("• %s: %d escenarios%n",
+                            hu.getId(), hu.getEscenarios().size())));
+
+            resumen.append("\n");
+            resumen.append("=".repeat(80));
+
+            // Escribir archivo
+            Path rutaResumen = Paths.get("reportes", "resumen-ejecutivo.txt");
+            Files.createDirectories(rutaResumen.getParent());
+            Files.write(rutaResumen, resumen.toString().getBytes());
+
+            logger.info("✅ Resumen ejecutivo generado: {}", rutaResumen.toAbsolutePath());
+
+            // También loggear el resumen
+            logger.info("\n{}", resumen.toString());
+
+        } catch (IOException e) {
+            logger.error("Error generando resumen ejecutivo: {}", e.getMessage(), e);
+        }
+    }
+
+    // ==================== MÉTODOS DE CÁLCULO ====================
+
+    private long calcularDuracionSesion() {
+        if (inicioSesion == null) return 0;
+        LocalDateTime fin = finSesion != null ? finSesion : LocalDateTime.now();
+        return java.time.Duration.between(inicioSesion, fin).toMinutes();
+    }
+
+    private int contarHistoriasCompletamenteCubiertas() {
+        return (int) historiasUsuario.values().stream()
+                .filter(hu -> hu.getEscenarios().size() > 0 &&
+                        hu.getEscenarios().stream().allMatch(e -> "PASSED".equals(e.getResultado())))
+                .count();
+    }
+
+    private int contarHistoriasParcialmenteCubiertas() {
+        return (int) historiasUsuario.values().stream()
+                .filter(hu -> hu.getEscenarios().size() > 0 &&
+                        hu.getEscenarios().stream().anyMatch(e -> "PASSED".equals(e.getResultado())) &&
+                        hu.getEscenarios().stream().anyMatch(e -> !"PASSED".equals(e.getResultado())))
+                .count();
+    }
+
+    private int contarHistoriasSinCobertura() {
+        return (int) historiasUsuario.values().stream()
+                .filter(hu -> hu.getEscenarios().isEmpty() ||
+                        hu.getEscenarios().stream().noneMatch(e -> "PASSED".equals(e.getResultado())))
+                .count();
+    }
+
+    private int contarTotalPasos() {
+        return escenariosEjecutados.values().stream()
+                .mapToInt(escenario -> escenario.getPasos().size())
+                .sum();
+    }
+
+    private double calcularPromedioPasosPorEscenario() {
+        if (totalEscenariosEjecutados == 0) return 0.0;
+        return (double) contarTotalPasos() / totalEscenariosEjecutados;
+    }
+
+    private String determinarEstadoCobertura(HistoriaUsuario hu) {
+        if (hu.getEscenarios().isEmpty()) {
+            return "SIN_COBERTURA";
+        }
+
+        long pasados = hu.getEscenarios().stream()
+                .filter(e -> "PASSED".equals(e.getResultado()))
+                .count();
+
+        if (pasados == hu.getEscenarios().size()) {
+            return "COMPLETAMENTE_CUBIERTA";
+        } else if (pasados > 0) {
+            return "PARCIALMENTE_CUBIERTA";
+        } else {
+            return "COBERTURA_FALLIDA";
+        }
+    }
+
+    // ==================== MÉTODOS DE CONSULTA ====================
+
+    /**
+     * Obtiene todas las historias de usuario registradas.
+     */
+    public Collection<HistoriaUsuario> obtenerHistoriasUsuario() {
+        return new ArrayList<>(historiasUsuario.values());
+    }
+
+    /**
+     * Obtiene una historia de usuario específica.
+     */
+    public HistoriaUsuario obtenerHistoriaUsuario(String id) {
+        return historiasUsuario.get(id);
+    }
+
+    /**
+     * Obtiene todos los escenarios ejecutados.
+     */
+    public Collection<EscenarioEjecucion> obtenerEscenariosEjecutados() {
+        return new ArrayList<>(escenariosEjecutados.values());
+    }
+
+    /**
+     * Obtiene métricas actuales de ejecución.
+     */
+    public Map<String, Object> obtenerMetricasActuales() {
+        return crearMetricasReporte();
+    }
+
+    // ==================== MÉTODOS DE LIMPIEZA ====================
+
+    /**
+     * Limpia datos temporales pero mantiene la configuración.
+     */
+    public void limpiarDatosTempo() {
+        eventosEjecucion.clear();
+        logger.debug("Datos temporales de trazabilidad limpiados");
+    }
+
+    /**
+     * Reinicia completamente el helper.
+     */
+    public void reiniciar() {
+        historiasUsuario.clear();
+        escenariosEjecutados.clear();
+        eventosEjecucion.clear();
+
+        totalEscenariosEjecutados = 0;
+        totalEscenariosPasados = 0;
+        totalEscenariosFallidos = 0;
+
+        inicioSesion = null;
+        finSesion = null;
+
+        logger.info("HelperTrazabilidad reiniciado completamente");
+    }
+
+    // ==================== CLASES INTERNAS ====================
+
+    /**
+     * Representa una historia de usuario con sus escenarios asociados.
+     */
+    public static class HistoriaUsuario {
+        private final String id;
+        private final List<EscenarioEjecucion> escenarios = new ArrayList<>();
+        private final LocalDateTime fechaCreacion = LocalDateTime.now();
+
+        public HistoriaUsuario(String id) {
+            this.id = id;
+        }
+
+        public void agregarEscenario(EscenarioEjecucion escenario) {
+            escenarios.add(escenario);
+        }
+
+        public int contarEscenariosPorEstado(String estado) {
+            return (int) escenarios.stream()
+                    .filter(e -> estado.equals(e.getResultado()))
+                    .count();
+        }
+
+        public LocalDateTime obtenerPrimeraEjecucion() {
+            return escenarios.stream()
+                    .map(EscenarioEjecucion::getInicio)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(fechaCreacion);
+        }
+
+        public LocalDateTime obtenerUltimaEjecucion() {
+            return escenarios.stream()
+                    .map(EscenarioEjecucion::getInicio)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(fechaCreacion);
+        }
+
+        // Getters
+        public String getId() { return id; }
+        public List<EscenarioEjecucion> getEscenarios() { return new ArrayList<>(escenarios); }
+        public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+    }
+
+    /**
+     * Representa la ejecución de un escenario específico.
+     */
+    public static class EscenarioEjecucion {
+        private final String nombre;
+        private final String historiaUsuario;
+        private final LocalDateTime inicio;
+        private LocalDateTime fin;
+        private String resultado;
+        private final List<PasoEjecucion> pasos = new ArrayList<>();
+
+        public EscenarioEjecucion(String nombre, String historiaUsuario, LocalDateTime inicio) {
+            this.nombre = nombre;
+            this.historiaUsuario = historiaUsuario;
+            this.inicio = inicio;
+        }
+
+        public void finalizarEjecucion(String resultado) {
+            this.fin = LocalDateTime.now();
+            this.resultado = resultado;
+        }
+
+        public void agregarPaso(PasoEjecucion paso) {
+            pasos.add(paso);
+        }
+
+        public long obtenerDuracionSegundos() {
+            if (fin == null) return 0;
+            return java.time.Duration.between(inicio, fin).getSeconds();
+        }
+
+        // Getters
+        public String getNombre() { return nombre; }
+        public String getHistoriaUsuario() { return historiaUsuario; }
+        public LocalDateTime getInicio() { return inicio; }
+        public LocalDateTime getFin() { return fin; }
+        public String getResultado() { return resultado; }
+        public List<PasoEjecucion> getPasos() { return new ArrayList<>(pasos); }
+    }
+
+    /**
+     * Representa la ejecución de un paso individual.
+     */
+    public static class PasoEjecucion {
+        private final String descripcion;
+        private final LocalDateTime timestamp;
+
+        public PasoEjecucion(String descripcion, LocalDateTime timestamp) {
+            this.descripcion = descripcion;
+            this.timestamp = timestamp;
+        }
+
+        // Getters
+        public String getDescripcion() { return descripcion; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+    }
+
+    /**
+     * Representa un evento de trazabilidad.
+     */
+    public static class EventoTrazabilidad {
+        private final String tipo;
+        private final String descripcion;
+        private final String historiaUsuario;
+        private final LocalDateTime timestamp;
+
+        public EventoTrazabilidad(String tipo, String descripcion, String historiaUsuario, LocalDateTime timestamp) {
+            this.tipo = tipo;
+            this.descripcion = descripcion;
+            this.historiaUsuario = historiaUsuario;
+            this.timestamp = timestamp;
+        }
+
+        // Getters
+        public String getTipo() { return tipo; }
+        public String getDescripcion() { return descripcion; }
+        public String getHistoriaUsuario() { return historiaUsuario; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+    }
 }

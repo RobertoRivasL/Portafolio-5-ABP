@@ -1,365 +1,441 @@
 package com.qa.automatizacion.paginas;
 
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.By;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 /**
- * Página del Dashboard principal de la aplicación.
- * Implementa el patrón Page Object Model para la página principal del usuario autenticado.
+ * Page Object para la página de dashboard principal del sistema.
+ * Representa la página principal después del login exitoso.
  *
  * Principios aplicados:
- * - Page Object Model: Encapsula elementos y acciones de la página
- * - Single Responsibility: Se enfoca únicamente en el dashboard
- * - Abstracción: Oculta complejidades de interacción con Selenium
+ * - Page Object Pattern: Separa la lógica de UI de los tests
+ * - Encapsulación: Oculta los detalles de implementación de Selenium
+ * - Herencia: Extiende PaginaBase para reutilizar funcionalidades comunes
  *
- * @author Equipo QA Automatización
- * @version 1.0
+ * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
+ * @version 2.0.0
  */
 public class PaginaDashboard extends PaginaBase {
 
-    private static final Logger logger = LoggerFactory.getLogger(PaginaDashboard.class);
+    // ==================== LOCALIZADORES ====================
 
-    // Elementos de la barra superior
-    @FindBy(css = ".navbar .username, .header .user-name, #username")
-    private WebElement nombreUsuario;
+    // Barra de navegación superior
+    private static final By BARRA_NAVEGACION = By.cssSelector(".navbar, .top-nav, [data-testid='navbar']");
+    private static final By NOMBRE_USUARIO = By.cssSelector(".user-name, .username, [data-testid='username']");
+    private static final By AVATAR_USUARIO = By.cssSelector(".user-avatar, .avatar, [data-testid='user-avatar']");
+    private static final By MENU_USUARIO = By.cssSelector(".user-menu, .dropdown-user, [data-testid='user-menu']");
 
-    @FindBy(css = ".welcome-message, .greeting, #welcome-msg")
-    private WebElement mensajeBienvenida;
+    // Mensajes de bienvenida
+    private static final By MENSAJE_BIENVENIDA = By.cssSelector(".welcome-message, .greeting, [data-testid='welcome-message']");
+    private static final By TITULO_DASHBOARD = By.cssSelector("h1, .dashboard-title, [data-testid='dashboard-title']");
 
-    @FindBy(css = ".logout-btn, #logout, .btn-logout")
-    private WebElement botonCerrarSesion;
+    // Menú lateral
+    private static final By MENU_LATERAL = By.cssSelector(".sidebar, .side-nav, [data-testid='sidebar']");
+    private static final By ITEM_MENU_PRODUCTOS = By.cssSelector("a[href*='productos'], [data-testid='menu-productos']");
+    private static final By ITEM_MENU_USUARIOS = By.cssSelector("a[href*='usuarios'], [data-testid='menu-usuarios']");
+    private static final By ITEM_MENU_REPORTES = By.cssSelector("a[href*='reportes'], [data-testid='menu-reportes']");
+    private static final By ITEM_MENU_CONFIGURACION = By.cssSelector("a[href*='configuracion'], [data-testid='menu-configuracion']");
 
-    @FindBy(css = ".user-menu, .profile-menu")
-    private WebElement menuUsuario;
+    // Contenido principal
+    private static final By CONTENIDO_PRINCIPAL = By.cssSelector(".dashboard-content, .main-content, [data-testid='main-content']");
+    private static final By CONTENEDOR_WIDGETS = By.cssSelector(".dashboard-widgets, .widgets-container, [data-testid='widgets']");
+    private static final By WIDGETS = By.cssSelector(".widget, .dashboard-card, [data-testid='widget']");
 
-    // Elementos de navegación principal
-    @FindBy(css = ".main-nav, .sidebar, .navigation")
-    private WebElement navegacionPrincipal;
+    // Estadísticas
+    private static final By CONTENEDOR_ESTADISTICAS = By.cssSelector(".stats-container, .statistics, [data-testid='stats']");
+    private static final By ELEMENTOS_ESTADISTICAS = By.cssSelector(".stat-item, .metric, [data-testid='stat']");
 
-    @FindBy(css = ".nav-item, .menu-item")
-    private List<WebElement> itemsNavegacion;
+    // Notificaciones
+    private static final By CONTENEDOR_NOTIFICACIONES = By.cssSelector(".notifications, .alerts, [data-testid='notifications']");
+    private static final By CONTADOR_NOTIFICACIONES = By.cssSelector(".notification-badge, .alert-count, [data-testid='notification-count']");
 
-    @FindBy(css = "[data-nav='productos'], .nav-productos, #nav-productos")
-    private WebElement linkProductos;
+    // Búsqueda rápida
+    private static final By CAJA_BUSQUEDA_RAPIDA = By.cssSelector(".search-box, #quick-search, [data-testid='search']");
+    private static final By BOTON_BUSCAR = By.cssSelector(".search-btn, .btn-search, [data-testid='search-button']");
 
-    @FindBy(css = "[data-nav='usuarios'], .nav-usuarios, #nav-usuarios")
-    private WebElement linkUsuarios;
+    // Botones de acción
+    private static final By BOTON_CERRAR_SESION = By.cssSelector(".logout-btn, #logout, .btn-logout, [data-testid='logout']");
+    private static final By BOTON_NUEVO_PRODUCTO = By.cssSelector(".btn-new-product, [data-testid='new-product']");
+    private static final By BOTON_GESTIONAR_USUARIOS = By.cssSelector(".btn-manage-users, [data-testid='manage-users']");
 
-    @FindBy(css = "[data-nav='reportes'], .nav-reportes, #nav-reportes")
-    private WebElement linkReportes;
+    // Elementos usando @FindBy para demostrar ambos enfoques
+    @FindBy(css = ".welcome-message, .greeting, [data-testid='welcome-message']")
+    private WebElement mensajeBienvenidaElement;
 
-    @FindBy(css = "[data-nav='configuracion'], .nav-config, #nav-config")
-    private WebElement linkConfiguracion;
+    @FindBy(css = ".user-name, .username, [data-testid='username']")
+    private WebElement nombreUsuarioElement;
 
-    // Elementos del contenido principal
-    @FindBy(css = ".dashboard-content, .main-content, #main-content")
-    private WebElement contenidoPrincipal;
+    @FindBy(css = ".dashboard-content, .main-content, [data-testid='main-content']")
+    private WebElement contenidoPrincipalElement;
 
-    @FindBy(css = ".dashboard-widgets, .widgets-container")
-    private WebElement contenedorWidgets;
-
-    @FindBy(css = ".widget, .dashboard-card")
-    private List<WebElement> widgets;
-
-    // Elementos de estadísticas
-    @FindBy(css = ".stats-container, .statistics")
-    private WebElement contenedorEstadisticas;
-
-    @FindBy(css = ".stat-item, .metric")
-    private List<WebElement> elementosEstadisticas;
-
-    // Elementos de notificaciones
-    @FindBy(css = ".notifications, .alerts")
-    private WebElement contenedorNotificaciones;
-
-    @FindBy(css = ".notification-badge, .alert-count")
-    private WebElement contadorNotificaciones;
-
-    // Elementos de búsqueda rápida
-    @FindBy(css = ".search-box, #quick-search")
-    private WebElement cajaBusquedaRapida;
-
-    @FindBy(css = ".search-btn, .btn-search")
-    private WebElement botonBuscar;
+    // ==================== CONSTRUCTOR ====================
 
     /**
-     * Constructor que inicializa la página del dashboard
-     *
-     * @param driver Instancia del WebDriver
+     * Constructor que inicializa la página del dashboard.
      */
-    public PaginaDashboard(WebDriver driver) {
-        super(driver);
-        logger.info("Página Dashboard inicializada");
+    public PaginaDashboard() {
+        super();
+        logger.info("PaginaDashboard inicializada");
     }
 
+    // ==================== MÉTODOS ABSTRACTOS IMPLEMENTADOS ====================
+
+    /**
+     * Verifica si la página de dashboard está completamente cargada.
+     *
+     * @return true si la página está cargada, false en caso contrario
+     */
     @Override
-    public boolean estaPaginaCargada() {
+    public boolean esPaginaCargada() {
         try {
-            // Verificar elementos clave del dashboard
-            esperarElementoVisible(contenidoPrincipal);
-            esperarElementoVisible(navegacionPrincipal);
+            boolean contenidoPresente = esElementoPresente(CONTENIDO_PRINCIPAL);
+            boolean barraNavegacionPresente = esElementoPresente(BARRA_NAVEGACION);
+            boolean usuarioVisible = esElementoPresente(NOMBRE_USUARIO) || esElementoPresente(MENU_USUARIO);
+            boolean mensajeBienvenidaPresente = esElementoPresente(MENSAJE_BIENVENIDA);
 
-            // Verificar que al menos uno de los elementos de usuario esté presente
-            boolean usuarioVisible = estaElementoVisible(nombreUsuario) ||
-                    estaElementoVisible(menuUsuario);
+            boolean cargada = contenidoPresente && barraNavegacionPresente && usuarioVisible;
 
-            return usuarioVisible;
+            logger.debug("Verificación de carga - Contenido: {}, Barra: {}, Usuario: {}, Mensaje: {}, Resultado: {}",
+                    contenidoPresente, barraNavegacionPresente, usuarioVisible, mensajeBienvenidaPresente, cargada);
+
+            return cargada;
 
         } catch (Exception e) {
-            logger.error("Error verificando carga de página Dashboard: {}", e.getMessage());
+            logger.error("Error verificando carga de página dashboard: {}", e.getMessage());
             return false;
         }
     }
 
-    // Métodos para información del usuario
-
     /**
-     * Verifica si el nombre de usuario es visible en la barra superior
+     * Obtiene el título esperado de la página de dashboard.
      *
-     * @return true si el nombre de usuario está visible
+     * @return título esperado
      */
-    public boolean esNombreUsuarioVisible() {
-        return estaElementoVisible(nombreUsuario);
+    @Override
+    public String obtenerTituloEsperado() {
+        return "Dashboard";
     }
 
     /**
-     * Obtiene el nombre de usuario mostrado en la barra superior
+     * Obtiene la URL esperada de la página de dashboard.
      *
-     * @return Nombre de usuario o cadena vacía si no está disponible
+     * @return URL esperada
+     */
+    @Override
+    public String obtenerUrlEsperada() {
+        return utileria.obtenerUrlDashboard();
+    }
+
+    // ==================== MÉTODOS DE INFORMACIÓN DEL USUARIO ====================
+
+    /**
+     * Verifica si hay información de usuario visible.
+     *
+     * @return true si hay información de usuario, false en caso contrario
+     */
+    public boolean hayInformacionUsuario() {
+        return esElementoPresente(NOMBRE_USUARIO) || esElementoPresente(MENU_USUARIO);
+    }
+
+    /**
+     * Obtiene el nombre de usuario mostrado en la barra superior.
+     *
+     * @return nombre de usuario o cadena vacía si no está disponible
      */
     public String obtenerNombreUsuario() {
-        if (esNombreUsuarioVisible()) {
-            return obtenerTextoSeguro(nombreUsuario);
-        }
+        registrarAccion("Obteniendo nombre de usuario");
 
-        // Intentar obtener de atributos alternativos
         try {
-            String textoAtributo = nombreUsuario.getAttribute("data-username");
-            if (textoAtributo != null && !textoAtributo.trim().isEmpty()) {
-                return textoAtributo;
+            if (esElementoPresente(NOMBRE_USUARIO)) {
+                String nombre = obtenerTexto(NOMBRE_USUARIO);
+                if (!nombre.isEmpty()) {
+                    logger.debug("Nombre de usuario obtenido: {}", nombre);
+                    return nombre;
+                }
             }
-        } catch (Exception e) {
-            logger.debug("No se pudo obtener nombre de usuario de atributos: {}", e.getMessage());
-        }
 
-        return "";
+            // Intentar obtener de atributos alternativos
+            try {
+                WebElement elemento = buscarElemento(NOMBRE_USUARIO);
+                String textoAtributo = elemento.getAttribute("data-username");
+                if (textoAtributo != null && !textoAtributo.trim().isEmpty()) {
+                    logger.debug("Nombre de usuario obtenido de atributo: {}", textoAtributo);
+                    return textoAtributo;
+                }
+            } catch (Exception e) {
+                logger.debug("No se pudo obtener nombre de usuario de atributos: {}", e.getMessage());
+            }
+
+            // Buscar en otros elementos posibles
+            List<WebElement> elementos = buscarElementos(By.cssSelector(".user, .username, [data-user], [class*='user']"));
+            for (WebElement elemento : elementos) {
+                if (esElementoVisible(By.xpath(".//*"))) {
+                    String texto = elemento.getText().trim();
+                    if (!texto.isEmpty()) {
+                        logger.debug("Nombre de usuario encontrado en elemento alternativo: {}", texto);
+                        return texto;
+                    }
+                }
+            }
+
+            logger.warn("No se pudo obtener nombre de usuario");
+            return "";
+
+        } catch (Exception e) {
+            logger.error("Error obteniendo nombre de usuario: {}", e.getMessage());
+            return "";
+        }
     }
 
     /**
-     * Obtiene el mensaje de bienvenida
+     * Verifica si hay mensaje de bienvenida visible.
      *
-     * @return Mensaje de bienvenida
+     * @return true si hay mensaje de bienvenida, false en caso contrario
+     */
+    public boolean hayMensajeBienvenida() {
+        return esElementoVisible(MENSAJE_BIENVENIDA);
+    }
+
+    /**
+     * Obtiene el mensaje de bienvenida.
+     *
+     * @return mensaje de bienvenida o cadena vacía si no está disponible
      */
     public String obtenerMensajeBienvenida() {
-        if (estaElementoVisible(mensajeBienvenida)) {
-            return obtenerTextoSeguro(mensajeBienvenida);
-        }
+        registrarAccion("Obteniendo mensaje de bienvenida");
 
-        // Buscar mensaje de bienvenida en otros elementos posibles
         try {
-            WebElement mensajeAlternativo = driver.findElement(
-                    By.cssSelector(".welcome, .greeting, [class*='welcome'], [id*='welcome']"));
-            return obtenerTextoSeguro(mensajeAlternativo);
-        } catch (Exception e) {
-            logger.debug("No se encontró mensaje de bienvenida alternativo: {}", e.getMessage());
-        }
+            if (hayMensajeBienvenida()) {
+                String mensaje = obtenerTexto(MENSAJE_BIENVENIDA);
+                logger.debug("Mensaje de bienvenida obtenido: {}", mensaje);
+                return mensaje;
+            }
 
-        return "";
+            // Buscar mensaje de bienvenida en otros elementos posibles
+            List<WebElement> elementos = buscarElementos(By.cssSelector(".welcome, .greeting, [class*='welcome'], [id*='welcome']"));
+            for (WebElement elemento : elementos) {
+                if (elemento.isDisplayed()) {
+                    String texto = elemento.getText().trim();
+                    if (!texto.isEmpty()) {
+                        logger.debug("Mensaje de bienvenida encontrado en elemento alternativo: {}", texto);
+                        return texto;
+                    }
+                }
+            }
+
+            logger.debug("No se encontró mensaje de bienvenida");
+            return "";
+
+        } catch (Exception e) {
+            logger.error("Error obteniendo mensaje de bienvenida: {}", e.getMessage());
+            return "";
+        }
     }
 
-    // Métodos de navegación
+    // ==================== MÉTODOS DE NAVEGACIÓN ====================
 
     /**
-     * Navega a la página de productos
-     *
-     * @return true si la navegación fue exitosa
+     * Navega a la sección de productos.
      */
-    public boolean navegarAProductos() {
+    public void navegarAProductos() {
+        registrarAccion("Navegando a sección de productos");
+
         try {
-            if (estaElementoVisible(linkProductos)) {
-                hacerClicSeguro(linkProductos);
-                logger.info("Navegación a productos iniciada");
-                return true;
-            } else {
-                // Intentar navegación alternativa
-                return navegarPorTexto("Productos");
-            }
+            hacerClick(ITEM_MENU_PRODUCTOS);
+            esperarCargaPagina();
+            logger.debug("Navegación a productos ejecutada");
         } catch (Exception e) {
             logger.error("Error navegando a productos: {}", e.getMessage());
-            return false;
+            throw new RuntimeException("No se pudo navegar a productos", e);
         }
     }
 
     /**
-     * Navega a la página de usuarios
-     *
-     * @return true si la navegación fue exitosa
+     * Navega a la sección de usuarios.
      */
-    public boolean navegarAUsuarios() {
+    public void navegarAUsuarios() {
+        registrarAccion("Navegando a sección de usuarios");
+
         try {
-            if (estaElementoVisible(linkUsuarios)) {
-                hacerClicSeguro(linkUsuarios);
-                logger.info("Navegación a usuarios iniciada");
-                return true;
-            } else {
-                return navegarPorTexto("Usuarios");
-            }
+            hacerClick(ITEM_MENU_USUARIOS);
+            esperarCargaPagina();
+            logger.debug("Navegación a usuarios ejecutada");
         } catch (Exception e) {
             logger.error("Error navegando a usuarios: {}", e.getMessage());
-            return false;
+            throw new RuntimeException("No se pudo navegar a usuarios", e);
         }
     }
 
     /**
-     * Navega a la página de reportes
-     *
-     * @return true si la navegación fue exitosa
+     * Navega a la sección de reportes.
      */
-    public boolean navegarAReportes() {
+    public void navegarAReportes() {
+        registrarAccion("Navegando a sección de reportes");
+
         try {
-            if (estaElementoVisible(linkReportes)) {
-                hacerClicSeguro(linkReportes);
-                logger.info("Navegación a reportes iniciada");
-                return true;
-            } else {
-                return navegarPorTexto("Reportes");
-            }
+            hacerClick(ITEM_MENU_REPORTES);
+            esperarCargaPagina();
+            logger.debug("Navegación a reportes ejecutada");
         } catch (Exception e) {
             logger.error("Error navegando a reportes: {}", e.getMessage());
-            return false;
+            throw new RuntimeException("No se pudo navegar a reportes", e);
         }
     }
 
     /**
-     * Navega a la página de configuración
-     *
-     * @return true si la navegación fue exitosa
+     * Navega a la configuración del sistema.
      */
-    public boolean navegarAConfiguracion() {
+    public void navegarAConfiguracion() {
+        registrarAccion("Navegando a configuración");
+
         try {
-            if (estaElementoVisible(linkConfiguracion)) {
-                hacerClicSeguro(linkConfiguracion);
-                logger.info("Navegación a configuración iniciada");
-                return true;
-            } else {
-                return navegarPorTexto("Configuración");
-            }
+            hacerClick(ITEM_MENU_CONFIGURACION);
+            esperarCargaPagina();
+            logger.debug("Navegación a configuración ejecutada");
         } catch (Exception e) {
             logger.error("Error navegando a configuración: {}", e.getMessage());
-            return false;
+            throw new RuntimeException("No se pudo navegar a configuración", e);
         }
     }
 
+    // ==================== MÉTODOS DE ACCIONES ====================
+
     /**
-     * Verifica si un elemento es navegable
-     *
-     * @param nombreElemento Nombre del elemento a verificar
-     * @return true si el elemento es navegable
+     * Hace clic en el botón para crear un nuevo producto.
      */
-    public boolean esElementoNavegable(String nombreElemento) {
+    public void hacerClickNuevoProducto() {
+        registrarAccion("Haciendo clic en 'Nuevo Producto'");
+
         try {
-            String nombreLower = nombreElemento.toLowerCase().trim();
-
-            switch (nombreLower) {
-                case "productos":
-                    return estaElementoVisible(linkProductos) || existeEnlacePorTexto("Productos");
-
-                case "usuarios":
-                    return estaElementoVisible(linkUsuarios) || existeEnlacePorTexto("Usuarios");
-
-                case "reportes":
-                    return estaElementoVisible(linkReportes) || existeEnlacePorTexto("Reportes");
-
-                case "configuracion", "configuración":
-                    return estaElementoVisible(linkConfiguracion) || existeEnlacePorTexto("Configuración");
-
-                default:
-                    return existeEnlacePorTexto(nombreElemento);
-            }
-
+            hacerClick(BOTON_NUEVO_PRODUCTO);
+            logger.debug("Clic en 'Nuevo Producto' ejecutado");
         } catch (Exception e) {
-            logger.debug("Error verificando navegabilidad de '{}': {}", nombreElemento, e.getMessage());
-            return false;
+            logger.error("Error haciendo clic en 'Nuevo Producto': {}", e.getMessage());
+            throw new RuntimeException("No se pudo hacer clic en 'Nuevo Producto'", e);
         }
     }
 
-    // Métodos para widgets y estadísticas
+    /**
+     * Hace clic en el botón para gestionar usuarios.
+     */
+    public void hacerClickGestionarUsuarios() {
+        registrarAccion("Haciendo clic en 'Gestionar Usuarios'");
+
+        try {
+            hacerClick(BOTON_GESTIONAR_USUARIOS);
+            logger.debug("Clic en 'Gestionar Usuarios' ejecutado");
+        } catch (Exception e) {
+            logger.error("Error haciendo clic en 'Gestionar Usuarios': {}", e.getMessage());
+            throw new RuntimeException("No se pudo hacer clic en 'Gestionar Usuarios'", e);
+        }
+    }
 
     /**
-     * Obtiene la cantidad de widgets visibles en el dashboard
+     * Cierra la sesión del usuario.
+     */
+    public void cerrarSesion() {
+        registrarAccion("Cerrando sesión");
+
+        try {
+            hacerClick(BOTON_CERRAR_SESION);
+            logger.info("Cierre de sesión iniciado");
+        } catch (Exception e) {
+            logger.error("Error cerrando sesión: {}", e.getMessage());
+
+            // Intentar método alternativo
+            try {
+                List<WebElement> botonesLogout = buscarElementos(
+                        By.cssSelector("a[href*='logout'], button[onclick*='logout'], .logout"));
+
+                for (WebElement boton : botonesLogout) {
+                    if (boton.isDisplayed()) {
+                        boton.click();
+                        logger.info("Cierre de sesión ejecutado con método alternativo");
+                        return;
+                    }
+                }
+
+                throw new RuntimeException("No se encontró botón de cierre de sesión", e);
+
+            } catch (Exception e2) {
+                logger.error("Error en método alternativo de cierre de sesión: {}", e2.getMessage());
+                throw new RuntimeException("No se pudo cerrar sesión", e2);
+            }
+        }
+    }
+
+    // ==================== MÉTODOS DE WIDGETS Y ESTADÍSTICAS ====================
+
+    /**
+     * Obtiene la cantidad de widgets visibles en el dashboard.
      *
-     * @return Número de widgets visibles
+     * @return número de widgets visibles
      */
     public int obtenerCantidadWidgets() {
+        registrarAccion("Contando widgets visibles");
+
         try {
-            return (int) widgets.stream().filter(this::estaElementoVisible).count();
+            List<WebElement> widgets = buscarElementos(WIDGETS);
+            int widgetsVisibles = 0;
+
+            for (WebElement widget : widgets) {
+                if (widget.isDisplayed()) {
+                    widgetsVisibles++;
+                }
+            }
+
+            logger.debug("Widgets visibles encontrados: {}", widgetsVisibles);
+            return widgetsVisibles;
+
         } catch (Exception e) {
-            logger.debug("Error contando widgets: {}", e.getMessage());
+            logger.error("Error contando widgets: {}", e.getMessage());
             return 0;
         }
     }
 
     /**
-     * Verifica si las estadísticas están cargadas
+     * Verifica si las estadísticas están cargadas.
      *
-     * @return true si hay estadísticas visibles
+     * @return true si hay estadísticas visibles, false en caso contrario
      */
     public boolean estanEstadisticasCargadas() {
         try {
-            return estaElementoVisible(contenedorEstadisticas) &&
-                    !elementosEstadisticas.isEmpty() &&
-                    elementosEstadisticas.stream().anyMatch(this::estaElementoVisible);
+            boolean contenedorPresente = esElementoPresente(CONTENEDOR_ESTADISTICAS);
+            if (!contenedorPresente) {
+                return false;
+            }
+
+            List<WebElement> elementos = buscarElementos(ELEMENTOS_ESTADISTICAS);
+            boolean hayElementosVisibles = elementos.stream().anyMatch(WebElement::isDisplayed);
+
+            logger.debug("Estadísticas cargadas - Contenedor: {}, Elementos visibles: {}",
+                    contenedorPresente, hayElementosVisibles);
+
+            return hayElementosVisibles;
+
         } catch (Exception e) {
-            logger.debug("Error verificando estadísticas: {}", e.getMessage());
+            logger.error("Error verificando estadísticas: {}", e.getMessage());
             return false;
         }
     }
 
-    /**
-     * Obtiene el valor de una estadística específica
-     *
-     * @param nombreEstadistica Nombre de la estadística
-     * @return Valor de la estadística o cadena vacía si no se encuentra
-     */
-    public String obtenerValorEstadistica(String nombreEstadistica) {
-        try {
-            // Buscar por atributo data-metric
-            WebElement estadistica = driver.findElement(
-                    By.cssSelector(String.format("[data-metric='%s']", nombreEstadistica.toLowerCase())));
-            return obtenerTextoSeguro(estadistica);
-
-        } catch (Exception e) {
-            try {
-                // Buscar por texto del label
-                WebElement estadistica = driver.findElement(
-                        By.xpath(String.format("//div[contains(@class,'stat')]//span[contains(text(),'%s')]/following-sibling::span", nombreEstadistica)));
-                return obtenerTextoSeguro(estadistica);
-
-            } catch (Exception e2) {
-                logger.debug("No se pudo obtener estadística '{}': {}", nombreEstadistica, e2.getMessage());
-                return "";
-            }
-        }
-    }
-
-    // Métodos para notificaciones
+    // ==================== MÉTODOS DE NOTIFICACIONES ====================
 
     /**
-     * Verifica si hay notificaciones pendientes
+     * Verifica si hay notificaciones pendientes.
      *
-     * @return true si hay notificaciones
+     * @return true si hay notificaciones, false en caso contrario
      */
     public boolean hayNotificacionesPendientes() {
         try {
-            if (estaElementoVisible(contadorNotificaciones)) {
-                String texto = obtenerTextoSeguro(contadorNotificaciones);
-                return !texto.isEmpty() && !texto.equals("0");
+            if (esElementoVisible(CONTADOR_NOTIFICACIONES)) {
+                String texto = obtenerTexto(CONTADOR_NOTIFICACIONES);
+                boolean hayNotificaciones = !texto.isEmpty() && !texto.equals("0");
+                logger.debug("Notificaciones pendientes: {} (texto: '{}')", hayNotificaciones, texto);
+                return hayNotificaciones;
             }
             return false;
         } catch (Exception e) {
@@ -369,169 +445,142 @@ public class PaginaDashboard extends PaginaBase {
     }
 
     /**
-     * Obtiene el número de notificaciones pendientes
+     * Obtiene el número de notificaciones pendientes.
      *
-     * @return Número de notificaciones
+     * @return número de notificaciones
      */
     public int obtenerNumeroNotificaciones() {
         try {
             if (hayNotificacionesPendientes()) {
-                String texto = obtenerTextoSeguro(contadorNotificaciones);
-                return Integer.parseInt(texto.replaceAll("[^0-9]", ""));
+                String texto = obtenerTexto(CONTADOR_NOTIFICACIONES);
+                String numeroTexto = texto.replaceAll("[^0-9]", "");
+                if (!numeroTexto.isEmpty()) {
+                    int numero = Integer.parseInt(numeroTexto);
+                    logger.debug("Número de notificaciones: {}", numero);
+                    return numero;
+                }
             }
             return 0;
         } catch (Exception e) {
-            logger.debug("Error obteniendo número de notificaciones: {}", e.getMessage());
+            logger.error("Error obteniendo número de notificaciones: {}", e.getMessage());
             return 0;
         }
     }
 
-    // Métodos para búsqueda rápida
+    // ==================== MÉTODOS DE BÚSQUEDA ====================
 
     /**
-     * Realiza una búsqueda rápida
+     * Realiza una búsqueda rápida.
      *
-     * @param termino Término a buscar
-     * @return true si la búsqueda se ejecutó exitosamente
+     * @param termino término a buscar
      */
-    public boolean realizarBusquedaRapida(String termino) {
-        try {
-            if (estaElementoVisible(cajaBusquedaRapida)) {
-                escribirTextoSeguro(cajaBusquedaRapida, termino);
+    public void realizarBusquedaRapida(String termino) {
+        registrarAccion("Realizando búsqueda rápida: " + termino);
 
-                if (estaElementoVisible(botonBuscar)) {
-                    hacerClicSeguro(botonBuscar);
+        try {
+            utileria.validarCadenaNoVacia(termino, "Término de búsqueda");
+
+            if (esElementoPresente(CAJA_BUSQUEDA_RAPIDA)) {
+                ingresarTexto(CAJA_BUSQUEDA_RAPIDA, termino);
+
+                if (esElementoPresente(BOTON_BUSCAR)) {
+                    hacerClick(BOTON_BUSCAR);
                 } else {
                     // Presionar Enter en la caja de búsqueda
-                    cajaBusquedaRapida.sendKeys(org.openqa.selenium.Keys.ENTER);
+                    WebElement caja = buscarElemento(CAJA_BUSQUEDA_RAPIDA);
+                    caja.sendKeys(org.openqa.selenium.Keys.ENTER);
                 }
 
                 logger.info("Búsqueda rápida realizada: {}", termino);
-                return true;
+            } else {
+                throw new RuntimeException("Caja de búsqueda no disponible");
             }
-            return false;
+
         } catch (Exception e) {
             logger.error("Error realizando búsqueda rápida: {}", e.getMessage());
-            return false;
+            throw new RuntimeException("Error en búsqueda rápida: " + e.getMessage(), e);
         }
     }
 
-    // Métodos para gestión de sesión
+    // ==================== MÉTODOS DE VALIDACIÓN ====================
 
     /**
-     * Cierra la sesión del usuario
+     * Verifica si un elemento de navegación es accesible.
      *
-     * @return true si el cierre de sesión fue exitoso
+     * @param nombreElemento nombre del elemento a verificar
+     * @return true si el elemento es navegable, false en caso contrario
      */
-    public boolean cerrarSesion() {
+    public boolean esElementoNavegable(String nombreElemento) {
         try {
-            if (estaElementoVisible(botonCerrarSesion)) {
-                hacerClicSeguro(botonCerrarSesion);
-                logger.info("Cierre de sesión iniciado");
-                return true;
-            } else {
-                // Buscar botón de logout alternativo
-                try {
-                    WebElement logoutAlt = driver.findElement(
-                            By.cssSelector("a[href*='logout'], button[onclick*='logout'], .logout"));
-                    hacerClicSeguro(logoutAlt);
-                    logger.info("Cierre de sesión iniciado (método alternativo)");
-                    return true;
-                } catch (Exception e2) {
-                    logger.warn("No se encontró botón de cierre de sesión");
-                    return false;
+            String nombreLower = nombreElemento.toLowerCase().trim();
+
+            return switch (nombreLower) {
+                case "productos" -> esElementoPresente(ITEM_MENU_PRODUCTOS);
+                case "usuarios" -> esElementoPresente(ITEM_MENU_USUARIOS);
+                case "reportes" -> esElementoPresente(ITEM_MENU_REPORTES);
+                case "configuracion", "configuración" -> esElementoPresente(ITEM_MENU_CONFIGURACION);
+                default -> {
+                    // Buscar por texto genérico
+                    try {
+                        WebElement elemento = utileria.obtenerNavegador().findElement(
+                                By.xpath(String.format("//a[contains(text(),'%s')] | //button[contains(text(),'%s')]",
+                                        nombreElemento, nombreElemento)));
+                        yield elemento.isDisplayed();
+                    } catch (Exception e) {
+                        yield false;
+                    }
                 }
-            }
+            };
+
         } catch (Exception e) {
-            logger.error("Error cerrando sesión: {}", e.getMessage());
+            logger.debug("Error verificando navegabilidad de '{}': {}", nombreElemento, e.getMessage());
             return false;
         }
     }
 
+    // ==================== MÉTODOS DE INFORMACIÓN ====================
+
     /**
-     * Espera a que la página del dashboard termine de cargar completamente
+     * Obtiene información completa del estado actual del dashboard.
      *
-     * @return true si la página cargó exitosamente
+     * @return información detallada del estado
      */
-    public boolean esperarCargaPagina() {
+    public String obtenerEstadoCompleto() {
         try {
-            // Esperar elementos críticos
-            esperarElementoVisible(contenidoPrincipal);
-            esperarElementoVisible(navegacionPrincipal);
-
-            // Esperar que termine la carga de JavaScript
-            esperarCargaCompleta();
-
-            // Verificar que al menos algunos widgets estén cargados
-            esperarTiempo(1000); // Dar tiempo para que carguen los widgets
-
-            return estaPaginaCargada();
+            return String.format(
+                    "Estado Dashboard - Cargada: %s | Usuario visible: %s | Nombre: '%s' | " +
+                            "Mensaje bienvenida: %s | Widgets: %d | Estadísticas cargadas: %s | " +
+                            "Notificaciones: %s | %s",
+                    esPaginaCargada(),
+                    hayInformacionUsuario(),
+                    obtenerNombreUsuario(),
+                    hayMensajeBienvenida(),
+                    obtenerCantidadWidgets(),
+                    estanEstadisticasCargadas(),
+                    hayNotificacionesPendientes(),
+                    obtenerInformacionDebug()
+            );
 
         } catch (Exception e) {
-            logger.error("Error esperando carga de dashboard: {}", e.getMessage());
-            return false;
+            return "Error obteniendo estado completo: " + e.getMessage();
         }
     }
 
-    // Métodos auxiliares privados
+    // ==================== MÉTODOS DE LIMPIEZA ====================
 
     /**
-     * Navega a una sección por texto del enlace
-     *
-     * @param textoEnlace Texto del enlace a buscar
-     * @return true si se encontró y se hizo clic en el enlace
+     * Sobrescribe el método de limpieza base para incluir limpieza específica del dashboard.
      */
-    private boolean navegarPorTexto(String textoEnlace) {
+    @Override
+    public void limpiar() {
+        super.limpiar();
+
         try {
-            WebElement enlace = driver.findElement(
-                    By.xpath(String.format("//a[contains(text(),'%s')] | //button[contains(text(),'%s')]",
-                            textoEnlace, textoEnlace)));
-            hacerClicSeguro(enlace);
-            logger.info("Navegación por texto exitosa: {}", textoEnlace);
-            return true;
+            // Limpieza específica del dashboard
+            // Por ejemplo: cerrar modales abiertos, limpiar filtros, etc.
+            logger.debug("Limpieza específica del dashboard ejecutada");
         } catch (Exception e) {
-            logger.debug("No se pudo navegar por texto '{}': {}", textoEnlace, e.getMessage());
-            return false;
+            logger.warn("Error en limpieza específica del dashboard: {}", e.getMessage());
         }
-    }
-
-    /**
-     * Verifica si existe un enlace con el texto especificado
-     *
-     * @param texto Texto a buscar en los enlaces
-     * @return true si existe el enlace
-     */
-    private boolean existeEnlacePorTexto(String texto) {
-        try {
-            WebElement enlace = driver.findElement(
-                    By.xpath(String.format("//a[contains(text(),'%s')] | //button[contains(text(),'%s')]",
-                            texto, texto)));
-            return enlace.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
-     * Obtiene información del estado actual del dashboard
-     *
-     * @return String con información del estado
-     */
-    public String obtenerEstadoDashboard() {
-        StringBuilder estado = new StringBuilder();
-        estado.append("=== Estado del Dashboard ===\n");
-
-        estado.append("Página cargada: ").append(estaPaginaCargada()).append("\n");
-        estado.append("Usuario visible: ").append(esNombreUsuarioVisible()).append("\n");
-        estado.append("Nombre usuario: ").append(obtenerNombreUsuario()).append("\n");
-        estado.append("Widgets visibles: ").append(obtenerCantidadWidgets()).append("\n");
-        estado.append("Estadísticas cargadas: ").append(estanEstadisticasCargadas()).append("\n");
-        estado.append("Notificaciones pendientes: ").append(hayNotificacionesPendientes()).append("\n");
-
-        if (hayNotificacionesPendientes()) {
-            estado.append("Número de notificaciones: ").append(obtenerNumeroNotificaciones()).append("\n");
-        }
-
-        return estado.toString();
     }
 }

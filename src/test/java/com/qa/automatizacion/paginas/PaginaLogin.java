@@ -1,25 +1,27 @@
 package com.qa.automatizacion.paginas;
 
-import com.qa.automatizacion.modelo.Usuario;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.WebElement;
-
-import java.util.Optional;
+import org.openqa.selenium.support.FindBy;
 
 /**
  * Page Object para la página de login del sistema.
- * Implementa la nueva arquitectura optimizada usando PaginaBase y UtileriasComunes.
+ * Encapsula todos los elementos y acciones relacionadas con la autenticación.
  *
- * Principios aplicados:
- * - Herencia: Extiende PaginaBase para reutilizar funcionalidades comunes
- * - DRY: No duplica código, reutiliza métodos de PaginaBase/UtileriasComunes
- * - Single Responsibility: Se enfoca únicamente en la funcionalidad de login
- * - Encapsulación: Expone métodos de alto nivel, oculta detalles de implementación
+ * Esta implementación utiliza:
+ * - Herencia de PaginaBase para funcionalidades comunes
+ * - Patrón Page Object para encapsular la UI
+ * - Utileria centralizada para todas las operaciones
+ * - Logging y trazabilidad unificados
+ *
+ * Responsabilidades:
+ * - Gestionar la interacción con elementos de login
+ * - Validar el estado de la página de login
+ * - Proporcionar métodos de alto nivel para autenticación
+ * - Manejar errores específicos de autenticación
  *
  * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 2.0.0 - Optimizada con métodos reutilizables
+ * @version 2.0.0
  */
 public class PaginaLogin extends PaginaBase {
 
@@ -32,25 +34,24 @@ public class PaginaLogin extends PaginaBase {
     // Botones
     private static final By BOTON_LOGIN = By.id("btn-login");
     private static final By BOTON_OLVIDAR_PASSWORD = By.linkText("¿Olvidaste tu contraseña?");
-    private static final By BOTON_MOSTRAR_PASSWORD = By.cssSelector("[data-testid='toggle-password']");
+    private static final By ENLACE_REGISTRO = By.linkText("Registrarse");
 
-    // Checkboxes
+    // Checkboxes y opciones
     private static final By CHECKBOX_RECORDAR_SESION = By.id("recordar-sesion");
 
-    // Mensajes específicos de login
-    private static final By MENSAJE_ERROR_CREDENCIALES = By.cssSelector("[data-testid='error-credenciales']");
-    private static final By MENSAJE_CUENTA_BLOQUEADA = By.cssSelector("[data-testid='cuenta-bloqueada']");
-    private static final By MENSAJE_LOGIN_EXITOSO = By.cssSelector("[data-testid='login-exitoso']");
-
-    // Formulario y contenedores
+    // Contenedores y estructura
     private static final By FORMULARIO_LOGIN = By.id("form-login");
-    private static final By CONTENEDOR_LOGIN = By.cssSelector(".login-container");
+    private static final By CONTENEDOR_LOGIN = By.cssSelector(".login-container, .auth-container");
+    private static final By TITULO_PAGINA = By.cssSelector("h1, .login-title, [data-testid='login-title']");
 
-    // Enlaces
-    private static final By ENLACE_REGISTRO = By.linkText("Registrarse");
-    private static final By ENLACE_RECUPERAR_CUENTA = By.linkText("¿No puedes acceder a tu cuenta?");
+    // Etiquetas y texto
+    private static final By ETIQUETA_EMAIL = By.cssSelector("label[for='email']");
+    private static final By ETIQUETA_PASSWORD = By.cssSelector("label[for='password']");
 
-    // Elementos usando @FindBy (opcionales, para demostrar compatibilidad)
+    // Indicadores de estado
+    private static final By SPINNER_CARGA = By.cssSelector(".spinner, .loading, [data-testid='loading']");
+
+    // Elementos usando @FindBy para demostrar ambos enfoques
     @FindBy(id = "email")
     private WebElement campoEmailElement;
 
@@ -60,741 +61,666 @@ public class PaginaLogin extends PaginaBase {
     @FindBy(id = "btn-login")
     private WebElement botonLoginElement;
 
-    // ==================== CONSTRUCTORES ====================
+    // ==================== CONSTRUCTOR ====================
 
     /**
-     * Constructor que acepta un WebDriver específico.
-     *
-     * @param driver WebDriver a utilizar
-     */
-    public PaginaLogin(WebDriver driver) {
-        super(driver);
-    }
-
-    /**
-     * Constructor por defecto que usa el driver global.
+     * Constructor que inicializa la página de login.
      */
     public PaginaLogin() {
         super();
+        logger.info("PaginaLogin inicializada");
     }
 
     // ==================== MÉTODOS ABSTRACTOS IMPLEMENTADOS ====================
 
-    @Override
-    public boolean estaPaginaCargada() {
-        // Verifica múltiples indicadores de que la página está cargada
-        return esElementoVisible(FORMULARIO_LOGIN, 5) &&
-                esElementoVisible(CAMPO_EMAIL, 2) &&
-                esElementoVisible(CAMPO_PASSWORD, 2) &&
-                esElementoVisible(BOTON_LOGIN, 2) &&
-                !estaCargando();
-    }
-
-    @Override
-    public String obtenerUrlBase() {
-        return propiedades.obtenerUrlLogin();
-    }
-
-    @Override
-    protected By[] obtenerLocalizadoresUnicos() {
-        return new By[]{
-                FORMULARIO_LOGIN,
-                BOTON_LOGIN,
-                CAMPO_EMAIL,
-                CAMPO_PASSWORD
-        };
-    }
-
-    // ==================== MÉTODOS PRINCIPALES DE LOGIN ====================
-
     /**
-     * Realiza el proceso completo de login con credenciales básicas.
+     * Verifica si la página de login está completamente cargada.
      *
-     * @param email email del usuario
-     * @param password contraseña del usuario
-     * @return true si el login fue exitoso
+     * @return true si la página está cargada, false en caso contrario
      */
-    public boolean iniciarSesion(String email, String password) {
-        registrarAccion("Iniciando sesión", "Email: " + email);
-
+    @Override
+    public boolean esPaginaCargada() {
         try {
-            // Verificar que la página esté cargada
-            if (!estaPaginaCargada()) {
-                logger.error("La página de login no está completamente cargada");
-                return false;
-            }
+            boolean formularioPresente = esElementoPresente(FORMULARIO_LOGIN);
+            boolean campoEmailPresente = esElementoPresente(CAMPO_EMAIL);
+            boolean campoPasswordPresente = esElementoPresente(CAMPO_PASSWORD);
+            boolean botonLoginPresente = esElementoPresente(BOTON_LOGIN);
+            boolean tituloPresente = esElementoPresente(TITULO_PAGINA);
 
-            // Limpiar campos existentes e ingresar credenciales
-            if (!ingresarCredenciales(email, password)) {
-                logger.error("Error ingresando credenciales");
-                return false;
-            }
+            boolean cargada = formularioPresente && campoEmailPresente &&
+                    campoPasswordPresente && botonLoginPresente && tituloPresente;
 
-            // Hacer clic en el botón de login
-            if (!hacerClicEnLogin()) {
-                logger.error("Error haciendo clic en botón de login");
-                return false;
-            }
+            logger.debug("Verificación de carga - Formulario: {}, Email: {}, Password: {}, Botón: {}, Título: {}, Resultado: {}",
+                    formularioPresente, campoEmailPresente, campoPasswordPresente, botonLoginPresente, tituloPresente, cargada);
 
-            // Verificar resultado del login
-            return verificarResultadoLogin();
+            return cargada;
 
         } catch (Exception e) {
-            logger.error("Error durante el proceso de login: {}", e.getMessage());
+            logger.error("Error verificando carga de página login: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * Realiza login con un objeto Usuario.
+     * Obtiene el título esperado de la página de login.
      *
-     * @param usuario objeto Usuario con las credenciales
-     * @return true si el login fue exitoso
+     * @return título esperado
      */
-    public boolean iniciarSesion(Usuario usuario) {
-        if (usuario == null) {
-            logger.error("El objeto usuario no puede ser null");
-            return false;
-        }
-
-        return iniciarSesion(usuario.getEmail(), usuario.getContrasena());
+    @Override
+    public String obtenerTituloEsperado() {
+        return "Login";
     }
 
     /**
-     * Realiza login con opción de recordar sesión.
+     * Obtiene la URL esperada de la página de login.
+     *
+     * @return URL esperada
+     */
+    @Override
+    public String obtenerUrlEsperada() {
+        return utileria.obtenerUrlLogin();
+    }
+
+    // ==================== MÉTODOS DE ACCIONES PRINCIPALES ====================
+
+    /**
+     * Realiza el proceso completo de login.
      *
      * @param email email del usuario
      * @param password contraseña del usuario
-     * @param recordarSesion true para marcar "Recordar sesión"
-     * @return true si el login fue exitoso
+     * @param recordarSesion si se debe recordar la sesión
      */
-    public boolean iniciarSesionConRecordar(String email, String password, boolean recordarSesion) {
-        registrarAccion("Iniciando sesión con opción recordar",
-                "Email: " + email, "Recordar: " + recordarSesion);
+    public void realizarLogin(String email, String password, boolean recordarSesion) {
+        logger.info("Iniciando proceso de login para usuario: {}", email);
+        registrarAccion("Iniciando login completo");
 
-        // Primero ingresar credenciales
-        if (!ingresarCredenciales(email, password)) {
-            return false;
+        try {
+            validarPaginaListaParaLogin();
+
+            ingresarCredenciales(email, password);
+
+            if (recordarSesion) {
+                marcarRecordarSesion();
+            }
+
+            hacerClickLogin();
+
+            logger.info("Proceso de login completado para usuario: {}", email);
+
+        } catch (Exception e) {
+            logger.error("Error en proceso de login: {}", e.getMessage());
+            utileria.capturarScreenshotError("login_proceso_error");
+            throw new RuntimeException("Error en login: " + e.getMessage(), e);
         }
-
-        // Manejar checkbox de recordar sesión
-        if (recordarSesion) {
-            marcarRecordarSesion();
-        } else {
-            desmarcarRecordarSesion();
-        }
-
-        // Proceder con el login
-        if (!hacerClicEnLogin()) {
-            return false;
-        }
-
-        return verificarResultadoLogin();
     }
 
-    // ==================== MÉTODOS DE INGRESO DE DATOS ====================
+    /**
+     * Realiza login básico con email y contraseña.
+     *
+     * @param email email del usuario
+     * @param password contraseña del usuario
+     */
+    public void realizarLogin(String email, String password) {
+        realizarLogin(email, password, false);
+    }
 
     /**
-     * Ingresa las credenciales en los campos correspondientes.
+     * Ingresa las credenciales de usuario.
      *
-     * @param email email a ingresar
-     * @param password contraseña a ingresar
-     * @return true si las credenciales se ingresaron correctamente
+     * @param email email del usuario
+     * @param password contraseña del usuario
      */
-    public boolean ingresarCredenciales(String email, String password) {
-        registrarAccion("Ingresando credenciales", "Email: " + email);
+    public void ingresarCredenciales(String email, String password) {
+        logger.info("Ingresando credenciales para usuario: {}", email);
+        registrarAccion("Ingresando credenciales");
 
-        // Validar parámetros
-        if (email == null || email.trim().isEmpty()) {
-            logger.error("Email no puede ser vacío o null");
-            return false;
-        }
+        ingresarEmail(email);
+        ingresarPassword(password);
 
-        if (password == null || password.trim().isEmpty()) {
-            logger.error("Password no puede ser vacío o null");
-            return false;
-        }
-
-        // Ingresar email
-        if (!ingresarEmail(email)) {
-            logger.error("Error ingresando email");
-            return false;
-        }
-
-        // Ingresar contraseña
-        if (!ingresarPassword(password)) {
-            logger.error("Error ingresando contraseña");
-            return false;
-        }
-
-        logger.info("Credenciales ingresadas exitosamente");
-        return true;
+        logger.debug("Credenciales ingresadas exitosamente");
     }
 
     /**
      * Ingresa el email en el campo correspondiente.
      *
      * @param email email a ingresar
-     * @return true si se ingresó correctamente
      */
-    public boolean ingresarEmail(String email) {
-        registrarAccion("Ingresando email", email);
-        return ingresarTextoSeguro(CAMPO_EMAIL, email, true);
+    public void ingresarEmail(String email) {
+        utileria.validarCadenaNoVacia(email, "Email");
+
+        logger.debug("Ingresando email: {}", email);
+        registrarAccion("Ingresando email");
+
+        try {
+            // Verificar formato de email
+            if (!validarFormatoEmail(email)) {
+                logger.warn("Formato de email inválido: {}", email);
+            }
+
+            ingresarTextoSeguro(CAMPO_EMAIL, email);
+
+            // Verificar que se ingresó correctamente
+            String emailIngresado = obtenerAtributo(CAMPO_EMAIL, "value");
+            if (!email.equals(emailIngresado)) {
+                throw new RuntimeException("Email no se ingresó correctamente");
+            }
+
+            logger.debug("Email ingresado correctamente: {}", email);
+
+        } catch (Exception e) {
+            logger.error("Error ingresando email: {}", e.getMessage());
+            utileria.capturarScreenshotError("ingreso_email_error");
+            throw new RuntimeException("Error ingresando email: " + e.getMessage(), e);
+        }
     }
 
     /**
      * Ingresa la contraseña en el campo correspondiente.
      *
      * @param password contraseña a ingresar
-     * @return true si se ingresó correctamente
      */
-    public boolean ingresarPassword(String password) {
-        registrarAccion("Ingresando contraseña", "***");
-        return ingresarTextoSeguro(CAMPO_PASSWORD, password, true);
-    }
+    public void ingresarPassword(String password) {
+        utileria.validarCadenaNoVacia(password, "Password");
 
-    // ==================== MÉTODOS DE INTERACCIÓN CON ELEMENTOS ====================
+        logger.debug("Ingresando contraseña");
+        registrarAccion("Ingresando contraseña");
+
+        try {
+            ingresarTextoSeguro(CAMPO_PASSWORD, password);
+
+            // Verificar que el campo no esté vacío (sin mostrar la contraseña real)
+            String passwordIngresado = obtenerAtributo(CAMPO_PASSWORD, "value");
+            if (passwordIngresado == null || passwordIngresado.isEmpty()) {
+                throw new RuntimeException("Contraseña no se ingresó correctamente");
+            }
+
+            logger.debug("Contraseña ingresada correctamente");
+
+        } catch (Exception e) {
+            logger.error("Error ingresando contraseña: {}", e.getMessage());
+            utileria.capturarScreenshotError("ingreso_password_error");
+            throw new RuntimeException("Error ingresando contraseña: " + e.getMessage(), e);
+        }
+    }
 
     /**
      * Hace clic en el botón de login.
-     *
-     * @return true si el clic fue exitoso
      */
-    public boolean hacerClicEnLogin() {
-        registrarAccion("Haciendo clic en botón de login");
-        return hacerClicSeguro(BOTON_LOGIN, 3);
+    public void hacerClickLogin() {
+        logger.debug("Haciendo clic en botón de login");
+        registrarAccion("Haciendo clic en botón login");
+
+        try {
+            // Verificar que el botón esté habilitado
+            WebElement boton = buscarElemento(BOTON_LOGIN);
+            if (!boton.isEnabled()) {
+                throw new RuntimeException("Botón de login no está habilitado");
+            }
+
+            hacerClick(BOTON_LOGIN);
+
+            // Esperar un momento para que inicie el proceso
+            utileria.pausa(1000);
+
+            logger.debug("Clic en botón login ejecutado");
+
+        } catch (Exception e) {
+            logger.error("Error haciendo clic en botón login: {}", e.getMessage());
+            utileria.capturarScreenshotError("click_login_error");
+            throw new RuntimeException("Error en clic login: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * Hace clic en el enlace de "Olvidé mi contraseña".
-     *
-     * @return true si el clic fue exitoso
+     * Marca el checkbox de recordar sesión.
      */
-    public boolean hacerClicEnOlvidoPassword() {
-        registrarAccion("Haciendo clic en 'Olvidé mi contraseña'");
-        return hacerClicSeguro(BOTON_OLVIDAR_PASSWORD);
+    public void marcarRecordarSesion() {
+        logger.debug("Marcando checkbox recordar sesión");
+        registrarAccion("Marcando recordar sesión");
+
+        try {
+            if (esElementoPresente(CHECKBOX_RECORDAR_SESION)) {
+                WebElement checkbox = buscarElemento(CHECKBOX_RECORDAR_SESION);
+
+                if (!checkbox.isSelected()) {
+                    hacerClick(CHECKBOX_RECORDAR_SESION);
+                    logger.debug("Checkbox recordar sesión marcado");
+                } else {
+                    logger.debug("Checkbox recordar sesión ya estaba marcado");
+                }
+            } else {
+                logger.warn("Checkbox recordar sesión no encontrado en la página");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error marcando recordar sesión: {}", e.getMessage());
+            throw new RuntimeException("Error marcando recordar sesión: " + e.getMessage(), e);
+        }
+    }
+
+    // ==================== MÉTODOS DE NAVEGACIÓN ====================
+
+    /**
+     * Navega a la página de registro.
+     */
+    public void navegarARegistro() {
+        logger.info("Navegando a página de registro");
+        registrarAccion("Navegando a registro");
+
+        try {
+            if (esElementoPresente(ENLACE_REGISTRO)) {
+                hacerClick(ENLACE_REGISTRO);
+                logger.debug("Navegación a registro ejecutada");
+            } else {
+                logger.warn("Enlace de registro no encontrado");
+                throw new RuntimeException("Enlace de registro no disponible");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error navegando a registro: {}", e.getMessage());
+            throw new RuntimeException("Error navegando a registro: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * Hace clic en el enlace de registro.
-     *
-     * @return true si el clic fue exitoso
+     * Navega a la página de recuperación de contraseña.
      */
-    public boolean hacerClicEnRegistro() {
-        registrarAccion("Haciendo clic en enlace de registro");
-        return hacerClicSeguro(ENLACE_REGISTRO);
+    public void navegarARecuperarPassword() {
+        logger.info("Navegando a recuperación de contraseña");
+        registrarAccion("Navegando a recuperar contraseña");
+
+        try {
+            if (esElementoPresente(BOTON_OLVIDAR_PASSWORD)) {
+                hacerClick(BOTON_OLVIDAR_PASSWORD);
+                logger.debug("Navegación a recuperar contraseña ejecutada");
+            } else {
+                logger.warn("Enlace de recuperar contraseña no encontrado");
+                throw new RuntimeException("Enlace de recuperar contraseña no disponible");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error navegando a recuperar contraseña: {}", e.getMessage());
+            throw new RuntimeException("Error navegando a recuperar contraseña: " + e.getMessage(), e);
+        }
     }
 
-    /**
-     * Marca el checkbox de "Recordar sesión".
-     *
-     * @return true si se marcó correctamente
-     */
-    public boolean marcarRecordarSesion() {
-        registrarAccion("Marcando 'Recordar sesión'");
+    // ==================== MÉTODOS DE VALIDACIÓN ====================
 
-        if (!esElementoSeleccionado(CHECKBOX_RECORDAR_SESION)) {
-            return hacerClicSeguro(CHECKBOX_RECORDAR_SESION);
+    /**
+     * Valida que la página esté lista para realizar login.
+     *
+     * @throws RuntimeException si la página no está lista
+     */
+    public void validarPaginaListaParaLogin() {
+        logger.debug("Validando que la página esté lista para login");
+
+        if (!esPaginaCargada()) {
+            throw new RuntimeException("La página de login no está completamente cargada");
         }
 
-        logger.debug("Checkbox 'Recordar sesión' ya estaba marcado");
-        return true;
-    }
-
-    /**
-     * Desmarca el checkbox de "Recordar sesión".
-     *
-     * @return true si se desmarcó correctamente
-     */
-    public boolean desmarcarRecordarSesion() {
-        registrarAccion("Desmarcando 'Recordar sesión'");
-
-        if (esElementoSeleccionado(CHECKBOX_RECORDAR_SESION)) {
-            return hacerClicSeguro(CHECKBOX_RECORDAR_SESION);
+        if (!esFormularioHabilitado()) {
+            throw new RuntimeException("El formulario de login no está habilitado");
         }
 
-        logger.debug("Checkbox 'Recordar sesión' ya estaba desmarcado");
-        return true;
+        if (hayErroresPrevios()) {
+            logger.warn("Hay errores previos en la página de login");
+        }
+
+        logger.debug("Página lista para realizar login");
     }
 
     /**
-     * Togglea la visibilidad de la contraseña.
+     * Verifica si el formulario de login está habilitado.
      *
-     * @return true si se cambió la visibilidad
+     * @return true si está habilitado, false en caso contrario
      */
-    public boolean toggleVisibilidadPassword() {
-        registrarAccion("Cambiando visibilidad de contraseña");
-        return hacerClicSeguro(BOTON_MOSTRAR_PASSWORD);
+    public boolean esFormularioHabilitado() {
+        try {
+            WebElement campoEmail = buscarElemento(CAMPO_EMAIL);
+            WebElement campoPassword = buscarElemento(CAMPO_PASSWORD);
+            WebElement botonLogin = buscarElemento(BOTON_LOGIN);
+
+            boolean habilitado = campoEmail.isEnabled() &&
+                    campoPassword.isEnabled() &&
+                    botonLogin.isEnabled();
+
+            logger.debug("Estado del formulario - Email: {}, Password: {}, Botón: {}, Resultado: {}",
+                    campoEmail.isEnabled(), campoPassword.isEnabled(), botonLogin.isEnabled(), habilitado);
+
+            return habilitado;
+
+        } catch (Exception e) {
+            logger.error("Error verificando estado del formulario: {}", e.getMessage());
+            return false;
+        }
     }
 
-    // ==================== MÉTODOS DE VERIFICACIÓN ====================
+    /**
+     * Verifica si hay errores previos en la página.
+     *
+     * @return true si hay errores, false en caso contrario
+     */
+    public boolean hayErroresPrevios() {
+        return hayMensajeError();
+    }
 
     /**
-     * Verifica el resultado del intento de login.
+     * Valida las credenciales antes de intentar login.
      *
-     * @return true si el login fue exitoso
+     * @param email email a validar
+     * @param password contraseña a validar
+     * @return true si las credenciales son válidas para el formato, false en caso contrario
      */
-    private boolean verificarResultadoLogin() {
-        registrarAccion("Verificando resultado de login");
+    public boolean validarCredenciales(String email, String password) {
+        logger.debug("Validando formato de credenciales");
 
-        // Esperar un momento para que aparezcan los mensajes
-        esperarSegundos(2);
+        try {
+            // Validar email
+            if (email == null || email.trim().isEmpty()) {
+                logger.warn("Email está vacío");
+                return false;
+            }
 
-        // Verificar si hay mensaje de éxito
-        if (esElementoVisible(MENSAJE_LOGIN_EXITOSO, 3)) {
-            logger.info("Login exitoso - mensaje de confirmación visible");
+            if (!validarFormatoEmail(email)) {
+                logger.warn("Formato de email inválido: {}", email);
+                return false;
+            }
+
+            // Validar contraseña
+            if (password == null || password.trim().isEmpty()) {
+                logger.warn("Contraseña está vacía");
+                return false;
+            }
+
+            if (password.length() < 6) {
+                logger.warn("Contraseña muy corta (mínimo 6 caracteres)");
+                return false;
+            }
+
+            logger.debug("Credenciales válidas en formato");
             return true;
-        }
 
-        // Verificar si cambió la URL (redirección exitosa)
-        String urlActual = obtenerUrlActual();
-        if (!urlActual.contains("/login")) {
-            logger.info("Login exitoso - redirección detectada a: {}", urlActual);
-            return true;
-        }
-
-        // Verificar si hay mensajes de error específicos
-        if (hayErrorCredenciales()) {
-            logger.error("Login fallido - credenciales incorrectas");
+        } catch (Exception e) {
+            logger.error("Error validando credenciales: {}", e.getMessage());
             return false;
         }
+    }
 
-        if (hayCuentaBloqueada()) {
-            logger.error("Login fallido - cuenta bloqueada");
+    // ==================== MÉTODOS DE ESTADO ====================
+
+    /**
+     * Verifica si el usuario ya está logueado (redirección automática).
+     *
+     * @return true si ya está logueado, false en caso contrario
+     */
+    public boolean esUsuarioYaLogueado() {
+        try {
+            // Si no estamos en la página de login, probablemente ya estamos logueados
+            if (!utileria.verificarUrl("login")) {
+                logger.debug("Usuario parece estar ya logueado (no en página login)");
+                return true;
+            }
+
+            // Verificar si hay redirección automática
+            utileria.pausa(2000);
+            if (!utileria.verificarUrl("login")) {
+                logger.debug("Usuario logueado automáticamente (redirección detectada)");
+                return true;
+            }
+
+            return false;
+
+        } catch (Exception e) {
+            logger.error("Error verificando si usuario ya está logueado: {}", e.getMessage());
             return false;
         }
+    }
 
-        if (hayMensajesError()) {
-            Optional<String> mensajeError = obtenerMensajeError();
-            logger.error("Login fallido - error general: {}", mensajeError.orElse("Error desconocido"));
-            return false;
+    /**
+     * Verifica si hay un spinner de carga visible.
+     *
+     * @return true si hay loading, false en caso contrario
+     */
+    public boolean haySpinnerCarga() {
+        return esElementoVisible(SPINNER_CARGA);
+    }
+
+    /**
+     * Espera a que termine el proceso de login.
+     *
+     * @param timeoutSegundos timeout máximo en segundos
+     */
+    public void esperarProcesoLogin(int timeoutSegundos) {
+        logger.debug("Esperando proceso de login (timeout: {} segundos)", timeoutSegundos);
+
+        try {
+            // Esperar que aparezca el spinner (si existe)
+            if (esElementoPresente(SPINNER_CARGA)) {
+                utileria.obtenerEspera(5).until(driver -> esElementoVisible(SPINNER_CARGA));
+                logger.debug("Spinner de carga apareció");
+            }
+
+            // Esperar que desaparezca el spinner o que cambie la URL
+            utileria.obtenerEspera(timeoutSegundos).until(driver ->
+                    !esElementoVisible(SPINNER_CARGA) || !utileria.verificarUrl("login")
+            );
+
+            logger.debug("Proceso de login completado");
+
+        } catch (Exception e) {
+            logger.warn("Timeout esperando proceso de login: {}", e.getMessage());
         }
-
-        // Si no hay mensajes claros, verificar si seguimos en login
-        if (estaPaginaCargada()) {
-            logger.error("Login fallido - aún en página de login sin mensajes claros");
-            return false;
-        }
-
-        logger.info("Login aparentemente exitoso");
-        return true;
-    }
-
-    /**
-     * Verifica si hay errores de credenciales.
-     *
-     * @return true si hay errores de credenciales
-     */
-    public boolean hayErrorCredenciales() {
-        return esElementoVisible(MENSAJE_ERROR_CREDENCIALES, 2);
-    }
-
-    /**
-     * Verifica si la cuenta está bloqueada.
-     *
-     * @return true si la cuenta está bloqueada
-     */
-    public boolean hayCuentaBloqueada() {
-        return esElementoVisible(MENSAJE_CUENTA_BLOQUEADA, 2);
-    }
-
-    /**
-     * Verifica si el formulario de login está visible.
-     *
-     * @return true si el formulario está visible
-     */
-    public boolean esFormularioVisible() {
-        return esElementoVisible(FORMULARIO_LOGIN, 2);
-    }
-
-    /**
-     * Verifica si el campo de email está habilitado.
-     *
-     * @return true si está habilitado
-     */
-    public boolean esCampoEmailHabilitado() {
-        return esElementoHabilitado(CAMPO_EMAIL);
-    }
-
-    /**
-     * Verifica si el campo de contraseña está habilitado.
-     *
-     * @return true si está habilitado
-     */
-    public boolean esCampoPasswordHabilitado() {
-        return esElementoHabilitado(CAMPO_PASSWORD);
-    }
-
-    /**
-     * Verifica si el botón de login está habilitado.
-     *
-     * @return true si está habilitado
-     */
-    public boolean esBotonLoginHabilitado() {
-        return esElementoHabilitado(BOTON_LOGIN);
-    }
-
-    /**
-     * Verifica si el checkbox de recordar sesión está marcado.
-     *
-     * @return true si está marcado
-     */
-    public boolean estaRecordarSesionMarcado() {
-        return esElementoSeleccionado(CHECKBOX_RECORDAR_SESION);
     }
 
     // ==================== MÉTODOS DE OBTENCIÓN DE DATOS ====================
 
     /**
-     * Obtiene el valor actual del campo de email.
+     * Obtiene el valor actual del campo email.
      *
-     * @return Optional con el valor del email
+     * @return valor del campo email
      */
-    public Optional<String> obtenerValorEmail() {
-        return obtenerValorCampo(CAMPO_EMAIL);
-    }
-
-    /**
-     * Obtiene el valor actual del campo de contraseña.
-     *
-     * @return Optional con el valor de la contraseña
-     */
-    public Optional<String> obtenerValorPassword() {
-        return obtenerValorCampo(CAMPO_PASSWORD);
-    }
-
-    /**
-     * Obtiene el mensaje de error de credenciales si está presente.
-     *
-     * @return Optional con el mensaje de error
-     */
-    public Optional<String> obtenerMensajeErrorCredenciales() {
-        if (hayErrorCredenciales()) {
-            return obtenerTextoElemento(MENSAJE_ERROR_CREDENCIALES);
+    public String obtenerEmailIngresado() {
+        try {
+            return obtenerAtributo(CAMPO_EMAIL, "value");
+        } catch (Exception e) {
+            logger.error("Error obteniendo email ingresado: {}", e.getMessage());
+            return "";
         }
-        return Optional.empty();
     }
 
     /**
-     * Obtiene el mensaje de cuenta bloqueada si está presente.
+     * Obtiene el texto del título de la página.
      *
-     * @return Optional con el mensaje de cuenta bloqueada
+     * @return texto del título
      */
-    public Optional<String> obtenerMensajeCuentaBloqueada() {
-        if (hayCuentaBloqueada()) {
-            return obtenerTextoElemento(MENSAJE_CUENTA_BLOQUEADA);
+    public String obtenerTituloPagina() {
+        try {
+            if (esElementoPresente(TITULO_PAGINA)) {
+                return obtenerTexto(TITULO_PAGINA);
+            }
+            return "";
+        } catch (Exception e) {
+            logger.error("Error obteniendo título de página: {}", e.getMessage());
+            return "";
         }
-        return Optional.empty();
     }
 
     /**
-     * Obtiene el texto del botón de login.
+     * Verifica si el checkbox de recordar sesión está marcado.
      *
-     * @return Optional con el texto del botón
+     * @return true si está marcado, false en caso contrario
      */
-    public Optional<String> obtenerTextoBotonLogin() {
-        return obtenerTextoElemento(BOTON_LOGIN);
-    }
-
-    // ==================== MÉTODOS DE VALIDACIÓN DE CAMPOS ====================
-
-    /**
-     * Valida el formato del email ingresado.
-     *
-     * @param email email a validar
-     * @return true si el formato es válido
-     */
-    public boolean esFormatoEmailValido(String email) {
-        if (email == null || email.trim().isEmpty()) {
+    public boolean esRecordarSesionMarcado() {
+        try {
+            if (esElementoPresente(CHECKBOX_RECORDAR_SESION)) {
+                WebElement checkbox = buscarElemento(CHECKBOX_RECORDAR_SESION);
+                return checkbox.isSelected();
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("Error verificando estado de recordar sesión: {}", e.getMessage());
             return false;
         }
+    }
 
-        String patronEmail = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
-        boolean valido = email.matches(patronEmail);
+    // ==================== MÉTODOS DE LIMPIEZA ====================
 
-        registrarAccion("Validando formato de email", "Email: " + email, "Válido: " + valido);
-        return valido;
+    /**
+     * Limpia los campos del formulario de login.
+     */
+    public void limpiarFormulario() {
+        logger.debug("Limpiando formulario de login");
+        registrarAccion("Limpiando formulario");
+
+        try {
+            if (esElementoPresente(CAMPO_EMAIL)) {
+                WebElement campoEmail = buscarElemento(CAMPO_EMAIL);
+                campoEmail.clear();
+            }
+
+            if (esElementoPresente(CAMPO_PASSWORD)) {
+                WebElement campoPassword = buscarElemento(CAMPO_PASSWORD);
+                campoPassword.clear();
+            }
+
+            // Desmarcar checkbox si está marcado
+            if (esRecordarSesionMarcado()) {
+                hacerClick(CHECKBOX_RECORDAR_SESION);
+            }
+
+            logger.debug("Formulario de login limpiado");
+
+        } catch (Exception e) {
+            logger.error("Error limpiando formulario: {}", e.getMessage());
+        }
     }
 
     /**
-     * Valida la fortaleza de la contraseña.
-     *
-     * @param password contraseña a validar
-     * @return true si cumple los criterios mínimos
+     * Sobrescribe el método de limpieza base para incluir limpieza específica de login.
      */
-    public boolean esPasswordSeguro(String password) {
-        if (password == null || password.length() < 8) {
-            return false;
-        }
-
-        // Validaciones básicas de seguridad
-        boolean tieneMayuscula = password.matches(".*[A-Z].*");
-        boolean tieneMinuscula = password.matches(".*[a-z].*");
-        boolean tieneNumero = password.matches(".*\\d.*");
-        boolean tieneCaracterEspecial = password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*");
-
-        boolean seguro = tieneMayuscula && tieneMinuscula && tieneNumero && tieneCaracterEspecial;
-
-        registrarAccion("Validando fortaleza de contraseña", "Seguro: " + seguro);
-        return seguro;
+    @Override
+    public void limpiar() {
+        super.limpiar();
+        limpiarFormulario();
     }
 
     // ==================== MÉTODOS DE ESPERA ESPECÍFICOS ====================
 
     /**
-     * Espera que aparezca un mensaje de error específico.
+     * Espera a que el formulario esté completamente cargado y listo.
+     */
+    public void esperarFormularioListo() {
+        logger.debug("Esperando que el formulario esté listo");
+
+        try {
+            utileria.obtenerEspera(TIMEOUT_ELEMENTO).until(driver ->
+                    esElementoPresente(CAMPO_EMAIL) &&
+                            esElementoPresente(CAMPO_PASSWORD) &&
+                            esElementoPresente(BOTON_LOGIN) &&
+                            esFormularioHabilitado()
+            );
+
+            logger.debug("Formulario listo para uso");
+
+        } catch (Exception e) {
+            logger.error("Timeout esperando formulario listo: {}", e.getMessage());
+            throw new RuntimeException("Formulario no está listo: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Espera a que aparezca un mensaje de error específico.
      *
      * @param timeoutSegundos timeout en segundos
-     * @return true si apareció el mensaje de error
+     * @return true si aparece el mensaje, false si hay timeout
      */
     public boolean esperarMensajeError(int timeoutSegundos) {
-        return esperarElementoVisible(MENSAJE_ERROR_CREDENCIALES, timeoutSegundos) ||
-                esperarElementoVisible(MENSAJE_CUENTA_BLOQUEADA, timeoutSegundos) ||
-                esperarElementoVisible(MENSAJE_ERROR_GLOBAL, timeoutSegundos);
-    }
+        try {
+            utileria.obtenerEspera(timeoutSegundos).until(driver -> hayMensajeError());
+            logger.debug("Mensaje de error apareció");
+            return true;
 
-    /**
-     * Espera que aparezca el mensaje de login exitoso.
-     *
-     * @param timeoutSegundos timeout en segundos
-     * @return true si apareció el mensaje de éxito
-     */
-    public boolean esperarMensajeExito(int timeoutSegundos) {
-        return esperarElementoVisible(MENSAJE_LOGIN_EXITOSO, timeoutSegundos);
-    }
-
-    /**
-     * Espera que se complete la redirección después del login.
-     *
-     * @param timeoutSegundos timeout en segundos
-     * @return true si hubo redirección
-     */
-    public boolean esperarRedireccionLogin(int timeoutSegundos) {
-        String urlInicial = obtenerUrlActual();
-
-        for (int i = 0; i < timeoutSegundos; i++) {
-            esperarSegundos(1);
-            String urlActual = obtenerUrlActual();
-
-            if (!urlActual.equals(urlInicial) && !urlActual.contains("/login")) {
-                logger.info("Redirección detectada a: {}", urlActual);
-                return true;
-            }
+        } catch (Exception e) {
+            logger.debug("No apareció mensaje de error en {} segundos", timeoutSegundos);
+            return false;
         }
-
-        logger.debug("No se detectó redirección en {} segundos", timeoutSegundos);
-        return false;
     }
 
-    // ==================== MÉTODOS DE LIMPIEZA Y RESET ====================
+    // ==================== MÉTODOS DE UTILIDAD ESPECÍFICOS ====================
 
     /**
-     * Limpia todos los campos del formulario de login.
-     */
-    public void limpiarFormulario() {
-        registrarAccion("Limpiando formulario de login");
-
-        // Limpiar campo de email
-        Optional<String> valorEmail = obtenerValorEmail();
-        if (valorEmail.isPresent() && !valorEmail.get().isEmpty()) {
-            ingresarTextoSeguro(CAMPO_EMAIL, "", true);
-        }
-
-        // Limpiar campo de contraseña
-        Optional<String> valorPassword = obtenerValorPassword();
-        if (valorPassword.isPresent() && !valorPassword.get().isEmpty()) {
-            ingresarTextoSeguro(CAMPO_PASSWORD, "", true);
-        }
-
-        // Desmarcar checkbox si está marcado
-        if (estaRecordarSesionMarcado()) {
-            desmarcarRecordarSesion();
-        }
-
-        logger.info("Formulario de login limpiado");
-    }
-
-    /**
-     * Resetea la página de login a su estado inicial.
-     */
-    public void resetearPagina() {
-        registrarAccion("Reseteando página de login");
-
-        limpiarFormulario();
-        actualizarPagina();
-        esperarCargaPagina();
-
-        logger.info("Página de login reseteada");
-    }
-
-    // ==================== MÉTODOS DE ACCIONES COMPLEJAS ====================
-
-    /**
-     * Intenta múltiples logins con diferentes credenciales.
-     * Útil para pruebas de seguridad y robustez.
-     *
-     * @param credenciales array de arrays [email, password]
-     * @param limpiarEntreIntentos true para limpiar formulario entre intentos
-     * @return índice del intento exitoso, -1 si ninguno fue exitoso
-     */
-    public int intentarMultiplesLogins(String[][] credenciales, boolean limpiarEntreIntentos) {
-        registrarAccion("Intentando múltiples logins", "Cantidad: " + credenciales.length);
-
-        for (int i = 0; i < credenciales.length; i++) {
-            String email = credenciales[i][0];
-            String password = credenciales[i][1];
-
-            logger.info("Intento de login {} de {}: {}", i + 1, credenciales.length, email);
-
-            if (limpiarEntreIntentos && i > 0) {
-                limpiarFormulario();
-                esperarSegundos(1);
-            }
-
-            if (iniciarSesion(email, password)) {
-                logger.info("Login exitoso en intento {} con credenciales: {}", i + 1, email);
-                return i;
-            }
-
-            logger.debug("Login fallido en intento {} con credenciales: {}", i + 1, email);
-            esperarSegundos(2); // Evitar intentos demasiado rápidos
-        }
-
-        logger.info("Todos los intentos de login fallaron");
-        return -1;
-    }
-
-    /**
-     * Realiza login con manejo automático de errores.
-     * Reintenta automáticamente en caso de errores transitorios.
+     * Realiza login con manejo completo de errores y reintentos.
      *
      * @param email email del usuario
      * @param password contraseña del usuario
-     * @param maxReintentos número máximo de reintentos
-     * @return true si el login fue exitoso
+     * @param reintentos número máximo de reintentos
+     * @return true si el login fue exitoso, false en caso contrario
      */
-    public boolean loginConReintentos(String email, String password, int maxReintentos) {
-        registrarAccion("Login con reintentos", "Email: " + email, "Max reintentos: " + maxReintentos);
+    public boolean intentarLoginConReintentos(String email, String password, int reintentos) {
+        logger.info("Intentando login con reintentos (máximo: {}) para usuario: {}", reintentos, email);
 
-        for (int intento = 1; intento <= maxReintentos; intento++) {
-            logger.info("Intento de login {} de {}", intento, maxReintentos);
-
+        for (int intento = 1; intento <= reintentos; intento++) {
             try {
-                if (iniciarSesion(email, password)) {
-                    logger.info("Login exitoso en intento {}", intento);
+                logger.debug("Intento de login #{}", intento);
+
+                limpiarFormulario();
+                realizarLogin(email, password);
+                esperarProcesoLogin(10);
+
+                // Verificar si el login fue exitoso
+                if (!utileria.verificarUrl("login")) {
+                    logger.info("Login exitoso en intento #{}", intento);
                     return true;
                 }
 
-                // Verificar si es un error recuperable
-                if (hayCuentaBloqueada()) {
-                    logger.error("Cuenta bloqueada - no se reintentará");
-                    return false;
+                // Si hay mensaje de error, registrarlo
+                if (hayMensajeError()) {
+                    String mensajeError = obtenerMensajeError();
+                    logger.warn("Error en intento #{}: {}", intento, mensajeError);
                 }
 
-                if (intento < maxReintentos) {
-                    logger.info("Login fallido, reintentando en 3 segundos...");
-                    esperarSegundos(3);
-                    limpiarFormulario();
+                if (intento < reintentos) {
+                    logger.debug("Preparando reintento #{}", intento + 1);
+                    utileria.pausa(1000);
                 }
 
             } catch (Exception e) {
-                logger.error("Error en intento {} de login: {}", intento, e.getMessage());
-                if (intento < maxReintentos) {
-                    esperarSegundos(2);
-                    actualizarPagina();
-                    esperarCargaPagina();
+                logger.error("Error en intento de login #{}: {}", intento, e.getMessage());
+
+                if (intento < reintentos) {
+                    utileria.pausa(2000);
+                    refrescarPagina();
                 }
             }
         }
 
-        logger.error("Login fallido después de {} intentos", maxReintentos);
+        logger.error("Login falló después de {} intentos", reintentos);
         return false;
     }
 
-    // ==================== MÉTODOS DE DEBUGGING Y DIAGNÓSTICO ====================
-
     /**
-     * Obtiene información de diagnóstico específica de la página de login.
+     * Obtiene información completa del estado actual de la página.
      *
-     * @return String con información detallada
+     * @return información detallada del estado
      */
-    @Override
-    public String obtenerInformacionDiagnostico() {
-        StringBuilder diagnostico = new StringBuilder(super.obtenerInformacionDiagnostico());
+    public String obtenerEstadoCompleto() {
+        try {
+            return String.format(
+                    "Estado Login - Cargada: %s | Formulario habilitado: %s | " +
+                            "Email presente: %s | Password presente: %s | Botón presente: %s | " +
+                            "Hay errores: %s | Recordar sesión: %s | %s",
+                    esPaginaCargada(),
+                    esFormularioHabilitado(),
+                    esElementoPresente(CAMPO_EMAIL),
+                    esElementoPresente(CAMPO_PASSWORD),
+                    esElementoPresente(BOTON_LOGIN),
+                    hayMensajeError(),
+                    esRecordarSesionMarcado(),
+                    obtenerInformacionDebug()
+            );
 
-        diagnostico.append("\n=== DIAGNÓSTICO PÁGINA LOGIN ===\n");
-        diagnostico.append("Formulario visible: ").append(esFormularioVisible()).append("\n");
-        diagnostico.append("Campo email habilitado: ").append(esCampoEmailHabilitado()).append("\n");
-        diagnostico.append("Campo password habilitado: ").append(esCampoPasswordHabilitado()).append("\n");
-        diagnostico.append("Botón login habilitado: ").append(esBotonLoginHabilitado()).append("\n");
-        diagnostico.append("Recordar sesión marcado: ").append(estaRecordarSesionMarcado()).append("\n");
-        diagnostico.append("Hay errores credenciales: ").append(hayErrorCredenciales()).append("\n");
-        diagnostico.append("Hay cuenta bloqueada: ").append(hayCuentaBloqueada()).append("\n");
-
-        obtenerValorEmail().ifPresent(email ->
-                diagnostico.append("Valor email actual: ").append(email).append("\n"));
-
-        obtenerMensajeErrorCredenciales().ifPresent(mensaje ->
-                diagnostico.append("Mensaje error credenciales: ").append(mensaje).append("\n"));
-
-        obtenerMensajeCuentaBloqueada().ifPresent(mensaje ->
-                diagnostico.append("Mensaje cuenta bloqueada: ").append(mensaje).append("\n"));
-
-        diagnostico.append("================================\n");
-
-        return diagnostico.toString();
-    }
-
-    /**
-     * Toma screenshot específico del formulario de login.
-     *
-     * @return byte array con la imagen del formulario
-     */
-    public byte[] tomarCapturaFormulario() {
-        registrarAccion("Tomando captura del formulario de login");
-        return tomarCapturaElemento(FORMULARIO_LOGIN);
-    }
-
-    // ==================== MÉTODOS DE LIMPIEZA DE RECURSOS ====================
-
-    /**
-     * Limpia recursos específicos de la página de login.
-     */
-    @Override
-    public void limpiarRecursos() {
-        super.limpiarRecursos();
-
-        // Limpiar formulario si aún está visible
-        if (esFormularioVisible()) {
-            limpiarFormulario();
+        } catch (Exception e) {
+            return "Error obteniendo estado completo: " + e.getMessage();
         }
-
-        logger.debug("Recursos específicos de PaginaLogin limpiados");
-    }
-
-    // ==================== MÉTODOS DE VERIFICACIÓN DE SALUD ESPECÍFICOS ====================
-
-    /**
-     * Verifica el estado de salud específico de la página de login.
-     *
-     * @return true si la página está en buen estado para login
-     */
-    @Override
-    public boolean verificarSaludPagina() {
-        boolean saludBase = super.verificarSaludPagina();
-
-        if (!saludBase) {
-            return false;
-        }
-
-        // Verificaciones específicas de login
-        boolean saludLogin = esFormularioVisible() &&
-                esCampoEmailHabilitado() &&
-                esCampoPasswordHabilitado() &&
-                esBotonLoginHabilitado() &&
-                !hayCuentaBloqueada();
-
-        logger.debug("Salud específica de login: {}", saludLogin);
-        return saludLogin;
     }
 }
