@@ -1,0 +1,17 @@
+La clase PaginaLogin es un Page Object para la página de login, siguiendo buenas prácticas de automatización con Selenium. Hereda de PaginaBase y centraliza la interacción con elementos de la UI, validaciones y navegación.  Puntos positivos:  
+Uso de localizadores claros y constantes.
+Métodos bien documentados y agrupados por funcionalidad.
+Manejo de errores y logging detallado.
+Métodos de utilidad para validaciones, navegación y limpieza.
+Soporte para reintentos y espera de elementos.
+Problemas detectados:  
+Muchos errores de compilación: faltan métodos como esElementoPresente, buscarElemento, hacerClick, registrarAccion, validarFormatoEmail, ingresarTextoSeguro, obtenerAtributo, esElementoVisible, obtenerTexto, hayMensajeError, y la variable utileria no está definida ni inicializada.
+Hay dos métodos obtenerUrlEsperada(), lo que causa conflicto.
+El acceso a utileria debería ser a través de una instancia correctamente inicializada, probablemente en el constructor o como atributo heredado.
+Algunos métodos dependen de utilidades que no están implementadas en la clase base ni en la propia clase.
+Recomendaciones:  
+Implementar o heredar los métodos faltantes (esElementoPresente, etc.) y definir correctamente la instancia de utileria.
+Eliminar la duplicidad de obtenerUrlEsperada().
+Revisar la inicialización de dependencias y el uso de utilidades.
+Considerar mover lógica repetida a la clase base o a una clase utilitaria común.
+En resumen, la estructura es buena, pero faltan implementaciones clave y correcciones para que compile y funcione correctamente.

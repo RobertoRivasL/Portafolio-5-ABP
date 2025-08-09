@@ -1,743 +1,899 @@
 package com.qa.automatizacion.paginas;
 
-import com.qa.automatizacion.modelo.ProductoCrud;
+import com.qa.automatizacion.utilidades.Utileria;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
- * Page Object para las operaciones CRUD de productos del sistema.
- * Implementa la nueva arquitectura optimizada usando PaginaBase y UtileriasComunes.
+ * Page Object para la gestión CRUD de productos del sistema.
+ * Encapsula todas las operaciones relacionadas con la gestión de productos.
  *
  * Principios aplicados:
- * - Herencia: Extiende PaginaBase para reutilizar funcionalidades comunes
- * - DRY: No duplica código, reutiliza métodos de PaginaBase/UtileriasComunes
- * - Single Responsibility: Se enfoca únicamente en operaciones CRUD
- * - Encapsulación: Expone métodos de alto nivel, oculta detalles de implementación
- *
- * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 2.0.0 - Optimizada con métodos reutilizables
+ * - Page Object Pattern: Separa la lógica de UI de los tests
+ * - Encapsulación: Oculta los detalles de implementación de Selenium
+ * - Single Responsibility: Se enfoca únicamente en la gestión de productos
+ * - Integration with Utileria: Todas las operaciones pasan por la facade central
+ * - CRUD Operations: Create, Read, Update, Delete completamente implementadas
  */
 public class PaginaCrud extends PaginaBase {
 
+    private static final Logger logger = LoggerFactory.getLogger(PaginaCrud.class);
+    private final Utileria utileria;
+
     // ==================== LOCALIZADORES ====================
 
+    // Elementos principales de la página
+    private static final By TITULO_PAGINA = By.cssSelector("h1, .productos-title, [data-testid='productos-title']");
+    private static final By CONTENEDOR_PRODUCTOS = By.cssSelector(".productos-container, .crud-container");
+
     // Botones principales de acción
-    private static final By BOTON_NUEVO = By.id("btn-nuevo");
-    private static final By BOTON_GUARDAR = By.id("btn-guardar");
-    private static final By BOTON_EDITAR = By.id("btn-editar");
-    private static final By BOTON_ELIMINAR = By.id("btn-eliminar");
-    private static final By BOTON_CANCELAR = By.id("btn-cancelar");
-    private static final By BOTON_BUSCAR = By.id("btn-buscar");
-    private static final By BOTON_LIMPIAR_BUSQUEDA = By.id("btn-limpiar-busqueda");
+    private static final By BOTON_NUEVO_PRODUCTO = By.cssSelector("#btn-nuevo-producto, .btn-nuevo, [data-testid='btn-nuevo-producto']");
+    private static final By BOTON_EXPORTAR = By.cssSelector("#btn-exportar, .btn-export, [data-testid='btn-exportar']");
+    private static final By BOTON_IMPORTAR = By.cssSelector("#btn-importar, .btn-import, [data-testid='btn-importar']");
 
-    // Campos del formulario de producto
+    // Formulario de producto (crear/editar)
+    private static final By MODAL_PRODUCTO = By.cssSelector(".modal-producto, .product-modal, [data-testid='modal-producto']");
     private static final By CAMPO_NOMBRE = By.id("nombre-producto");
-    private static final By CAMPO_DESCRIPCION = By.id("descripcion-producto");
-    private static final By CAMPO_PRECIO = By.id("precio-producto");
-    private static final By CAMPO_CATEGORIA = By.id("categoria-producto");
-    private static final By CAMPO_STOCK = By.id("stock-producto");
     private static final By CAMPO_CODIGO = By.id("codigo-producto");
+    private static final By CAMPO_CATEGORIA = By.id("categoria-producto");
+    private static final By CAMPO_PRECIO = By.id("precio-producto");
+    private static final By CAMPO_STOCK = By.id("stock-producto");
+    private static final By CAMPO_DESCRIPCION = By.id("descripcion-producto");
 
-    // Campos de búsqueda y filtros
-    private static final By CAMPO_BUSQUEDA = By.id("campo-busqueda");
-    private static final By FILTRO_CATEGORIA = By.id("filtro-categoria");
+    // Botones del formulario
+    private static final By BOTON_GUARDAR = By.cssSelector("#btn-guardar-producto, .btn-save, [data-testid='btn-guardar']");
+    private static final By BOTON_CANCELAR = By.cssSelector("#btn-cancelar-producto, .btn-cancel, [data-testid='btn-cancelar']");
+
+    // Búsqueda y filtros
+    private static final By CAMPO_BUSQUEDA = By.cssSelector("#buscar-productos, .search-input, [data-testid='buscar-productos']");
+    private static final By BOTON_BUSCAR = By.cssSelector("#btn-buscar, .btn-search, [data-testid='btn-buscar']");
+    private static final By FILTRO_CATEGORIA = By.cssSelector("#filtro-categoria, .category-filter");
     private static final By FILTRO_PRECIO_MIN = By.id("precio-min");
     private static final By FILTRO_PRECIO_MAX = By.id("precio-max");
+    private static final By BOTON_LIMPIAR_FILTROS = By.cssSelector(".btn-clear-filters, [data-testid='limpiar-filtros']");
 
-    // Tabla de resultados
-    private static final By TABLA_PRODUCTOS = By.id("tabla-productos");
-    private static final By FILAS_TABLA = By.cssSelector("#tabla-productos tbody tr");
-    private static final By ENCABEZADOS_TABLA = By.cssSelector("#tabla-productos thead th");
+    // Tabla de productos
+    private static final By TABLA_PRODUCTOS = By.cssSelector("#tabla-productos, .products-table, [data-testid='tabla-productos']");
+    private static final By FILAS_PRODUCTOS = By.cssSelector(".producto-fila, .product-row, tbody tr");
+    private static final By HEADERS_TABLA = By.cssSelector("thead th, .table-header");
 
-    // Elementos de paginación
-    private static final By PAGINACION_CONTAINER = By.cssSelector(".paginacion");
-    private static final By BOTON_PAGINA_ANTERIOR = By.cssSelector(".paginacion .anterior");
-    private static final By BOTON_PAGINA_SIGUIENTE = By.cssSelector(".paginacion .siguiente");
-    private static final By INFO_PAGINACION = By.cssSelector(".paginacion .info");
+    // Acciones por fila de producto
+    private static final By BOTON_VER_DETALLE = By.cssSelector(".btn-ver-detalle, [data-action='view']");
+    private static final By BOTON_EDITAR = By.cssSelector(".btn-editar, [data-action='edit']");
+    private static final By BOTON_ELIMINAR = By.cssSelector(".btn-eliminar, [data-action='delete']");
 
-    // Mensajes específicos de CRUD
-    private static final By MENSAJE_PRODUCTO_GUARDADO = By.cssSelector("[data-testid='producto-guardado']");
-    private static final By MENSAJE_PRODUCTO_ELIMINADO = By.cssSelector("[data-testid='producto-eliminado']");
-    private static final By MENSAJE_PRODUCTO_NO_ENCONTRADO = By.cssSelector("[data-testid='producto-no-encontrado']");
-    private static final By MENSAJE_ERROR_PRECIO_INVALIDO = By.cssSelector("[data-testid='error-precio-invalido']");
+    // Paginación
+    private static final By CONTENEDOR_PAGINACION = By.cssSelector(".paginacion, .pagination");
+    private static final By BOTON_PAGINA_ANTERIOR = By.cssSelector(".btn-prev, .pagination-prev");
+    private static final By BOTON_PAGINA_SIGUIENTE = By.cssSelector(".btn-next, .pagination-next");
+    private static final By NUMERO_PAGINA_ACTUAL = By.cssSelector(".pagina-actual, .current-page");
+    private static final By TOTAL_PRODUCTOS = By.cssSelector(".total-productos, .total-count");
 
-    // Formulario y contenedores
-    private static final By FORMULARIO_PRODUCTO = By.id("form-producto");
-    private static final By PANEL_BUSQUEDA = By.id("panel-busqueda");
-    private static final By MODAL_CONFIRMACION = By.id("modal-confirmacion");
+    // Mensajes y alertas
+    private static final By MENSAJE_EXITO = By.cssSelector(".alert-success, .success-message, [data-testid='success-message']");
+    private static final By MENSAJE_ERROR = By.cssSelector(".alert-error, .error-message, [data-testid='error-message']");
+    private static final By MENSAJE_CONFIRMACION = By.cssSelector(".confirm-dialog, .confirmation-modal");
 
-    // Elementos usando @FindBy (opcionales)
-    @FindBy(id = "btn-nuevo")
-    private WebElement botonNuevoElement;
+    // Indicadores de estado
+    private static final By INDICADOR_CARGA = By.cssSelector(".loading, .spinner, [data-testid='loading']");
+    private static final By PRODUCTO_AGOTADO = By.cssSelector(".agotado, .out-of-stock");
+    private static final By INDICADOR_STOCK_BAJO = By.cssSelector(".stock-bajo, .low-stock");
 
-    @FindBy(id = "tabla-productos")
-    private WebElement tablaProductosElement;
+    // Validaciones y errores por campo
+    private static final By ERROR_NOMBRE = By.cssSelector("[data-field='nombre'] .error, #nombre-producto + .error");
+    private static final By ERROR_CODIGO = By.cssSelector("[data-field='codigo'] .error, #codigo-producto + .error");
+    private static final By ERROR_PRECIO = By.cssSelector("[data-field='precio'] .error, #precio-producto + .error");
+    private static final By ERROR_STOCK = By.cssSelector("[data-field='stock'] .error, #stock-producto + .error");
 
-    // ==================== CONSTRUCTORES ====================
+    // ==================== CONSTRUCTOR ====================
 
-    /**
-     * Constructor que acepta un WebDriver específico.
-     *
-     * @param driver WebDriver a utilizar
-     */
-    public PaginaCrud(WebDriver driver) {
-        super(driver);
-    }
-
-    /**
-     * Constructor por defecto que usa el driver global.
-     */
     public PaginaCrud() {
         super();
+        this.utileria = Utileria.obtenerInstancia();
+        logger.debug("PaginaCrud inicializada");
     }
 
     // ==================== MÉTODOS ABSTRACTOS IMPLEMENTADOS ====================
 
+    /**
+     * Implementa el método abstracto de PaginaBase.
+     * Retorna la URL esperada para la página de gestión de productos.
+     *
+     * @return URL esperada de la página de productos
+     */
     @Override
-    public boolean estaPaginaCargada() {
-        return esElementoVisible(TABLA_PRODUCTOS, 5) &&
-                esElementoVisible(BOTON_NUEVO, 2) &&
-                esElementoVisible(PANEL_BUSQUEDA, 2) &&
-                !estaCargando();
+    protected String obtenerUrlEsperada() {
+        return "/productos";
     }
 
-    @Override
-    public String obtenerUrlBase() {
-        return propiedades.obtenerUrlCrud();
-    }
-
-    @Override
-    protected By[] obtenerLocalizadoresUnicos() {
-        return new By[]{
-                TABLA_PRODUCTOS,
-                BOTON_NUEVO,
-                PANEL_BUSQUEDA,
-                CAMPO_BUSQUEDA
-        };
-    }
-
-    // ==================== OPERACIONES CRUD PRINCIPALES ====================
+    // ==================== MÉTODOS PRINCIPALES ====================
 
     /**
-     * Crea un nuevo producto con todos los datos.
+     * Verifica si la página de gestión de productos está completamente cargada.
      *
-     * @param producto objeto ProductoCrud con los datos completos
-     * @return true si la creación fue exitosa
+     * @return true si la página está cargada, false en caso contrario
      */
-    public boolean crearProducto(ProductoCrud producto) {
-        registrarAccion("Creando producto", "Nombre: " + producto.getNombre());
-
+    @Override
+    public boolean esPaginaCargada() {
         try {
-            // Hacer clic en el botón nuevo
-            if (!hacerClicEnNuevo()) {
-                logger.error("Error haciendo clic en botón nuevo");
-                return false;
+            utileria.registrarTrazabilidad("HU-003", "Verificación de carga de página CRUD productos");
+
+            boolean tituloVisible = utileria.esElementoVisible(TITULO_PAGINA);
+            boolean tablaVisible = utileria.esElementoVisible(TABLA_PRODUCTOS);
+            boolean botonesPresentes = verificarBotonesPrincipalesPresentes();
+
+            boolean paginaCargada = tituloVisible && tablaVisible && botonesPresentes;
+
+            if (paginaCargada) {
+                logger.info("Página de gestión de productos cargada correctamente");
+                utileria.tomarScreenshot("pagina-crud-productos-cargada");
+            } else {
+                logger.warn("La página de gestión de productos no está completamente cargada");
+                utileria.tomarScreenshot("pagina-crud-productos-error-carga");
             }
 
-            // Llenar el formulario con los datos del producto
-            if (!llenarFormularioProducto(producto)) {
-                logger.error("Error llenando formulario del producto");
-                return false;
-            }
-
-            // Guardar el producto
-            if (!hacerClicEnGuardar()) {
-                logger.error("Error haciendo clic en guardar");
-                return false;
-            }
-
-            // Verificar que se guardó correctamente
-            return verificarProductoGuardado();
+            return paginaCargada;
 
         } catch (Exception e) {
-            logger.error("Error durante creación de producto: {}", e.getMessage());
+            logger.error("Error al verificar carga de página CRUD: {}", e.getMessage());
+            utileria.manejarError("Error verificando página CRUD", e);
             return false;
         }
     }
 
-    /**
-     * Lee/busca productos por diferentes criterios.
-     *
-     * @param criterioBusqueda texto de búsqueda
-     * @return true si la búsqueda se ejecutó correctamente
-     */
-    public boolean buscarProductos(String criterioBusqueda) {
-        registrarAccion("Buscando productos", "Criterio: " + criterioBusqueda);
+    // ==================== OPERACIONES CREATE ====================
 
+    /**
+     * Abre el modal para crear un nuevo producto.
+     */
+    public void abrirFormularioNuevoProducto() {
         try {
+            logger.info("Abriendo formulario para nuevo producto");
+            utileria.registrarTrazabilidad("HU-003", "Apertura de formulario nuevo producto");
+
+            utileria.esperarElementoClickeable(BOTON_NUEVO_PRODUCTO);
+            utileria.hacerClick(BOTON_NUEVO_PRODUCTO);
+
+            // Esperar a que aparezca el modal
+            utileria.esperarElementoVisible(MODAL_PRODUCTO);
+            utileria.tomarScreenshot("modal-nuevo-producto-abierto");
+
+        } catch (Exception e) {
+            logger.error("Error al abrir formulario nuevo producto: {}", e.getMessage());
+            utileria.manejarError("Error abriendo formulario", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Completa el formulario de producto con los datos proporcionados.
+     *
+     * @param datosProducto mapa con los datos del producto
+     */
+    public void completarFormularioProducto(Map<String, String> datosProducto) {
+        try {
+            logger.info("Completando formulario de producto");
+            utileria.registrarTrazabilidad("HU-003", "Completando formulario producto");
+            utileria.tomarScreenshot("antes-completar-formulario");
+
+            // Completar campos uno por uno
+            if (datosProducto.containsKey("nombre")) {
+                ingresarNombreProducto(datosProducto.get("nombre"));
+            }
+            if (datosProducto.containsKey("codigo")) {
+                ingresarCodigoProducto(datosProducto.get("codigo"));
+            }
+            if (datosProducto.containsKey("categoria")) {
+                seleccionarCategoriaProducto(datosProducto.get("categoria"));
+            }
+            if (datosProducto.containsKey("precio")) {
+                ingresarPrecioProducto(datosProducto.get("precio"));
+            }
+            if (datosProducto.containsKey("stock")) {
+                ingresarStockProducto(datosProducto.get("stock"));
+            }
+            if (datosProducto.containsKey("descripcion")) {
+                ingresarDescripcionProducto(datosProducto.get("descripcion"));
+            }
+
+            utileria.tomarScreenshot("formulario-producto-completado");
+
+        } catch (Exception e) {
+            logger.error("Error completando formulario producto: {}", e.getMessage());
+            utileria.manejarError("Error completando formulario", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Ingresa el nombre del producto.
+     */
+    public void ingresarNombreProducto(String nombre) {
+        try {
+            logger.info("Ingresando nombre de producto: {}", nombre);
+            utileria.registrarTrazabilidad("HU-003", "Ingreso nombre producto: " + nombre);
+
+            utileria.esperarElementoVisible(CAMPO_NOMBRE);
+            utileria.limpiarCampo(CAMPO_NOMBRE);
+            utileria.escribirTexto(CAMPO_NOMBRE, nombre);
+
+        } catch (Exception e) {
+            logger.error("Error ingresando nombre producto: {}", e.getMessage());
+            utileria.manejarError("Error ingresando nombre", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Ingresa el código del producto.
+     */
+    public void ingresarCodigoProducto(String codigo) {
+        try {
+            logger.info("Ingresando código de producto: {}", codigo);
+            utileria.registrarTrazabilidad("HU-003", "Ingreso código producto: " + codigo);
+
+            utileria.esperarElementoVisible(CAMPO_CODIGO);
+            utileria.limpiarCampo(CAMPO_CODIGO);
+            utileria.escribirTexto(CAMPO_CODIGO, codigo);
+
+        } catch (Exception e) {
+            logger.error("Error ingresando código producto: {}", e.getMessage());
+            utileria.manejarError("Error ingresando código", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Selecciona la categoría del producto.
+     */
+    public void seleccionarCategoriaProducto(String categoria) {
+        try {
+            logger.info("Seleccionando categoría: {}", categoria);
+            utileria.registrarTrazabilidad("HU-003", "Selección categoría: " + categoria);
+
+            utileria.esperarElementoVisible(CAMPO_CATEGORIA);
+            utileria.seleccionarOpcion(CAMPO_CATEGORIA, categoria);
+
+        } catch (Exception e) {
+            logger.error("Error seleccionando categoría: {}", e.getMessage());
+            utileria.manejarError("Error seleccionando categoría", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Ingresa el precio del producto.
+     */
+    public void ingresarPrecioProducto(String precio) {
+        try {
+            logger.info("Ingresando precio de producto: {}", precio);
+            utileria.registrarTrazabilidad("HU-003", "Ingreso precio producto: " + precio);
+
+            utileria.esperarElementoVisible(CAMPO_PRECIO);
+            utileria.limpiarCampo(CAMPO_PRECIO);
+            utileria.escribirTexto(CAMPO_PRECIO, precio);
+
+        } catch (Exception e) {
+            logger.error("Error ingresando precio: {}", e.getMessage());
+            utileria.manejarError("Error ingresando precio", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Ingresa el stock del producto.
+     */
+    public void ingresarStockProducto(String stock) {
+        try {
+            logger.info("Ingresando stock de producto: {}", stock);
+            utileria.registrarTrazabilidad("HU-003", "Ingreso stock producto: " + stock);
+
+            utileria.esperarElementoVisible(CAMPO_STOCK);
+            utileria.limpiarCampo(CAMPO_STOCK);
+            utileria.escribirTexto(CAMPO_STOCK, stock);
+
+        } catch (Exception e) {
+            logger.error("Error ingresando stock: {}", e.getMessage());
+            utileria.manejarError("Error ingresando stock", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Ingresa la descripción del producto.
+     */
+    public void ingresarDescripcionProducto(String descripcion) {
+        try {
+            logger.info("Ingresando descripción de producto");
+            utileria.registrarTrazabilidad("HU-003", "Ingreso descripción producto");
+
+            utileria.esperarElementoVisible(CAMPO_DESCRIPCION);
+            utileria.limpiarCampo(CAMPO_DESCRIPCION);
+            utileria.escribirTexto(CAMPO_DESCRIPCION, descripcion);
+
+        } catch (Exception e) {
+            logger.error("Error ingresando descripción: {}", e.getMessage());
+            utileria.manejarError("Error ingresando descripción", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Guarda el producto haciendo clic en el botón guardar.
+     */
+    public void guardarProducto() {
+        try {
+            logger.info("Guardando producto");
+            utileria.registrarTrazabilidad("HU-003", "Guardado de producto");
+            utileria.tomarScreenshot("antes-guardar-producto");
+
+            utileria.esperarElementoClickeable(BOTON_GUARDAR);
+            utileria.hacerClick(BOTON_GUARDAR);
+
+            // Esperar a que se procese la operación
+            utileria.esperarTiempo(2000);
+            utileria.tomarScreenshot("despues-guardar-producto");
+
+        } catch (Exception e) {
+            logger.error("Error guardando producto: {}", e.getMessage());
+            utileria.manejarError("Error guardando producto", e);
+            throw e;
+        }
+    }
+
+    // ==================== OPERACIONES READ ====================
+
+    /**
+     * Busca productos por criterio específico.
+     *
+     * @param criterio criterio de búsqueda (nombre, código, categoría)
+     * @param valor valor a buscar
+     */
+    public void buscarProductos(String criterio, String valor) {
+        try {
+            logger.info("Buscando productos por {}: {}", criterio, valor);
+            utileria.registrarTrazabilidad("HU-003", "Búsqueda por " + criterio + ": " + valor);
+
             // Limpiar búsqueda anterior
-            limpiarBusqueda();
+            utileria.limpiarCampo(CAMPO_BUSQUEDA);
 
-            // Ingresar criterio de búsqueda
-            if (!ingresarTextoSeguro(CAMPO_BUSQUEDA, criterioBusqueda, true)) {
-                logger.error("Error ingresando criterio de búsqueda");
-                return false;
-            }
+            // Ingresar término de búsqueda
+            utileria.escribirTexto(CAMPO_BUSQUEDA, valor);
+            utileria.hacerClick(BOTON_BUSCAR);
 
-            // Hacer clic en buscar
-            if (!hacerClicEnBuscar()) {
-                logger.error("Error haciendo clic en buscar");
-                return false;
-            }
-
-            // Esperar que se carguen los resultados
-            esperarSegundos(2);
-            return true;
+            // Esperar resultados
+            utileria.esperarTiempo(1500);
+            utileria.tomarScreenshot("resultados-busqueda-" + criterio);
 
         } catch (Exception e) {
-            logger.error("Error durante búsqueda: {}", e.getMessage());
-            return false;
+            logger.error("Error buscando productos: {}", e.getMessage());
+            utileria.manejarError("Error en búsqueda", e);
+            throw e;
         }
     }
 
     /**
-     * Actualiza un producto existente.
+     * Obtiene la lista de productos visibles en la tabla.
      *
-     * @param nombreProductoActual nombre del producto a editar
-     * @param productoNuevo datos actualizados del producto
-     * @return true si la actualización fue exitosa
+     * @return lista de productos como mapas de datos
      */
-    public boolean actualizarProducto(String nombreProductoActual, ProductoCrud productoNuevo) {
-        registrarAccion("Actualizando producto", "Producto: " + nombreProductoActual);
-
+    public List<Map<String, String>> obtenerListaProductos() {
         try {
-            // Buscar el producto a editar
-            if (!buscarProductos(nombreProductoActual)) {
-                logger.error("Error buscando producto a editar");
-                return false;
-            }
+            logger.info("Obteniendo lista de productos visible");
+            utileria.registrarTrazabilidad("HU-003", "Obtención de lista de productos");
 
-            // Seleccionar el producto en la tabla
-            if (!seleccionarProductoEnTabla(nombreProductoActual)) {
-                logger.error("Error seleccionando producto en tabla");
-                return false;
-            }
-
-            // Hacer clic en editar
-            if (!hacerClicEnEditar()) {
-                logger.error("Error haciendo clic en editar");
-                return false;
-            }
-
-            // Actualizar datos en el formulario
-            if (!llenarFormularioProducto(productoNuevo)) {
-                logger.error("Error actualizando datos del producto");
-                return false;
-            }
-
-            // Guardar cambios
-            if (!hacerClicEnGuardar()) {
-                logger.error("Error guardando cambios");
-                return false;
-            }
-
-            return verificarProductoGuardado();
-
-        } catch (Exception e) {
-            logger.error("Error durante actualización: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Elimina un producto por su nombre.
-     *
-     * @param nombreProducto nombre del producto a eliminar
-     * @return true si la eliminación fue exitosa
-     */
-    public boolean eliminarProducto(String nombreProducto) {
-        registrarAccion("Eliminando producto", "Producto: " + nombreProducto);
-
-        try {
-            // Buscar el producto a eliminar
-            if (!buscarProductos(nombreProducto)) {
-                logger.error("Error buscando producto a eliminar");
-                return false;
-            }
-
-            // Seleccionar el producto en la tabla
-            if (!seleccionarProductoEnTabla(nombreProducto)) {
-                logger.error("Error seleccionando producto para eliminar");
-                return false;
-            }
-
-            // Hacer clic en eliminar
-            if (!hacerClicEnEliminar()) {
-                logger.error("Error haciendo clic en eliminar");
-                return false;
-            }
-
-            // Confirmar eliminación si aparece modal
-            if (esElementoVisible(MODAL_CONFIRMACION, 3)) {
-                confirmarAccion();
-            }
-
-            return verificarProductoEliminado();
-
-        } catch (Exception e) {
-            logger.error("Error durante eliminación: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    // ==================== MÉTODOS DE INTERACCIÓN CON BOTONES ====================
-
-    /**
-     * Hace clic en el botón nuevo.
-     *
-     * @return true si el clic fue exitoso
-     */
-    public boolean hacerClicEnNuevo() {
-        registrarAccion("Haciendo clic en botón nuevo");
-        return hacerClicSeguro(BOTON_NUEVO, 3);
-    }
-
-    /**
-     * Hace clic en el botón guardar.
-     *
-     * @return true si el clic fue exitoso
-     */
-    public boolean hacerClicEnGuardar() {
-        registrarAccion("Haciendo clic en botón guardar");
-        return hacerClicSeguro(BOTON_GUARDAR, 3);
-    }
-
-    /**
-     * Hace clic en el botón editar.
-     *
-     * @return true si el clic fue exitoso
-     */
-    public boolean hacerClicEnEditar() {
-        registrarAccion("Haciendo clic en botón editar");
-        return hacerClicSeguro(BOTON_EDITAR, 3);
-    }
-
-    /**
-     * Hace clic en el botón eliminar.
-     *
-     * @return true si el clic fue exitoso
-     */
-    public boolean hacerClicEnEliminar() {
-        registrarAccion("Haciendo clic en botón eliminar");
-        return hacerClicSeguro(BOTON_ELIMINAR, 3);
-    }
-
-    /**
-     * Hace clic en el botón buscar.
-     *
-     * @return true si el clic fue exitoso
-     */
-    public boolean hacerClicEnBuscar() {
-        registrarAccion("Haciendo clic en botón buscar");
-        return hacerClicSeguro(BOTON_BUSCAR, 3);
-    }
-
-    /**
-     * Hace clic en el botón cancelar.
-     *
-     * @return true si el clic fue exitoso
-     */
-    public boolean hacerClicEnCancelar() {
-        registrarAccion("Haciendo clic en botón cancelar");
-        return hacerClicSeguro(BOTON_CANCELAR);
-    }
-
-    // ==================== MÉTODOS DE FORMULARIO ====================
-
-    /**
-     * Llena el formulario de producto con todos los datos.
-     *
-     * @param producto objeto ProductoCrud con los datos
-     * @return true si se llenó correctamente
-     */
-    private boolean llenarFormularioProducto(ProductoCrud producto) {
-        registrarAccion("Llenando formulario de producto");
-
-        try {
-            // Campos obligatorios
-            if (!ingresarTextoSeguro(CAMPO_NOMBRE, producto.getNombre(), true)) return false;
-            if (!ingresarTextoSeguro(CAMPO_DESCRIPCION, producto.getDescripcion(), true)) return false;
-            if (!ingresarTextoSeguro(CAMPO_PRECIO, producto.getPrecio().toString(), true)) return false;
-
-            // Campos opcionales
-            if (producto.getCategoria() != null) {
-                seleccionarOpcionPorTexto(CAMPO_CATEGORIA, producto.getCategoria());
-            }
-
-            if (producto.getStock() != null) {
-                ingresarTextoSeguro(CAMPO_STOCK, producto.getStock().toString(), true);
-            }
-
-            if (producto.getCodigo() != null && !producto.getCodigo().isEmpty()) {
-                ingresarTextoSeguro(CAMPO_CODIGO, producto.getCodigo(), true);
-            }
-
-            logger.info("Formulario de producto llenado exitosamente");
-            return true;
-
-        } catch (Exception e) {
-            logger.error("Error llenando formulario: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Limpia todos los campos del formulario.
-     */
-    public void limpiarFormulario() {
-        registrarAccion("Limpiando formulario de producto");
-
-        try {
-            ingresarTextoSeguro(CAMPO_NOMBRE, "", true);
-            ingresarTextoSeguro(CAMPO_DESCRIPCION, "", true);
-            ingresarTextoSeguro(CAMPO_PRECIO, "", true);
-            ingresarTextoSeguro(CAMPO_STOCK, "", true);
-            ingresarTextoSeguro(CAMPO_CODIGO, "", true);
-
-            logger.info("Formulario limpiado");
-        } catch (Exception e) {
-            logger.error("Error limpiando formulario: {}", e.getMessage());
-        }
-    }
-
-    // ==================== MÉTODOS DE TABLA Y RESULTADOS ====================
-
-    /**
-     * Selecciona un producto específico en la tabla por su nombre.
-     *
-     * @param nombreProducto nombre del producto a seleccionar
-     * @return true si se seleccionó correctamente
-     */
-    public boolean seleccionarProductoEnTabla(String nombreProducto) {
-        registrarAccion("Seleccionando producto en tabla", nombreProducto);
-
-        try {
-            List<WebElement> filas = buscarElementos(FILAS_TABLA);
+            List<WebElement> filas = utileria.buscarElementos(FILAS_PRODUCTOS);
+            List<Map<String, String>> productos = new java.util.ArrayList<>();
 
             for (WebElement fila : filas) {
-                if (fila.getText().contains(nombreProducto)) {
-                    fila.click();
-                    logger.debug("Producto seleccionado: {}", nombreProducto);
-                    return true;
+                Map<String, String> producto = new HashMap<>();
+
+                // Extraer datos de cada columna
+                List<WebElement> columnas = fila.findElements(By.tagName("td"));
+
+                if (columnas.size() >= 6) {
+                    producto.put("id", columnas.get(0).getText());
+                    producto.put("nombre", columnas.get(1).getText());
+                    producto.put("codigo", columnas.get(2).getText());
+                    producto.put("categoria", columnas.get(3).getText());
+                    producto.put("precio", columnas.get(4).getText());
+                    producto.put("stock", columnas.get(5).getText());
                 }
+
+                productos.add(producto);
             }
 
-            logger.error("Producto no encontrado en tabla: {}", nombreProducto);
-            return false;
+            logger.info("Se obtuvieron {} productos de la lista", productos.size());
+            return productos;
 
         } catch (Exception e) {
-            logger.error("Error seleccionando producto: {}", e.getMessage());
+            logger.error("Error obteniendo lista de productos: {}", e.getMessage());
+            utileria.manejarError("Error obteniendo lista", e);
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Verifica si un producto específico existe en la lista.
+     *
+     * @param nombreProducto nombre del producto a buscar
+     * @return true si el producto existe, false en caso contrario
+     */
+    public boolean existeProductoEnLista(String nombreProducto) {
+        try {
+            logger.info("Verificando existencia de producto: {}", nombreProducto);
+            utileria.registrarTrazabilidad("HU-003", "Verificación existencia: " + nombreProducto);
+
+            List<Map<String, String>> productos = obtenerListaProductos();
+
+            boolean existe = productos.stream()
+                    .anyMatch(producto -> producto.get("nombre").equals(nombreProducto));
+
+            logger.info("Producto '{}' {}", nombreProducto, existe ? "encontrado" : "no encontrado");
+            return existe;
+
+        } catch (Exception e) {
+            logger.error("Error verificando existencia de producto: {}", e.getMessage());
+            utileria.manejarError("Error verificando existencia", e);
             return false;
         }
     }
 
     /**
-     * Obtiene el número de productos mostrados en la tabla.
+     * Obtiene el total de productos mostrado en la página.
      *
-     * @return número de productos en la tabla
+     * @return número total de productos
      */
-    public int obtenerNumeroProductosEnTabla() {
+    public int obtenerTotalProductos() {
         try {
-            List<WebElement> filas = buscarElementos(FILAS_TABLA);
-            int numero = filas.size();
-            logger.debug("Número de productos en tabla: {}", numero);
-            return numero;
+            if (utileria.esElementoVisible(TOTAL_PRODUCTOS)) {
+                String textoTotal = utileria.obtenerTexto(TOTAL_PRODUCTOS);
+                // Extraer número del texto (ej: "Total: 25 productos" -> "25")
+                String numero = textoTotal.replaceAll("[^0-9]", "");
+                return Integer.parseInt(numero);
+            }
+            return 0;
         } catch (Exception e) {
-            logger.error("Error obteniendo número de productos: {}", e.getMessage());
+            logger.warn("Error obteniendo total de productos: {}", e.getMessage());
             return 0;
         }
     }
 
-    /**
-     * Verifica si un producto específico existe en la tabla.
-     *
-     * @param nombreProducto nombre del producto a buscar
-     * @return true si el producto existe en la tabla
-     */
-    public boolean existeProductoEnTabla(String nombreProducto) {
-        try {
-            List<WebElement> filas = buscarElementos(FILAS_TABLA);
+    // ==================== OPERACIONES UPDATE ====================
 
-            for (WebElement fila : filas) {
-                if (fila.getText().contains(nombreProducto)) {
-                    logger.debug("Producto encontrado en tabla: {}", nombreProducto);
-                    return true;
+    /**
+     * Selecciona un producto para editar por su nombre.
+     *
+     * @param nombreProducto nombre del producto a editar
+     */
+    public void seleccionarProductoParaEditar(String nombreProducto) {
+        try {
+            logger.info("Seleccionando producto para editar: {}", nombreProducto);
+            utileria.registrarTrazabilidad("HU-003", "Selección para editar: " + nombreProducto);
+
+            // Buscar el producto en la tabla
+            By filaProducto = By.xpath("//tr[td[contains(text(), '" + nombreProducto + "')]]");
+            By botonEditarProducto = By.xpath("//tr[td[contains(text(), '" + nombreProducto + "')]]//button[@data-action='edit']");
+
+            utileria.esperarElementoVisible(filaProducto);
+            utileria.hacerClick(botonEditarProducto);
+
+            // Esperar a que aparezca el modal de edición
+            utileria.esperarElementoVisible(MODAL_PRODUCTO);
+            utileria.tomarScreenshot("modal-editar-producto");
+
+        } catch (Exception e) {
+            logger.error("Error seleccionando producto para editar: {}", e.getMessage());
+            utileria.manejarError("Error seleccionando para editar", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Modifica campos específicos de un producto.
+     *
+     * @param camposAModificar mapa con los campos y nuevos valores
+     */
+    public void modificarCamposProducto(Map<String, String> camposAModificar) {
+        try {
+            logger.info("Modificando campos de producto");
+            utileria.registrarTrazabilidad("HU-003", "Modificación de campos");
+            utileria.tomarScreenshot("antes-modificar-campos");
+
+            for (Map.Entry<String, String> campo : camposAModificar.entrySet()) {
+                String nombreCampo = campo.getKey();
+                String nuevoValor = campo.getValue();
+
+                logger.info("Modificando campo '{}' a valor '{}'", nombreCampo, nuevoValor);
+
+                switch (nombreCampo.toLowerCase()) {
+                    case "nombre" -> ingresarNombreProducto(nuevoValor);
+                    case "codigo" -> ingresarCodigoProducto(nuevoValor);
+                    case "categoria" -> seleccionarCategoriaProducto(nuevoValor);
+                    case "precio" -> ingresarPrecioProducto(nuevoValor);
+                    case "stock" -> ingresarStockProducto(nuevoValor);
+                    case "descripcion" -> ingresarDescripcionProducto(nuevoValor);
+                    default -> logger.warn("Campo no reconocido para modificación: {}", nombreCampo);
                 }
             }
 
-            logger.debug("Producto no encontrado en tabla: {}", nombreProducto);
-            return false;
+            utileria.tomarScreenshot("campos-modificados");
 
         } catch (Exception e) {
-            logger.error("Error verificando existencia de producto: {}", e.getMessage());
-            return false;
+            logger.error("Error modificando campos: {}", e.getMessage());
+            utileria.manejarError("Error modificando campos", e);
+            throw e;
         }
     }
 
-    // ==================== MÉTODOS DE BÚSQUEDA Y FILTROS ====================
+    // ==================== OPERACIONES DELETE ====================
 
     /**
-     * Aplica filtros de búsqueda avanzada.
+     * Selecciona un producto para eliminar por su nombre.
      *
-     * @param categoria categoría a filtrar (puede ser null)
-     * @param precioMin precio mínimo (puede ser null)
-     * @param precioMax precio máximo (puede ser null)
-     * @return true si se aplicaron los filtros correctamente
+     * @param nombreProducto nombre del producto a eliminar
      */
-    public boolean aplicarFiltrosAvanzados(String categoria, Double precioMin, Double precioMax) {
-        registrarAccion("Aplicando filtros avanzados",
-                "Categoría: " + categoria + ", Precio: " + precioMin + "-" + precioMax);
-
+    public void seleccionarProductoParaEliminar(String nombreProducto) {
         try {
-            if (categoria != null && !categoria.isEmpty()) {
-                seleccionarOpcionPorTexto(FILTRO_CATEGORIA, categoria);
-            }
+            logger.info("Seleccionando producto para eliminar: {}", nombreProducto);
+            utileria.registrarTrazabilidad("HU-003", "Selección para eliminar: " + nombreProducto);
 
-            if (precioMin != null) {
-                ingresarTextoSeguro(FILTRO_PRECIO_MIN, precioMin.toString(), true);
-            }
+            // Buscar el botón eliminar del producto específico
+            By botonEliminarProducto = By.xpath("//tr[td[contains(text(), '" + nombreProducto + "')]]//button[@data-action='delete']");
 
-            if (precioMax != null) {
-                ingresarTextoSeguro(FILTRO_PRECIO_MAX, precioMax.toString(), true);
-            }
+            utileria.esperarElementoClickeable(botonEliminarProducto);
+            utileria.hacerClick(botonEliminarProducto);
 
-            // Aplicar filtros
-            hacerClicEnBuscar();
-            esperarSegundos(2);
-
-            return true;
+            // Esperar a que aparezca el diálogo de confirmación
+            utileria.esperarElementoVisible(MENSAJE_CONFIRMACION);
+            utileria.tomarScreenshot("dialogo-confirmacion-eliminar");
 
         } catch (Exception e) {
-            logger.error("Error aplicando filtros: {}", e.getMessage());
-            return false;
+            logger.error("Error seleccionando producto para eliminar: {}", e.getMessage());
+            utileria.manejarError("Error seleccionando para eliminar", e);
+            throw e;
         }
     }
 
     /**
-     * Limpia todos los filtros de búsqueda.
+     * Confirma la eliminación del producto en el diálogo.
      */
-    public void limpiarBusqueda() {
-        registrarAccion("Limpiando búsqueda y filtros");
-
+    public void confirmarEliminacion() {
         try {
-            if (esElementoVisible(BOTON_LIMPIAR_BUSQUEDA, 2)) {
-                hacerClicSeguro(BOTON_LIMPIAR_BUSQUEDA);
-            } else {
-                // Limpiar manualmente si no hay botón específico
-                ingresarTextoSeguro(CAMPO_BUSQUEDA, "", true);
-                ingresarTextoSeguro(FILTRO_PRECIO_MIN, "", true);
-                ingresarTextoSeguro(FILTRO_PRECIO_MAX, "", true);
-            }
+            logger.info("Confirmando eliminación de producto");
+            utileria.registrarTrazabilidad("HU-003", "Confirmación de eliminación");
 
-            esperarSegundos(1);
-            logger.info("Búsqueda limpiada");
+            By botonConfirmarEliminacion = By.cssSelector(".btn-confirm-delete, [data-action='confirm-delete']");
+            utileria.esperarElementoClickeable(botonConfirmarEliminacion);
+            utileria.hacerClick(botonConfirmarEliminacion);
+
+            // Esperar a que se procese la eliminación
+            utileria.esperarTiempo(2000);
+            utileria.tomarScreenshot("producto-eliminado");
 
         } catch (Exception e) {
-            logger.error("Error limpiando búsqueda: {}", e.getMessage());
+            logger.error("Error confirmando eliminación: {}", e.getMessage());
+            utileria.manejarError("Error confirmando eliminación", e);
+            throw e;
         }
-    }
-
-    // ==================== MÉTODOS DE PAGINACIÓN ====================
-
-    /**
-     * Navega a la página siguiente de resultados.
-     *
-     * @return true si se navegó exitosamente
-     */
-    public boolean irAPaginaSiguiente() {
-        registrarAccion("Navegando a página siguiente");
-
-        if (esElementoHabilitado(BOTON_PAGINA_SIGUIENTE)) {
-            return hacerClicSeguro(BOTON_PAGINA_SIGUIENTE);
-        } else {
-            logger.debug("No hay página siguiente disponible");
-            return false;
-        }
-    }
-
-    /**
-     * Navega a la página anterior de resultados.
-     *
-     * @return true si se navegó exitosamente
-     */
-    public boolean irAPaginaAnterior() {
-        registrarAccion("Navegando a página anterior");
-
-        if (esElementoHabilitado(BOTON_PAGINA_ANTERIOR)) {
-            return hacerClicSeguro(BOTON_PAGINA_ANTERIOR);
-        } else {
-            logger.debug("No hay página anterior disponible");
-            return false;
-        }
-    }
-
-    /**
-     * Obtiene información de paginación actual.
-     *
-     * @return texto con información de paginación
-     */
-    public Optional<String> obtenerInfoPaginacion() {
-        return obtenerTextoElemento(INFO_PAGINACION);
-    }
-
-    // ==================== MÉTODOS DE VERIFICACIÓN ====================
-
-    /**
-     * Verifica que un producto se guardó correctamente.
-     *
-     * @return true si se confirmó el guardado
-     */
-    private boolean verificarProductoGuardado() {
-        // Esperar mensaje de confirmación
-        if (esElementoVisible(MENSAJE_PRODUCTO_GUARDADO, 5)) {
-            logger.info("Producto guardado - mensaje de confirmación visible");
-            return true;
-        }
-
-        // Verificar si regresó a la lista (indicativo de guardado exitoso)
-        if (esElementoVisible(TABLA_PRODUCTOS, 3)) {
-            logger.info("Producto guardado - regresó a la tabla");
-            return true;
-        }
-
-        logger.error("No se pudo verificar que el producto se guardó");
-        return false;
-    }
-
-    /**
-     * Verifica que un producto se eliminó correctamente.
-     *
-     * @return true si se confirmó la eliminación
-     */
-    private boolean verificarProductoEliminado() {
-        // Esperar mensaje de confirmación
-        if (esElementoVisible(MENSAJE_PRODUCTO_ELIMINADO, 5)) {
-            logger.info("Producto eliminado - mensaje de confirmación visible");
-            return true;
-        }
-
-        // Si no hay mensaje específico, asumir éxito si no hay errores
-        if (!hayMensajesError()) {
-            logger.info("Producto eliminado - no hay errores");
-            return true;
-        }
-
-        logger.error("No se pudo verificar que el producto se eliminó");
-        return false;
-    }
-
-    /**
-     * Verifica si hay errores específicos de CRUD.
-     *
-     * @return true si hay algún error específico
-     */
-    public boolean hayErroresCrud() {
-        return esElementoVisible(MENSAJE_ERROR_PRECIO_INVALIDO, 2) ||
-                esElementoVisible(MENSAJE_PRODUCTO_NO_ENCONTRADO, 2) ||
-                hayMensajesError();
-    }
-
-    // ==================== MÉTODOS DE CONFIRMACIÓN ====================
-
-    /**
-     * Confirma una acción en el modal de confirmación.
-     *
-     * @return true si se confirmó la acción
-     */
-    public boolean confirmarAccion() {
-        registrarAccion("Confirmando acción en modal");
-
-        By botonConfirmar = By.cssSelector("#modal-confirmacion .btn-confirmar, .modal .btn-si, .btn-aceptar");
-        return hacerClicSeguro(botonConfirmar);
-    }
-
-    /**
-     * Cancela una acción en el modal de confirmación.
-     *
-     * @return true si se canceló la acción
-     */
-    public boolean cancelarAccion() {
-        registrarAccion("Cancelando acción en modal");
-
-        By botonCancelar = By.cssSelector("#modal-confirmacion .btn-cancelar, .modal .btn-no, .btn-cancelar");
-        return hacerClicSeguro(botonCancelar);
     }
 
     // ==================== MÉTODOS DE VALIDACIÓN ====================
 
     /**
-     * Valida que los datos de un producto sean correctos antes de guardar.
+     * Obtiene el mensaje de éxito mostrado en la página.
      *
-     * @param producto producto a validar
-     * @return true si los datos son válidos
+     * @return texto del mensaje de éxito
      */
-    public boolean validarDatosProducto(ProductoCrud producto) {
-        registrarAccion("Validando datos de producto", producto.getNombre());
-
-        // Validaciones básicas
-        if (producto.getNombre() == null || producto.getNombre().trim().isEmpty()) {
-            logger.error("El nombre del producto es obligatorio");
-            return false;
+    public String obtenerMensajeExito() {
+        try {
+            if (utileria.esElementoVisible(MENSAJE_EXITO)) {
+                String mensaje = utileria.obtenerTexto(MENSAJE_EXITO);
+                logger.info("Mensaje de éxito obtenido: {}", mensaje);
+                return mensaje;
+            }
+            return "";
+        } catch (Exception e) {
+            logger.warn("Error obteniendo mensaje de éxito: {}", e.getMessage());
+            return "";
         }
-
-        if (producto.getPrecio() == null || producto.getPrecio().doubleValue() <= 0) {
-            logger.error("El precio debe ser mayor a 0");
-            return false;
-        }
-
-        if (producto.getStock() != null && producto.getStock() < 0) {
-            logger.error("El stock no puede ser negativo");
-            return false;
-        }
-
-        logger.info("Datos del producto válidos");
-        return true;
-    }
-
-    // ==================== MÉTODOS DE VERIFICACIÓN DE SALUD ====================
-
-    /**
-     * Verifica el estado de salud específico de la página CRUD.
-     *
-     * @return true si la página está en buen estado para operaciones CRUD
-     */
-    @Override
-    public boolean verificarSaludPagina() {
-        boolean saludBase = super.verificarSaludPagina();
-
-        if (!saludBase) {
-            return false;
-        }
-
-        // Verificaciones específicas de CRUD
-        boolean saludCrud = esElementoVisible(TABLA_PRODUCTOS, 3) &&
-                esElementoHabilitado(BOTON_NUEVO) &&
-                esElementoVisible(PANEL_BUSQUEDA, 3) &&
-                !hayErroresCrud();
-
-        logger.debug("Salud específica de CRUD: {}", saludCrud);
-        return saludCrud;
     }
 
     /**
-     * Limpia recursos específicos de la página CRUD.
+     * Obtiene el mensaje de error mostrado en la página.
+     *
+     * @return texto del mensaje de error
      */
-    @Override
-    public void limpiarRecursos() {
-        super.limpiarRecursos();
-
-        // Limpiar formularios y búsquedas si están visibles
-        if (esElementoVisible(FORMULARIO_PRODUCTO, 2)) {
-            limpiarFormulario();
+    public String obtenerMensajeError() {
+        try {
+            if (utileria.esElementoVisible(MENSAJE_ERROR)) {
+                String mensaje = utileria.obtenerTexto(MENSAJE_ERROR);
+                logger.info("Mensaje de error obtenido: {}", mensaje);
+                return mensaje;
+            }
+            return "";
+        } catch (Exception e) {
+            logger.warn("Error obteniendo mensaje de error: {}", e.getMessage());
+            return "";
         }
+    }
 
-        limpiarBusqueda();
+    /**
+     * Verifica si hay errores de validación en campos específicos.
+     *
+     * @param campo nombre del campo a verificar
+     * @return true si hay error en el campo, false en caso contrario
+     */
+    public boolean tieneErrorValidacion(String campo) {
+        try {
+            By localizadorError = switch (campo.toLowerCase()) {
+                case "nombre" -> ERROR_NOMBRE;
+                case "codigo" -> ERROR_CODIGO;
+                case "precio" -> ERROR_PRECIO;
+                case "stock" -> ERROR_STOCK;
+                default -> throw new IllegalArgumentException("Campo no válido: " + campo);
+            };
 
-        logger.debug("Recursos específicos de PaginaCrud limpiados");
+            boolean tieneError = utileria.esElementoVisible(localizadorError);
+            if (tieneError) {
+                String mensajeError = utileria.obtenerTexto(localizadorError);
+                logger.info("Error en campo {}: {}", campo, mensajeError);
+            }
+            return tieneError;
+
+        } catch (Exception e) {
+            logger.warn("Error verificando validación del campo {}: {}", campo, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si el botón guardar está habilitado.
+     *
+     * @return true si está habilitado, false en caso contrario
+     */
+    public boolean esBotonGuardarHabilitado() {
+        try {
+            return utileria.esElementoHabilitado(BOTON_GUARDAR);
+        } catch (Exception e) {
+            logger.warn("Error verificando estado del botón guardar: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    // ==================== OPERACIONES DE FILTRADO Y PAGINACIÓN ====================
+
+    /**
+     * Aplica filtros de búsqueda avanzada.
+     *
+     * @param filtros mapa con los filtros a aplicar
+     */
+    public void aplicarFiltros(Map<String, String> filtros) {
+        try {
+            logger.info("Aplicando filtros de búsqueda");
+            utileria.registrarTrazabilidad("HU-003", "Aplicación de filtros");
+
+            if (filtros.containsKey("categoria")) {
+                utileria.seleccionarOpcion(FILTRO_CATEGORIA, filtros.get("categoria"));
+            }
+            if (filtros.containsKey("precio_min")) {
+                utileria.escribirTexto(FILTRO_PRECIO_MIN, filtros.get("precio_min"));
+            }
+            if (filtros.containsKey("precio_max")) {
+                utileria.escribirTexto(FILTRO_PRECIO_MAX, filtros.get("precio_max"));
+            }
+
+            // Aplicar filtros
+            utileria.hacerClick(BOTON_BUSCAR);
+            utileria.esperarTiempo(1500);
+            utileria.tomarScreenshot("filtros-aplicados");
+
+        } catch (Exception e) {
+            logger.error("Error aplicando filtros: {}", e.getMessage());
+            utileria.manejarError("Error aplicando filtros", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Limpia todos los filtros aplicados.
+     */
+    public void limpiarFiltros() {
+        try {
+            logger.info("Limpiando filtros de búsqueda");
+            utileria.registrarTrazabilidad("HU-003", "Limpieza de filtros");
+
+            if (utileria.esElementoVisible(BOTON_LIMPIAR_FILTROS)) {
+                utileria.hacerClick(BOTON_LIMPIAR_FILTROS);
+                utileria.esperarTiempo(1000);
+                utileria.tomarScreenshot("filtros-limpiados");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error limpiando filtros: {}", e.getMessage());
+            utileria.manejarError("Error limpiando filtros", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Navega a la siguiente página de resultados.
+     */
+    public void irAPaginaSiguiente() {
+        try {
+            logger.info("Navegando a página siguiente");
+            utileria.registrarTrazabilidad("HU-003", "Navegación página siguiente");
+
+            if (utileria.esElementoClickeable(BOTON_PAGINA_SIGUIENTE)) {
+                utileria.hacerClick(BOTON_PAGINA_SIGUIENTE);
+                utileria.esperarTiempo(1500);
+                utileria.tomarScreenshot("pagina-siguiente");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error navegando a página siguiente: {}", e.getMessage());
+            utileria.manejarError("Error navegación página", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Navega a la página anterior de resultados.
+     */
+    public void irAPaginaAnterior() {
+        try {
+            logger.info("Navegando a página anterior");
+            utileria.registrarTrazabilidad("HU-003", "Navegación página anterior");
+
+            if (utileria.esElementoClickeable(BOTON_PAGINA_ANTERIOR)) {
+                utileria.hacerClick(BOTON_PAGINA_ANTERIOR);
+                utileria.esperarTiempo(1500);
+                utileria.tomarScreenshot("pagina-anterior");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error navegando a página anterior: {}", e.getMessage());
+            utileria.manejarError("Error navegación página", e);
+            throw e;
+        }
+    }
+
+    // ==================== OPERACIONES MASIVAS ====================
+
+    /**
+     * Selecciona múltiples productos por sus nombres.
+     *
+     * @param nombresProductos lista de nombres de productos a seleccionar
+     */
+    public void seleccionarMultiplesProductos(List<String> nombresProductos) {
+        try {
+            logger.info("Seleccionando múltiples productos: {}", nombresProductos);
+            utileria.registrarTrazabilidad("HU-003", "Selección múltiple productos");
+
+            for (String nombre : nombresProductos) {
+                By checkboxProducto = By.xpath("//tr[td[contains(text(), '" + nombre + "')]]//input[@type='checkbox']");
+                if (utileria.esElementoVisible(checkboxProducto)) {
+                    utileria.hacerClick(checkboxProducto);
+                    utileria.esperarTiempo(200);
+                }
+            }
+
+            utileria.tomarScreenshot("productos-seleccionados");
+
+        } catch (Exception e) {
+            logger.error("Error seleccionando múltiples productos: {}", e.getMessage());
+            utileria.manejarError("Error selección múltiple", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Aplica una operación masiva a los productos seleccionados.
+     *
+     * @param operacion tipo de operación (eliminar, cambiar_categoria, etc.)
+     * @param parametros parámetros adicionales para la operación
+     */
+    public void aplicarOperacionMasiva(String operacion, Map<String, String> parametros) {
+        try {
+            logger.info("Aplicando operación masiva: {}", operacion);
+            utileria.registrarTrazabilidad("HU-003", "Operación masiva: " + operacion);
+
+            // Buscar y hacer clic en el botón de operación masiva
+            By botonOperacionMasiva = By.cssSelector("[data-action='mass-" + operacion + "']");
+            utileria.hacerClick(botonOperacionMasiva);
+
+            // Configurar parámetros si es necesario
+            if (parametros != null && !parametros.isEmpty()) {
+                configurarParametrosOperacionMasiva(parametros);
+            }
+
+            // Confirmar operación
+            By botonConfirmar = By.cssSelector(".btn-confirm-mass-operation");
+            utileria.hacerClick(botonConfirmar);
+
+            utileria.esperarTiempo(3000);
+            utileria.tomarScreenshot("operacion-masiva-completada");
+
+        } catch (Exception e) {
+            logger.error("Error en operación masiva: {}", e.getMessage());
+            utileria.manejarError("Error operación masiva", e);
+            throw e;
+        }
+    }
+
+    // ==================== MÉTODOS AUXILIARES PRIVADOS ====================
+
+    /**
+     * Verifica que los botones principales estén presentes.
+     */
+    private boolean verificarBotonesPrincipalesPresentes() {
+        try {
+            return utileria.esElementoVisible(BOTON_NUEVO_PRODUCTO) &&
+                    utileria.esElementoVisible(CAMPO_BUSQUEDA) &&
+                    utileria.esElementoVisible(BOTON_BUSCAR);
+        } catch (Exception e) {
+            logger.warn("Error verificando botones principales: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Configura parámetros adicionales para operaciones masivas.
+     */
+    private void configurarParametrosOperacionMasiva(Map<String, String> parametros) {
+        try {
+            for (Map.Entry<String, String> parametro : parametros.entrySet()) {
+                By campo = By.id("mass-param-" + parametro.getKey());
+                if (utileria.esElementoVisible(campo)) {
+                    utileria.escribirTexto(campo, parametro.getValue());
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Error configurando parámetros operación masiva: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Cancela la operación actual cerrando el modal.
+     */
+    public void cancelarOperacion() {
+        try {
+            logger.info("Cancelando operación actual");
+            utileria.registrarTrazabilidad("HU-003", "Cancelación de operación");
+
+            if (utileria.esElementoVisible(BOTON_CANCELAR)) {
+                utileria.hacerClick(BOTON_CANCELAR);
+                utileria.esperarTiempo(1000);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error cancelando operación: {}", e.getMessage());
+            utileria.manejarError("Error cancelando", e);
+        }
+    }
+
+    /**
+     * Exporta la lista actual de productos.
+     */
+    public void exportarProductos() {
+        try {
+            logger.info("Exportando lista de productos");
+            utileria.registrarTrazabilidad("HU-003", "Exportación de productos");
+
+            utileria.hacerClick(BOTON_EXPORTAR);
+            utileria.esperarTiempo(3000);
+            utileria.tomarScreenshot("exportacion-completada");
+
+        } catch (Exception e) {
+            logger.error("Error exportando productos: {}", e.getMessage());
+            utileria.manejarError("Error exportando", e);
+            throw e;
+        }
     }
 }

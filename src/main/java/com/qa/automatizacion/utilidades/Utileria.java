@@ -717,4 +717,340 @@ public class Utileria {
             throw new RuntimeException("Error esperando visibilidad del elemento: " + localizador, e);
         }
     }
+
+    /**
+     * Sobrecarga de esperarElementoVisible con timeout por defecto.
+     *
+     * @param localizador el localizador del elemento a esperar
+     */
+    public void esperarElementoVisible(By localizador) {
+        esperarElementoVisible(localizador, TIMEOUT_DEFECTO);
+    }
+
+    /**
+     * Registra trazabilidad para una historia de usuario específica.
+     *
+     * @param historiaUsuario ID de la historia de usuario (ej: HU-001)
+     * @param accion descripción de la acción realizada
+     */
+    public void registrarTrazabilidad(String historiaUsuario, String accion) {
+        validarCadenaNoVacia(historiaUsuario, "Historia de usuario");
+        validarCadenaNoVacia(accion, "Acción");
+
+        try {
+            logger.debug("Registrando trazabilidad [{}]: {}", historiaUsuario, accion);
+            trazabilidad.registrarPaso(historiaUsuario, accion);
+
+        } catch (Exception e) {
+            logger.warn("Error registrando trazabilidad: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Toma screenshot con nombre específico.
+     *
+     * @param nombreArchivo nombre del archivo sin extensión
+     * @return ruta del archivo generado
+     */
+    public String tomarScreenshot(String nombreArchivo) {
+        validarCadenaNoVacia(nombreArchivo, "Nombre de archivo");
+        return capturarScreenshot(nombreArchivo);
+    }
+
+    /**
+     * Maneja errores de forma centralizada con logging y screenshot.
+     *
+     * @param contexto contexto del error
+     * @param excepcion excepción capturada
+     */
+    public void manejarError(String contexto, Exception excepcion) {
+        validarCadenaNoVacia(contexto, "Contexto");
+        validarParametroNoNulo(excepcion, "Excepción");
+
+        try {
+            logger.error("Error en {}: {}", contexto, excepcion.getMessage(), excepcion);
+
+            // Capturar screenshot del error
+            String rutaScreenshot = capturarScreenshotError(contexto);
+
+            // Registrar en trazabilidad si es posible
+            trazabilidad.registrarError(contexto, excepcion.getMessage(), rutaScreenshot);
+
+        } catch (Exception e) {
+            logger.error("Error manejando error: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Limpia un campo de texto de forma segura.
+     *
+     * @param localizador localizador del campo
+     */
+    public void limpiarCampo(By localizador) {
+        validarParametroNoNulo(localizador, "Localizador");
+
+        try {
+            logger.debug("Limpiando campo: {}", localizador);
+            WebElement elemento = buscarElemento(localizador);
+
+            // Múltiples estrategias de limpieza
+            elemento.clear();
+
+            // Verificar si el campo se limpió completamente
+            if (!elemento.getAttribute("value").isEmpty()) {
+                // Estrategia alternativa con Ctrl+A y Delete
+                Actions actions = new Actions(obtenerNavegador());
+                actions.click(elemento)
+                        .keyDown(org.openqa.selenium.Keys.CONTROL)
+                        .sendKeys("a")
+                        .keyUp(org.openqa.selenium.Keys.CONTROL)
+                        .sendKeys(org.openqa.selenium.Keys.DELETE)
+                        .perform();
+            }
+
+            logger.debug("Campo limpiado exitosamente: {}", localizador);
+
+        } catch (Exception e) {
+            logger.error("Error limpiando campo {}: {}", localizador, e.getMessage());
+            throw new RuntimeException("Error limpiando campo: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Escribe texto en un campo (alias para ingresarTexto para consistencia).
+     *
+     * @param localizador localizador del campo
+     * @param texto texto a escribir
+     */
+    public void escribirTexto(By localizador, String texto) {
+        ingresarTexto(localizador, texto);
+    }
+
+    /**
+     * Espera un tiempo determinado en milisegundos.
+     *
+     * @param milisegundos tiempo a esperar en milisegundos
+     */
+    public void esperarTiempo(long milisegundos) {
+        pausa(milisegundos);
+    }
+
+    /**
+     * Verifica si un elemento está seleccionado (checkbox, radio button).
+     *
+     * @param localizador localizador del elemento
+     * @return true si está seleccionado, false en caso contrario
+     */
+    public boolean esElementoSeleccionado(By localizador) {
+        validarParametroNoNulo(localizador, "Localizador");
+
+        try {
+            WebElement elemento = buscarElemento(localizador);
+            boolean seleccionado = elemento.isSelected();
+
+            logger.debug("Elemento {} seleccionado: {}", localizador, seleccionado);
+            return seleccionado;
+
+        } catch (Exception e) {
+            logger.debug("Error verificando selección del elemento {}: {}", localizador, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Espera a que un elemento sea clickeable.
+     *
+     * @param localizador localizador del elemento
+     */
+    public void esperarElementoClickeable(By localizador) {
+        esperarElementoClickeable(localizador, TIMEOUT_DEFECTO);
+    }
+
+    /**
+     * Espera a que un elemento sea clickeable con timeout personalizado.
+     *
+     * @param localizador localizador del elemento
+     * @param timeoutSegundos timeout en segundos
+     */
+    public void esperarElementoClickeable(By localizador, int timeoutSegundos) {
+        validarParametroNoNulo(localizador, "Localizador");
+
+        try {
+            logger.debug("Esperando elemento clickeable: {}", localizador);
+            WebDriverWait espera = obtenerEspera(timeoutSegundos);
+            espera.until(ExpectedConditions.elementToBeClickable(localizador));
+            logger.debug("Elemento clickeable: {}", localizador);
+
+        } catch (Exception e) {
+            logger.error("Error esperando elemento clickeable {}: {}", localizador, e.getMessage());
+            capturarScreenshotError("esperar_elemento_clickeable");
+            throw new RuntimeException("Error esperando elemento clickeable: " + localizador, e);
+        }
+    }
+
+    /**
+     * Verifica si un elemento está habilitado.
+     *
+     * @param localizador localizador del elemento
+     * @return true si está habilitado, false en caso contrario
+     */
+    public boolean esElementoHabilitado(By localizador) {
+        validarParametroNoNulo(localizador, "Localizador");
+
+        try {
+            WebElement elemento = buscarElemento(localizador);
+            boolean habilitado = elemento.isEnabled();
+
+            logger.debug("Elemento {} habilitado: {}", localizador, habilitado);
+            return habilitado;
+
+        } catch (Exception e) {
+            logger.debug("Error verificando si elemento está habilitado {}: {}", localizador, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Selecciona una opción de un dropdown/select.
+     *
+     * @param localizador localizador del select
+     * @param opcion texto de la opción a seleccionar
+     */
+    public void seleccionarOpcion(By localizador, String opcion) {
+        validarParametroNoNulo(localizador, "Localizador");
+        validarCadenaNoVacia(opcion, "Opción");
+
+        try {
+            logger.debug("Seleccionando opción '{}' en: {}", opcion, localizador);
+            WebElement selectElement = buscarElemento(localizador);
+
+            org.openqa.selenium.support.ui.Select select =
+                    new org.openqa.selenium.support.ui.Select(selectElement);
+
+            select.selectByVisibleText(opcion);
+            logger.debug("Opción seleccionada exitosamente: {}", opcion);
+
+            trazabilidad.registrarAccion("Selección de opción",
+                    localizador.toString() + " -> " + opcion);
+
+        } catch (Exception e) {
+            logger.error("Error seleccionando opción '{}' en {}: {}", opcion, localizador, e.getMessage());
+            capturarScreenshotError("seleccionar_opcion_error");
+            throw new RuntimeException("Error seleccionando opción: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Envía una tecla específica a un elemento.
+     *
+     * @param localizador localizador del elemento
+     * @param tecla tecla a enviar
+     */
+    public void enviarTecla(By localizador, org.openqa.selenium.Keys tecla) {
+        validarParametroNoNulo(localizador, "Localizador");
+        validarParametroNoNulo(tecla, "Tecla");
+
+        try {
+            logger.debug("Enviando tecla {} a: {}", tecla, localizador);
+            WebElement elemento = buscarElemento(localizador);
+            elemento.sendKeys(tecla);
+
+            logger.debug("Tecla enviada exitosamente: {}", tecla);
+
+        } catch (Exception e) {
+            logger.error("Error enviando tecla {} a {}: {}", tecla, localizador, e.getMessage());
+            throw new RuntimeException("Error enviando tecla: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Busca un elemento por texto visible.
+     *
+     * @param texto texto a buscar
+     * @return localizador del elemento encontrado
+     */
+    public By buscarElementoPorTexto(String texto) {
+        validarCadenaNoVacia(texto, "Texto");
+
+        // Crear localizador XPath para buscar por texto
+        String xpath = String.format("//*[contains(text(), '%s')]", texto);
+        return By.xpath(xpath);
+    }
+
+    /**
+     * Verifica si múltiples elementos están visibles.
+     *
+     * @param localizadores array de localizadores CSS
+     * @return true si todos están visibles, false en caso contrario
+     */
+    public boolean verificarElementosVisibles(String... localizadores) {
+        try {
+            for (String localizador : localizadores) {
+                if (!esElementoVisible(By.cssSelector(localizador))) {
+                    logger.debug("Elemento no visible: {}", localizador);
+                    return false;
+                }
+            }
+            return true;
+
+        } catch (Exception e) {
+            logger.debug("Error verificando elementos visibles: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Obtiene la URL actual del navegador.
+     *
+     * @return URL actual
+     */
+    public String obtenerUrlActual() {
+        try {
+            String url = obtenerNavegador().getCurrentUrl();
+            logger.debug("URL actual: {}", url);
+            return url;
+
+        } catch (Exception e) {
+            logger.error("Error obteniendo URL actual: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Refresca la página actual.
+     */
+    public void refrescarPagina() {
+        try {
+            logger.debug("Refrescando página");
+            obtenerNavegador().navigate().refresh();
+            esperarCargaPagina();
+
+        } catch (Exception e) {
+            logger.error("Error refrescando página: {}", e.getMessage());
+            throw new RuntimeException("Error refrescando página: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Ejecuta JavaScript en el navegador.
+     *
+     * @param script script JavaScript a ejecutar
+     * @return resultado de la ejecución
+     */
+    public Object ejecutarScript(String script) {
+        validarCadenaNoVacia(script, "Script");
+
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) obtenerNavegador();
+            Object resultado = js.executeScript(script);
+
+            logger.debug("Script ejecutado: {}", script);
+            return resultado;
+
+        } catch (Exception e) {
+            logger.error("Error ejecutando script '{}': {}", script, e.getMessage());
+            throw new RuntimeException("Error ejecutando script: " + e.getMessage(), e);
+        }
+    }
+
 }

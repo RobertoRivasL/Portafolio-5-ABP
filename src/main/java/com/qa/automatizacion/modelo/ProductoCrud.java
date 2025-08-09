@@ -1,546 +1,747 @@
 package com.qa.automatizacion.modelo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
- * Modelo de datos para representar un producto en operaciones CRUD.
- * Implementa el patrón Builder para una construcción flexible de objetos.
+ * Modelo de datos para representar un producto en el sistema CRUD.
+ * Encapsula toda la información relacionada con un producto y sus operaciones.
  *
  * Principios aplicados:
- * - Encapsulación: Atributos privados con getters y setters
- * - Inmutabilidad: Posibilidad de crear objetos inmutables
- * - Builder Pattern: Construcción flexible de objetos complejos
- * - Single Responsibility: Se enfoca únicamente en representar un producto
+ * - Encapsulación: Datos privados con acceso controlado vía getters/setters
+ * - Inmutabilidad parcial: ID generado automáticamente y no modificable
+ * - Validación: Métodos de validación integrados
+ * - Serialización: Compatible con JSON para APIs y almacenamiento
+ * - Clean Code: Nombres descriptivos y métodos con responsabilidad única
  *
- * @author Equipo QA Automatización
- * @version 1.0
+ * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
+ * @version 1.0.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductoCrud {
 
+    // ==================== CAMPOS PRINCIPALES ====================
+
     @JsonProperty("id")
-    private Long id;
+    private final String id;
 
     @JsonProperty("nombre")
     private String nombre;
 
-    @JsonProperty("descripcion")
-    private String descripcion;
-
-    @JsonProperty("precio")
-    private BigDecimal precio;
+    @JsonProperty("codigo")
+    private String codigo;
 
     @JsonProperty("categoria")
     private String categoria;
 
+    @JsonProperty("precio")
+    private BigDecimal precio;
+
     @JsonProperty("stock")
     private Integer stock;
 
+    @JsonProperty("descripcion")
+    private String descripcion;
+
+    // ==================== CAMPOS ADICIONALES ====================
+
+    @JsonProperty("marca")
+    private String marca;
+
+    @JsonProperty("peso")
+    private String peso;
+
+    @JsonProperty("garantia")
+    private String garantia;
+
     @JsonProperty("activo")
-    private Boolean activo;
+    private boolean activo;
+
+    @JsonProperty("destacado")
+    private boolean destacado;
+
+    // ==================== CAMPOS DE AUDITORÍA ====================
 
     @JsonProperty("fechaCreacion")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime fechaCreacion;
 
     @JsonProperty("fechaModificacion")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime fechaModificacion;
 
-    @JsonProperty("categoriaProducto")
-    private CategoriaProducto categoriaProducto;
+    @JsonProperty("usuarioCreacion")
+    private String usuarioCreacion;
 
-    // Constructores
+    @JsonProperty("usuarioModificacion")
+    private String usuarioModificacion;
+
+    // ==================== CAMPOS DE CONTROL ====================
+
+    @JsonProperty("version")
+    private Integer version;
+
+    @JsonProperty("stockMinimo")
+    private Integer stockMinimo;
+
+    @JsonProperty("stockMaximo")
+    private Integer stockMaximo;
+
+    // ==================== CONSTRUCTORES ====================
 
     /**
-     * Constructor por defecto requerido para Jackson
+     * Constructor por defecto requerido para deserialización JSON.
      */
     public ProductoCrud() {
-        this.activo = true;
+        this.id = UUID.randomUUID().toString();
         this.fechaCreacion = LocalDateTime.now();
-        this.stock = 0;
+        this.activo = true;
+        this.version = 1;
+        this.stockMinimo = 0;
+        this.stockMaximo = 1000;
     }
 
     /**
-     * Constructor completo para crear un producto con todos los datos
+     * Constructor con campos obligatorios.
+     *
+     * @param nombre nombre del producto
+     * @param codigo código único del producto
+     * @param categoria categoría del producto
+     * @param precio precio del producto
+     * @param stock cantidad en stock
      */
-    public ProductoCrud(Long id, String nombre, String descripcion, BigDecimal precio,
-                        String categoria, Integer stock, Boolean activo,
-                        LocalDateTime fechaCreacion, LocalDateTime fechaModificacion,
-                        CategoriaProducto categoriaProducto) {
-        this.id = id;
-        this.nombre = nombre;
-        this.descripcion = descripcion;
-        this.precio = precio;
-        this.categoria = categoria;
-        this.stock = stock != null ? stock : 0;
-        this.activo = activo != null ? activo : true;
-        this.fechaCreacion = fechaCreacion != null ? fechaCreacion : LocalDateTime.now();
-        this.fechaModificacion = fechaModificacion;
-        this.categoriaProducto = categoriaProducto;
-    }
-
-    /**
-     * Constructor simplificado para productos básicos
-     */
-    public ProductoCrud(String nombre, String descripcion, BigDecimal precio, String categoria) {
+    public ProductoCrud(String nombre, String codigo, String categoria, BigDecimal precio, Integer stock) {
         this();
-        this.nombre = nombre;
-        this.descripcion = descripcion;
+        validarCamposObligatorios(nombre, codigo, categoria, precio, stock);
+
+        this.nombre = nombre.trim();
+        this.codigo = codigo.trim().toUpperCase();
+        this.categoria = categoria.trim();
         this.precio = precio;
-        this.categoria = categoria;
-        this.categoriaProducto = CategoriaProducto.porDescripcion(categoria);
+        this.stock = stock;
     }
 
     /**
-     * Constructor privado para el Builder
+     * Constructor completo para pruebas y casos específicos.
      */
-    private ProductoCrud(Builder builder) {
-        this.id = builder.id;
-        this.nombre = builder.nombre;
-        this.descripcion = builder.descripcion;
-        this.precio = builder.precio;
-        this.categoria = builder.categoria;
-        this.stock = builder.stock;
-        this.activo = builder.activo;
-        this.fechaCreacion = builder.fechaCreacion;
-        this.fechaModificacion = builder.fechaModificacion;
-        this.categoriaProducto = builder.categoriaProducto;
+    public ProductoCrud(String nombre, String codigo, String categoria, BigDecimal precio,
+                        Integer stock, String descripcion, String marca) {
+        this(nombre, codigo, categoria, precio, stock);
+        this.descripcion = descripcion != null ? descripcion.trim() : "";
+        this.marca = marca != null ? marca.trim() : "";
     }
 
-    // Getters y Setters
+    // ==================== GETTERS Y SETTERS ====================
 
-    public Long getId() {
+    /**
+     * Obtiene el ID único del producto (inmutable).
+     *
+     * @return ID del producto
+     */
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
+    /**
+     * Obtiene el nombre del producto.
+     *
+     * @return nombre del producto
+     */
     public String getNombre() {
         return nombre;
     }
 
+    /**
+     * Establece el nombre del producto con validación.
+     *
+     * @param nombre nuevo nombre del producto
+     * @throws IllegalArgumentException si el nombre es inválido
+     */
     public void setNombre(String nombre) {
-        this.nombre = nombre;
+        validarNombre(nombre);
+        this.nombre = nombre.trim();
+        actualizarFechaModificacion();
     }
 
-    public String getDescripcion() {
-        return descripcion;
+    /**
+     * Obtiene el código del producto.
+     *
+     * @return código del producto
+     */
+    public String getCodigo() {
+        return codigo;
     }
 
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
+    /**
+     * Establece el código del producto con validación.
+     *
+     * @param codigo nuevo código del producto
+     * @throws IllegalArgumentException si el código es inválido
+     */
+    public void setCodigo(String codigo) {
+        validarCodigo(codigo);
+        this.codigo = codigo.trim().toUpperCase();
+        actualizarFechaModificacion();
     }
 
-    public BigDecimal getPrecio() {
-        return precio;
-    }
-
-    public void setPrecio(BigDecimal precio) {
-        this.precio = precio;
-    }
-
+    /**
+     * Obtiene la categoría del producto.
+     *
+     * @return categoría del producto
+     */
     public String getCategoria() {
         return categoria;
     }
 
+    /**
+     * Establece la categoría del producto con validación.
+     *
+     * @param categoria nueva categoría del producto
+     * @throws IllegalArgumentException si la categoría es inválida
+     */
     public void setCategoria(String categoria) {
-        this.categoria = categoria;
-        this.categoriaProducto = CategoriaProducto.porDescripcion(categoria);
+        validarCategoria(categoria);
+        this.categoria = categoria.trim();
+        actualizarFechaModificacion();
     }
 
+    /**
+     * Obtiene el precio del producto.
+     *
+     * @return precio del producto
+     */
+    public BigDecimal getPrecio() {
+        return precio;
+    }
+
+    /**
+     * Establece el precio del producto con validación.
+     *
+     * @param precio nuevo precio del producto
+     * @throws IllegalArgumentException si el precio es inválido
+     */
+    public void setPrecio(BigDecimal precio) {
+        validarPrecio(precio);
+        this.precio = precio;
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Establece el precio del producto desde string.
+     *
+     * @param precio precio como string
+     * @throws IllegalArgumentException si el precio es inválido
+     */
+    public void setPrecio(String precio) {
+        try {
+            setPrecio(new BigDecimal(precio));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Formato de precio inválido: " + precio);
+        }
+    }
+
+    /**
+     * Obtiene el stock del producto.
+     *
+     * @return stock del producto
+     */
     public Integer getStock() {
         return stock;
     }
 
+    /**
+     * Establece el stock del producto con validación.
+     *
+     * @param stock nuevo stock del producto
+     * @throws IllegalArgumentException si el stock es inválido
+     */
     public void setStock(Integer stock) {
+        validarStock(stock);
         this.stock = stock;
+        actualizarFechaModificacion();
     }
 
-    public Boolean getActivo() {
+    /**
+     * Obtiene la descripción del producto.
+     *
+     * @return descripción del producto
+     */
+    public String getDescripcion() {
+        return descripcion != null ? descripcion : "";
+    }
+
+    /**
+     * Establece la descripción del producto.
+     *
+     * @param descripcion nueva descripción del producto
+     */
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion != null ? descripcion.trim() : "";
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Obtiene la marca del producto.
+     *
+     * @return marca del producto
+     */
+    public String getMarca() {
+        return marca != null ? marca : "";
+    }
+
+    /**
+     * Establece la marca del producto.
+     *
+     * @param marca nueva marca del producto
+     */
+    public void setMarca(String marca) {
+        this.marca = marca != null ? marca.trim() : "";
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Obtiene el peso del producto.
+     *
+     * @return peso del producto
+     */
+    public String getPeso() {
+        return peso != null ? peso : "";
+    }
+
+    /**
+     * Establece el peso del producto.
+     *
+     * @param peso nuevo peso del producto
+     */
+    public void setPeso(String peso) {
+        this.peso = peso != null ? peso.trim() : "";
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Obtiene la garantía del producto.
+     *
+     * @return garantía del producto
+     */
+    public String getGarantia() {
+        return garantia != null ? garantia : "";
+    }
+
+    /**
+     * Establece la garantía del producto.
+     *
+     * @param garantia nueva garantía del producto
+     */
+    public void setGarantia(String garantia) {
+        this.garantia = garantia != null ? garantia.trim() : "";
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Verifica si el producto está activo.
+     *
+     * @return true si está activo, false en caso contrario
+     */
+    public boolean isActivo() {
         return activo;
     }
 
-    public void setActivo(Boolean activo) {
+    /**
+     * Establece el estado activo del producto.
+     *
+     * @param activo nuevo estado activo
+     */
+    public void setActivo(boolean activo) {
         this.activo = activo;
+        actualizarFechaModificacion();
     }
 
+    /**
+     * Verifica si el producto está destacado.
+     *
+     * @return true si está destacado, false en caso contrario
+     */
+    public boolean isDestacado() {
+        return destacado;
+    }
+
+    /**
+     * Establece si el producto está destacado.
+     *
+     * @param destacado nuevo estado destacado
+     */
+    public void setDestacado(boolean destacado) {
+        this.destacado = destacado;
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Obtiene la fecha de creación.
+     *
+     * @return fecha de creación
+     */
     public LocalDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
-
+    /**
+     * Obtiene la fecha de modificación.
+     *
+     * @return fecha de modificación
+     */
     public LocalDateTime getFechaModificacion() {
         return fechaModificacion;
     }
 
-    public void setFechaModificacion(LocalDateTime fechaModificacion) {
-        this.fechaModificacion = fechaModificacion;
-    }
-
-    public CategoriaProducto getCategoriaProducto() {
-        return categoriaProducto;
-    }
-
-    public void setCategoriaProducto(CategoriaProducto categoriaProducto) {
-        this.categoriaProducto = categoriaProducto;
-    }
-
-    // Métodos de utilidad
-
     /**
-     * Verifica si el producto tiene datos básicos válidos
+     * Obtiene el usuario creador.
      *
-     * @return true si el producto es válido, false en caso contrario
+     * @return usuario creador
      */
-    public boolean esValido() {
-        return nombre != null && !nombre.trim().isEmpty() &&
-                descripcion != null && !descripcion.trim().isEmpty() &&
-                precio != null && precio.compareTo(BigDecimal.ZERO) >= 0 &&
-                categoria != null && !categoria.trim().isEmpty();
+    public String getUsuarioCreacion() {
+        return usuarioCreacion != null ? usuarioCreacion : "";
     }
 
     /**
-     * Actualiza la fecha de modificación al momento actual
+     * Establece el usuario creador.
+     *
+     * @param usuarioCreacion usuario creador
      */
-    public void actualizarFechaModificacion() {
+    public void setUsuarioCreacion(String usuarioCreacion) {
+        this.usuarioCreacion = usuarioCreacion;
+    }
+
+    /**
+     * Obtiene el usuario que modificó por última vez.
+     *
+     * @return usuario modificador
+     */
+    public String getUsuarioModificacion() {
+        return usuarioModificacion != null ? usuarioModificacion : "";
+    }
+
+    /**
+     * Establece el usuario modificador.
+     *
+     * @param usuarioModificacion usuario modificador
+     */
+    public void setUsuarioModificacion(String usuarioModificacion) {
+        this.usuarioModificacion = usuarioModificacion;
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Obtiene la versión del producto.
+     *
+     * @return versión del producto
+     */
+    public Integer getVersion() {
+        return version;
+    }
+
+    /**
+     * Obtiene el stock mínimo.
+     *
+     * @return stock mínimo
+     */
+    public Integer getStockMinimo() {
+        return stockMinimo;
+    }
+
+    /**
+     * Establece el stock mínimo.
+     *
+     * @param stockMinimo nuevo stock mínimo
+     */
+    public void setStockMinimo(Integer stockMinimo) {
+        if (stockMinimo != null && stockMinimo < 0) {
+            throw new IllegalArgumentException("El stock mínimo no puede ser negativo");
+        }
+        this.stockMinimo = stockMinimo != null ? stockMinimo : 0;
+        actualizarFechaModificacion();
+    }
+
+    /**
+     * Obtiene el stock máximo.
+     *
+     * @return stock máximo
+     */
+    public Integer getStockMaximo() {
+        return stockMaximo;
+    }
+
+    /**
+     * Establece el stock máximo.
+     *
+     * @param stockMaximo nuevo stock máximo
+     */
+    public void setStockMaximo(Integer stockMaximo) {
+        if (stockMaximo != null && stockMaximo < 0) {
+            throw new IllegalArgumentException("El stock máximo no puede ser negativo");
+        }
+        this.stockMaximo = stockMaximo != null ? stockMaximo : 1000;
+        actualizarFechaModificacion();
+    }
+
+    // ==================== MÉTODOS DE VALIDACIÓN ====================
+
+    /**
+     * Valida los campos obligatorios del producto.
+     */
+    private void validarCamposObligatorios(String nombre, String codigo, String categoria,
+                                           BigDecimal precio, Integer stock) {
+        validarNombre(nombre);
+        validarCodigo(codigo);
+        validarCategoria(categoria);
+        validarPrecio(precio);
+        validarStock(stock);
+    }
+
+    /**
+     * Valida el nombre del producto.
+     */
+    private void validarNombre(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del producto es obligatorio");
+        }
+        if (nombre.trim().length() < 3) {
+            throw new IllegalArgumentException("El nombre debe tener al menos 3 caracteres");
+        }
+        if (nombre.trim().length() > 100) {
+            throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
+        }
+    }
+
+    /**
+     * Valida el código del producto.
+     */
+    private void validarCodigo(String codigo) {
+        if (codigo == null || codigo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El código del producto es obligatorio");
+        }
+        if (!codigo.trim().matches("^[A-Z0-9]+$")) {
+            throw new IllegalArgumentException("El código solo puede contener letras y números");
+        }
+        if (codigo.trim().length() < 3 || codigo.trim().length() > 20) {
+            throw new IllegalArgumentException("El código debe tener entre 3 y 20 caracteres");
+        }
+    }
+
+    /**
+     * Valida la categoría del producto.
+     */
+    private void validarCategoria(String categoria) {
+        if (categoria == null || categoria.trim().isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar una categoría");
+        }
+    }
+
+    /**
+     * Valida el precio del producto.
+     */
+    private void validarPrecio(BigDecimal precio) {
+        if (precio == null) {
+            throw new IllegalArgumentException("El precio es obligatorio");
+        }
+        if (precio.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor a 0");
+        }
+        if (precio.scale() > 2) {
+            throw new IllegalArgumentException("El precio debe tener máximo 2 decimales");
+        }
+    }
+
+    /**
+     * Valida el stock del producto.
+     */
+    private void validarStock(Integer stock) {
+        if (stock == null) {
+            throw new IllegalArgumentException("El stock es obligatorio");
+        }
+        if (stock < 0) {
+            throw new IllegalArgumentException("El stock no puede ser negativo");
+        }
+    }
+
+    // ==================== MÉTODOS DE UTILIDAD ====================
+
+    /**
+     * Actualiza la fecha de modificación al momento actual.
+     */
+    private void actualizarFechaModificacion() {
         this.fechaModificacion = LocalDateTime.now();
+        this.version++;
     }
 
     /**
-     * Crea una copia del producto actual
+     * Verifica si el producto está agotado.
      *
-     * @return Nueva instancia con los mismos datos
+     * @return true si está agotado, false en caso contrario
      */
-    public ProductoCrud copia() {
-        return new Builder()
-                .id(this.id)
-                .nombre(this.nombre)
-                .descripcion(this.descripcion)
-                .precio(this.precio)
-                .categoria(this.categoria)
-                .stock(this.stock)
-                .activo(this.activo)
-                .fechaCreacion(this.fechaCreacion)
-                .fechaModificacion(this.fechaModificacion)
-                .categoriaProducto(this.categoriaProducto)
-                .build();
+    public boolean estaAgotado() {
+        return stock == null || stock == 0;
     }
 
-    // Métodos de Object
+    /**
+     * Verifica si el producto tiene stock bajo.
+     *
+     * @return true si tiene stock bajo, false en caso contrario
+     */
+    public boolean tieneStockBajo() {
+        return stock != null && stockMinimo != null && stock <= stockMinimo;
+    }
+
+    /**
+     * Incrementa el stock en la cantidad especificada.
+     *
+     * @param cantidad cantidad a incrementar
+     * @throws IllegalArgumentException si la cantidad es inválida
+     */
+    public void incrementarStock(int cantidad) {
+        if (cantidad < 0) {
+            throw new IllegalArgumentException("La cantidad a incrementar debe ser positiva");
+        }
+        setStock(this.stock + cantidad);
+    }
+
+    /**
+     * Decrementa el stock en la cantidad especificada.
+     *
+     * @param cantidad cantidad a decrementar
+     * @throws IllegalArgumentException si la cantidad es inválida o insuficiente
+     */
+    public void decrementarStock(int cantidad) {
+        if (cantidad < 0) {
+            throw new IllegalArgumentException("La cantidad a decrementar debe ser positiva");
+        }
+        if (this.stock < cantidad) {
+            throw new IllegalArgumentException("Stock insuficiente. Disponible: " + this.stock + ", Solicitado: " + cantidad);
+        }
+        setStock(this.stock - cantidad);
+    }
+
+    /**
+     * Aplica un descuento al precio.
+     *
+     * @param porcentajeDescuento porcentaje de descuento (0-100)
+     * @throws IllegalArgumentException si el porcentaje es inválido
+     */
+    public void aplicarDescuento(double porcentajeDescuento) {
+        if (porcentajeDescuento < 0 || porcentajeDescuento > 100) {
+            throw new IllegalArgumentException("El porcentaje de descuento debe estar entre 0 y 100");
+        }
+
+        BigDecimal factorDescuento = BigDecimal.valueOf((100 - porcentajeDescuento) / 100);
+        BigDecimal nuevoPrecio = precio.multiply(factorDescuento).setScale(2, BigDecimal.ROUND_HALF_UP);
+
+        setPrecio(nuevoPrecio);
+    }
+
+    /**
+     * Crea una copia del producto con nuevo ID.
+     *
+     * @return nueva instancia del producto
+     */
+    public ProductoCrud clonar() {
+        ProductoCrud clon = new ProductoCrud();
+        clon.nombre = this.nombre;
+        clon.codigo = this.codigo + "_COPY";
+        clon.categoria = this.categoria;
+        clon.precio = this.precio;
+        clon.stock = this.stock;
+        clon.descripcion = this.descripcion;
+        clon.marca = this.marca;
+        clon.peso = this.peso;
+        clon.garantia = this.garantia;
+        clon.activo = this.activo;
+        clon.destacado = false; // Los clones no son destacados por defecto
+        clon.stockMinimo = this.stockMinimo;
+        clon.stockMaximo = this.stockMaximo;
+
+        return clon;
+    }
+
+    // ==================== MÉTODOS ESTÁNDAR ====================
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
 
-        ProductoCrud that = (ProductoCrud) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(nombre, that.nombre) &&
-                Objects.equals(descripcion, that.descripcion) &&
-                Objects.equals(precio, that.precio) &&
-                Objects.equals(categoria, that.categoria);
+        ProductoCrud producto = (ProductoCrud) obj;
+        return Objects.equals(id, producto.id) ||
+                Objects.equals(codigo, producto.codigo); // Productos son iguales si tienen el mismo código
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, nombre, descripcion, precio, categoria);
+        return Objects.hash(codigo); // Hash basado en código único
     }
 
     @Override
     public String toString() {
-        return String.format("ProductoCrud{id=%d, nombre='%s', descripcion='%s', precio=%s, categoria='%s', stock=%d, activo=%s}",
-                id, nombre, descripcion, precio, categoria, stock, activo);
+        return String.format("ProductoCrud{id='%s', nombre='%s', codigo='%s', categoria='%s', precio=%s, stock=%d, activo=%s}",
+                id, nombre, codigo, categoria, precio, stock, activo);
     }
 
-    // Builder Pattern
-
     /**
-     * Crea un nuevo Builder para construir ProductoCrud
+     * Representación detallada del producto para debugging.
      *
-     * @return Nueva instancia del Builder
+     * @return representación detallada
      */
-    public static Builder builder() {
-        return new Builder();
+    public String toStringDetallado() {
+        return String.format(
+                "ProductoCrud{\n" +
+                        "  id='%s',\n" +
+                        "  nombre='%s',\n" +
+                        "  codigo='%s',\n" +
+                        "  categoria='%s',\n" +
+                        "  precio=%s,\n" +
+                        "  stock=%d,\n" +
+                        "  descripcion='%s',\n" +
+                        "  marca='%s',\n" +
+                        "  activo=%s,\n" +
+                        "  destacado=%s,\n" +
+                        "  fechaCreacion=%s,\n" +
+                        "  fechaModificacion=%s,\n" +
+                        "  version=%d\n" +
+                        "}",
+                id, nombre, codigo, categoria, precio, stock,
+                descripcion, marca, activo, destacado,
+                fechaCreacion, fechaModificacion, version
+        );
     }
 
     /**
-     * Clase Builder para construcción flexible de ProductoCrud
+     * Valida si el producto está en un estado válido para persistencia.
+     *
+     * @return true si es válido, false en caso contrario
      */
-    public static class Builder {
-        private Long id;
-        private String nombre;
-        private String descripcion;
-        private BigDecimal precio;
-        private String categoria;
-        private Integer stock = 0;
-        private Boolean activo = true;
-        private LocalDateTime fechaCreacion = LocalDateTime.now();
-        private LocalDateTime fechaModificacion;
-        private CategoriaProducto categoriaProducto;
-
-        public Builder id(Long id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder nombre(String nombre) {
-            this.nombre = nombre;
-            return this;
-        }
-
-        public Builder descripcion(String descripcion) {
-            this.descripcion = descripcion;
-            return this;
-        }
-
-        public Builder precio(BigDecimal precio) {
-            this.precio = precio;
-            return this;
-        }
-
-        public Builder precio(double precio) {
-            this.precio = precio > 0 ? BigDecimal.valueOf(precio) : null;
-            return this;
-        }
-
-        public Builder categoria(String categoria) {
-            this.categoria = categoria;
-            if (categoria != null) {
-                this.categoriaProducto = CategoriaProducto.porDescripcion(categoria);
-            }
-            return this;
-        }
-
-        public Builder stock(Integer stock) {
-            this.stock = stock;
-            return this;
-        }
-
-        public Builder activo(Boolean activo) {
-            this.activo = activo;
-            return this;
-        }
-
-        public Builder fechaCreacion(LocalDateTime fechaCreacion) {
-            this.fechaCreacion = fechaCreacion;
-            return this;
-        }
-
-        public Builder fechaModificacion(LocalDateTime fechaModificacion) {
-            this.fechaModificacion = fechaModificacion;
-            return this;
-        }
-
-        public Builder categoriaProducto(CategoriaProducto categoriaProducto) {
-            this.categoriaProducto = categoriaProducto;
-            return this;
-        }
-
-        /**
-         * Construye el objeto ProductoCrud final
-         *
-         * @return Nueva instancia de ProductoCrud
-         */
-        public ProductoCrud build() {
-            // Validaciones antes de construir
-            if (nombre == null || nombre.trim().isEmpty()) {
-                throw new IllegalArgumentException("El nombre del producto es obligatorio");
-            }
-
-            if (precio != null && precio.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("El precio no puede ser negativo");
-            }
-
-            if (stock != null && stock < 0) {
-                throw new IllegalArgumentException("El stock no puede ser negativo");
-            }
-
-            return new ProductoCrud(this);
+    public boolean esValido() {
+        try {
+            validarCamposObligatorios(nombre, codigo, categoria, precio, stock);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
         }
     }
 
-    // Enum para categorías de producto
-    public enum CategoriaProducto {
-        @JsonProperty("ELECTRODOMESTICOS")
-        ELECTRODOMESTICOS("Electrodomésticos"),
+    /**
+     * Obtiene un resumen del producto para mostrar en listas.
+     *
+     * @return resumen del producto
+     */
+    public String obtenerResumen() {
+        String estadoStock = estaAgotado() ? " (AGOTADO)" :
+                tieneStockBajo() ? " (STOCK BAJO)" : "";
 
-        @JsonProperty("ELECTRONICOS")
-        ELECTRONICOS("Electrónicos"),
-
-        @JsonProperty("ROPA")
-        ROPA("Ropa y Accesorios"),
-
-        @JsonProperty("HOGAR")
-        HOGAR("Hogar y Jardín"),
-
-        @JsonProperty("DEPORTES")
-        DEPORTES("Deportes y Recreación"),
-
-        @JsonProperty("LIBROS")
-        LIBROS("Libros y Medios"),
-
-        @JsonProperty("SALUD")
-        SALUD("Salud y Belleza"),
-
-        @JsonProperty("AUTOMOVILES")
-        AUTOMOVILES("Automóviles y Repuestos"),
-
-        @JsonProperty("JUGUETES")
-        JUGUETES("Juguetes y Juegos"),
-
-        @JsonProperty("ALIMENTOS")
-        ALIMENTOS("Alimentos y Bebidas"),
-
-        @JsonProperty("MASCOTAS")
-        MASCOTAS("Mascotas y Animales"),
-
-        @JsonProperty("OFICINA")
-        OFICINA("Oficina y Papelería"),
-
-        @JsonProperty("HERRAMIENTAS")
-        HERRAMIENTAS("Herramientas y Mejoras del Hogar"),
-
-        @JsonProperty("MUSICA")
-        MUSICA("Música e Instrumentos"),
-
-        @JsonProperty("ARTE")
-        ARTE("Arte y Manualidades"),
-
-        @JsonProperty("GENERAL")
-        GENERAL("General");
-
-        private final String descripcion;
-
-        /**
-         * Constructor del enum
-         *
-         * @param descripcion Descripción legible de la categoría
-         */
-        CategoriaProducto(String descripcion) {
-            this.descripcion = descripcion;
-        }
-
-        /**
-         * Obtiene la descripción de la categoría
-         *
-         * @return Descripción de la categoría
-         */
-        public String getDescripcion() {
-            return descripcion;
-        }
-
-        /**
-         * Representación en string de la categoría
-         *
-         * @return Descripción de la categoría
-         */
-        @Override
-        public String toString() {
-            return descripcion;
-        }
-
-        /**
-         * Obtiene la categoría por descripción o nombre
-         *
-         * @param descripcion Descripción o nombre de la categoría
-         * @return CategoriaProducto correspondiente o GENERAL si no se encuentra
-         */
-        public static CategoriaProducto porDescripcion(String descripcion) {
-            if (descripcion == null || descripcion.trim().isEmpty()) {
-                return GENERAL;
-            }
-
-            String descripcionLimpia = descripcion.trim();
-
-            // Buscar por descripción exacta (ignorando mayúsculas/minúsculas)
-            for (CategoriaProducto categoria : values()) {
-                if (categoria.getDescripcion().equalsIgnoreCase(descripcionLimpia)) {
-                    return categoria;
-                }
-            }
-
-            // Buscar por nombre del enum
-            for (CategoriaProducto categoria : values()) {
-                if (categoria.name().equalsIgnoreCase(descripcionLimpia)) {
-                    return categoria;
-                }
-            }
-
-            // Buscar por palabras clave
-            String descripcionMinusculas = descripcionLimpia.toLowerCase();
-
-            if (descripcionMinusculas.contains("electro") && descripcionMinusculas.contains("domé")) {
-                return ELECTRODOMESTICOS;
-            } else if (descripcionMinusculas.contains("electró") || descripcionMinusculas.contains("electronic")) {
-                return ELECTRONICOS;
-            } else if (descripcionMinusculas.contains("ropa") || descripcionMinusculas.contains("acces")) {
-                return ROPA;
-            } else if (descripcionMinusculas.contains("hogar") || descripcionMinusculas.contains("jardín")) {
-                return HOGAR;
-            } else if (descripcionMinusculas.contains("deporte") || descripcionMinusculas.contains("recreac")) {
-                return DEPORTES;
-            } else if (descripcionMinusculas.contains("libro") || descripcionMinusculas.contains("medi")) {
-                return LIBROS;
-            } else if (descripcionMinusculas.contains("salud") || descripcionMinusculas.contains("belleza")) {
-                return SALUD;
-            } else if (descripcionMinusculas.contains("auto") || descripcionMinusculas.contains("repuesto")) {
-                return AUTOMOVILES;
-            } else if (descripcionMinusculas.contains("juguete") || descripcionMinusculas.contains("juego")) {
-                return JUGUETES;
-            } else if (descripcionMinusculas.contains("alimento") || descripcionMinusculas.contains("bebida")) {
-                return ALIMENTOS;
-            } else if (descripcionMinusculas.contains("mascota") || descripcionMinusculas.contains("animal")) {
-                return MASCOTAS;
-            } else if (descripcionMinusculas.contains("oficina") || descripcionMinusculas.contains("papel")) {
-                return OFICINA;
-            } else if (descripcionMinusculas.contains("herramienta") || descripcionMinusculas.contains("mejora")) {
-                return HERRAMIENTAS;
-            } else if (descripcionMinusculas.contains("música") || descripcionMinusculas.contains("instrumento")) {
-                return MUSICA;
-            } else if (descripcionMinusculas.contains("arte") || descripcionMinusculas.contains("manual")) {
-                return ARTE;
-            }
-
-            return GENERAL;
-        }
-
-        /**
-         * Obtiene todas las categorías disponibles como array de strings
-         *
-         * @return Array con las descripciones de todas las categorías
-         */
-        public static String[] obtenerTodasLasDescripciones() {
-            CategoriaProducto[] categorias = values();
-            String[] descripciones = new String[categorias.length];
-
-            for (int i = 0; i < categorias.length; i++) {
-                descripciones[i] = categorias[i].getDescripcion();
-            }
-
-            return descripciones;
-        }
-
-        /**
-         * Verifica si una descripción corresponde a una categoría válida
-         *
-         * @param descripcion Descripción a verificar
-         * @return true si es una categoría válida
-         */
-        public static boolean esCategoriaValida(String descripcion) {
-            return porDescripcion(descripcion) != GENERAL ||
-                    (descripcion != null && descripcion.equalsIgnoreCase("general"));
-        }
+        return String.format("%s - %s - $%s - Stock: %d%s",
+                codigo, nombre, precio, stock, estadoStock);
     }
 }

@@ -1,500 +1,227 @@
 package com.qa.automatizacion.paginas;
 
-import com.qa.automatizacion.utilidades.Utileria;
-import org.openqa.selenium.By;
+import com.qa.automatizacion.configuracion.ConfiguradorNavegador;
+import com.qa.automatizacion.configuracion.PropiedadesAplicacion;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.PageFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
- * Clase base para todos los Page Objects del proyecto.
- * Proporciona funcionalidades comunes y estandariza el comportamiento.
+ * Clase base abstracta para todos los Page Objects del sistema.
+ * Proporciona funcionalidades comunes y establece contratos para las páginas hijas.
  *
- * Esta clase implementa:
- * - Patrón Template Method: Define la estructura común de las páginas
- * - Principio DRY: Evita duplicación de código entre páginas
- * - Encapsulación: Oculta la complejidad de Selenium
- * - Single Responsibility: Se enfoca en operaciones comunes de páginas
- *
- * Todas las clases de página deben heredar de esta clase base para:
- * - Mantener consistencia en el comportamiento
- * - Reutilizar funcionalidades comunes
- * - Facilitar el mantenimiento
- * - Asegurar el logging unificado
+ * Principios aplicados:
+ * - Template Method Pattern: Define el esqueleto de operaciones comunes
+ * - Abstract Factory Pattern: Establece contratos para creación de páginas
+ * - DRY: Evita duplicación de código entre páginas
+ * - Single Responsibility: Se enfoca en funcionalidades base de páginas
  *
  * @author Antonio B. Arriagada LL., Dante Escalona Bustos, Roberto Rivas Lopez
- * @version 2.0.0
+ * @version 1.0.0
  */
 public abstract class PaginaBase {
 
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-    protected final Utileria utileria;
-
-    // Localizadores comunes a todas las páginas
-    protected static final By LOADER = By.cssSelector(".loader, .spinner, [data-testid='loading']");
-    protected static final By MENSAJE_ERROR = By.cssSelector(".alert-danger, .error, [data-testid='error']");
-    protected static final By MENSAJE_EXITO = By.cssSelector(".alert-success, .success, [data-testid='success']");
-    protected static final By MENSAJE_ADVERTENCIA = By.cssSelector(".alert-warning, .warning, [data-testid='warning']");
-    protected static final By MENSAJE_INFO = By.cssSelector(".alert-info, .info, [data-testid='info']");
-
-    // Timeouts específicos para páginas
-    protected static final int TIMEOUT_CARGA_PAGINA = 30;
-    protected static final int TIMEOUT_ELEMENTO = 10;
-    protected static final int TIMEOUT_CORTO = 5;
+    protected static final Logger logger = LoggerFactory.getLogger(PaginaBase.class);
+    protected final PropiedadesAplicacion propiedades;
 
     /**
-     * Constructor base que inicializa los componentes comunes.
-     * Todas las páginas heredadas deben llamar a super() en su constructor.
+     * Constructor protegido para uso de clases hijas.
      */
     protected PaginaBase() {
-        this.utileria = Utileria.obtenerInstancia();
-
-        // Inicializar PageFactory para @FindBy annotations
-        WebDriver navegador = utileria.obtenerNavegador();
-        PageFactory.initElements(navegador, this);
-
-        logger.debug("Página {} inicializada", this.getClass().getSimpleName());
+        this.propiedades = PropiedadesAplicacion.obtenerInstancia();
+        logger.debug("PaginaBase inicializada para: {}", this.getClass().getSimpleName());
     }
 
     // ==================== MÉTODOS ABSTRACTOS ====================
 
     /**
-     * Verifica si la página está completamente cargada.
-     * Cada página debe implementar su propia lógica de verificación.
+     * Verifica si la página actual está completamente cargada.
+     * Cada página hija debe implementar su propia lógica de verificación.
      *
      * @return true si la página está cargada, false en caso contrario
      */
     public abstract boolean esPaginaCargada();
 
     /**
-     * Obtiene el título esperado de la página.
-     * Cada página debe definir su título específico.
+     * Obtiene la URL esperada para esta página específica.
+     * Cada página hija debe retornar su URL característica.
      *
-     * @return título esperado de la página
+     * @return fragmento de URL esperado para esta página (ej: "/login", "/dashboard")
      */
-    public abstract String obtenerTituloEsperado();
+    protected abstract String obtenerUrlEsperada();
+
+    // ==================== MÉTODOS COMUNES ====================
 
     /**
-     * Obtiene la URL esperada o fragmento de URL de la página.
-     * Cada página debe definir su URL específica.
+     * Obtiene el WebDriver actual de forma segura.
      *
-     * @return URL o fragmento de URL esperado
+     * @return WebDriver actual
+     * @throws RuntimeException si no hay WebDriver activo
      */
-    public abstract String obtenerUrlEsperada();
-
-    // ==================== MÉTODOS DE NAVEGACIÓN ====================
-
-    /**
-     * Navega a la URL específica de esta página.
-     */
-    public void navegarAPagina() {
-        String urlPagina = obtenerUrlEsperada();
-        logger.info("Navegando a página: {}", this.getClass().getSimpleName());
-
-        utileria.navegarA(urlPagina);
-        esperarCargaCompletaPagina();
-
-        if (!esPaginaCargada()) {
-            throw new RuntimeException("La página " + this.getClass().getSimpleName() + " no se cargó correctamente");
+    protected WebDriver obtenerNavegador() {
+        WebDriver navegador = ConfiguradorNavegador.obtenerNavegador();
+        if (navegador == null) {
+            String mensaje = "WebDriver no está inicializado para " + this.getClass().getSimpleName();
+            logger.error(mensaje);
+            throw new RuntimeException(mensaje);
         }
+        return navegador;
     }
 
     /**
-     * Espera a que la página termine de cargar completamente.
-     * Incluye espera de elementos comunes y verificaciones específicas.
+     * Verifica si la URL actual corresponde a esta página.
+     *
+     * @return true si estamos en la URL correcta, false en caso contrario
      */
-    public void esperarCargaCompletaPagina() {
-        logger.debug("Esperando carga completa de página: {}", this.getClass().getSimpleName());
-
-        // Esperar carga básica
-        utileria.esperarCargaPagina();
-
-        // Esperar que desaparezcan los loaders
-        esperarDesaparicionLoader();
-
-        // Dar tiempo adicional para elementos dinámicos
-        utileria.pausa(500);
-
-        logger.debug("Carga completa de página finalizada");
-    }
-
-    /**
-     * Espera a que desaparezcan los indicadores de carga.
-     */
-    protected void esperarDesaparicionLoader() {
+    public boolean estaEnUrlCorrecta() {
         try {
-            if (utileria.esElementoPresente(LOADER)) {
-                logger.debug("Esperando desaparición de loader");
-                utileria.obtenerEspera(TIMEOUT_CARGA_PAGINA)
-                        .until(driver -> !utileria.esElementoVisible(LOADER));
-                logger.debug("Loader desaparecido");
-            }
-        } catch (Exception e) {
-            logger.debug("No se encontró loader o timeout esperando desaparición");
-        }
-    }
+            String urlActual = obtenerNavegador().getCurrentUrl();
+            String urlEsperada = obtenerUrlEsperada();
 
-    // ==================== MÉTODOS DE ELEMENTOS ====================
+            boolean urlCorrecta = urlActual.contains(urlEsperada);
+            logger.debug("Verificación URL - Actual: {}, Esperada: {}, Correcta: {}",
+                    urlActual, urlEsperada, urlCorrecta);
 
-    /**
-     * Busca un elemento de forma segura con el contexto de la página actual.
-     *
-     * @param localizador localizador del elemento
-     * @return WebElement encontrado
-     */
-    protected WebElement buscarElemento(By localizador) {
-        registrarAccion("Buscando elemento: " + localizador);
-        return utileria.buscarElemento(localizador);
-    }
-
-    /**
-     * Busca un elemento clickeable.
-     *
-     * @param localizador localizador del elemento
-     * @return WebElement clickeable
-     */
-    protected WebElement buscarElementoClickeable(By localizador) {
-        registrarAccion("Buscando elemento clickeable: " + localizador);
-        return utileria.buscarElementoClickeable(localizador);
-    }
-
-    /**
-     * Busca múltiples elementos.
-     *
-     * @param localizador localizador de los elementos
-     * @return lista de WebElement
-     */
-    protected List<WebElement> buscarElementos(By localizador) {
-        registrarAccion("Buscando elementos: " + localizador);
-        return utileria.buscarElementos(localizador);
-    }
-
-    /**
-     * Verifica si un elemento está presente.
-     *
-     * @param localizador localizador del elemento
-     * @return true si está presente, false en caso contrario
-     */
-    protected boolean esElementoPresente(By localizador) {
-        return utileria.esElementoPresente(localizador);
-    }
-
-    /**
-     * Verifica si un elemento está visible.
-     *
-     * @param localizador localizador del elemento
-     * @return true si está visible, false en caso contrario
-     */
-    protected boolean esElementoVisible(By localizador) {
-        return utileria.esElementoVisible(localizador);
-    }
-
-    // ==================== MÉTODOS DE ACCIONES ====================
-
-    /**
-     * Hace clic en un elemento de forma segura.
-     *
-     * @param localizador localizador del elemento
-     */
-    protected void hacerClick(By localizador) {
-        registrarAccion("Haciendo clic en: " + localizador);
-        utileria.hacerClick(localizador);
-    }
-
-    /**
-     * Hace clic usando JavaScript.
-     *
-     * @param localizador localizador del elemento
-     */
-    protected void hacerClickJavaScript(By localizador) {
-        registrarAccion("Haciendo clic con JavaScript en: " + localizador);
-        utileria.hacerClickJavaScript(localizador);
-    }
-
-    /**
-     * Ingresa texto en un campo.
-     *
-     * @param localizador localizador del campo
-     * @param texto texto a ingresar
-     */
-    protected void ingresarTexto(By localizador, String texto) {
-        registrarAccion("Ingresando texto en: " + localizador);
-        utileria.ingresarTexto(localizador, texto);
-    }
-
-    /**
-     * Ingresa texto de forma segura con validación previa.
-     *
-     * @param localizador localizador del campo
-     * @param texto texto a ingresar
-     */
-    protected void ingresarTextoSeguro(By localizador, String texto) {
-        utileria.validarCadenaNoVacia(texto, "Texto a ingresar");
-
-        try {
-            // Verificar que el campo esté habilitado
-            WebElement campo = buscarElemento(localizador);
-            if (!campo.isEnabled()) {
-                throw new RuntimeException("El campo no está habilitado: " + localizador);
-            }
-
-            ingresarTexto(localizador, texto);
-
-            // Verificar que el texto se ingresó correctamente
-            String textoIngresado = campo.getAttribute("value");
-            if (!texto.equals(textoIngresado)) {
-                logger.warn("Texto ingresado no coincide. Esperado: {}, Actual: {}", texto, textoIngresado);
-            }
+            return urlCorrecta;
 
         } catch (Exception e) {
-            logger.error("Error ingresando texto seguro: {}", e.getMessage());
-            utileria.capturarScreenshotError("ingreso_texto_seguro_error");
-            throw new RuntimeException("Error en ingreso de texto seguro: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Obtiene el texto de un elemento.
-     *
-     * @param localizador localizador del elemento
-     * @return texto del elemento
-     */
-    protected String obtenerTexto(By localizador) {
-        registrarAccion("Obteniendo texto de: " + localizador);
-        return utileria.obtenerTexto(localizador);
-    }
-
-    /**
-     * Obtiene el valor de un atributo de un elemento.
-     *
-     * @param localizador localizador del elemento
-     * @param atributo nombre del atributo
-     * @return valor del atributo
-     */
-    protected String obtenerAtributo(By localizador, String atributo) {
-        registrarAccion("Obteniendo atributo '" + atributo + "' de: " + localizador);
-
-        try {
-            WebElement elemento = buscarElemento(localizador);
-            String valor = elemento.getAttribute(atributo);
-
-            logger.debug("Atributo '{}' obtenido: {}", atributo, valor);
-            return valor;
-
-        } catch (Exception e) {
-            logger.error("Error obteniendo atributo '{}' de {}: {}", atributo, localizador, e.getMessage());
-            throw new RuntimeException("Error obteniendo atributo: " + e.getMessage(), e);
-        }
-    }
-
-    // ==================== MÉTODOS DE MENSAJES ====================
-
-    /**
-     * Verifica si hay un mensaje de error visible.
-     *
-     * @return true si hay mensaje de error, false en caso contrario
-     */
-    public boolean hayMensajeError() {
-        return esElementoVisible(MENSAJE_ERROR);
-    }
-
-    /**
-     * Obtiene el texto del mensaje de error si está presente.
-     *
-     * @return texto del mensaje de error o cadena vacía si no hay mensaje
-     */
-    public String obtenerMensajeError() {
-        if (hayMensajeError()) {
-            String mensaje = obtenerTexto(MENSAJE_ERROR);
-            logger.info("Mensaje de error encontrado: {}", mensaje);
-            return mensaje;
-        }
-        return "";
-    }
-
-    /**
-     * Verifica si hay un mensaje de éxito visible.
-     *
-     * @return true si hay mensaje de éxito, false en caso contrario
-     */
-    public boolean hayMensajeExito() {
-        return esElementoVisible(MENSAJE_EXITO);
-    }
-
-    /**
-     * Obtiene el texto del mensaje de éxito si está presente.
-     *
-     * @return texto del mensaje de éxito o cadena vacía si no hay mensaje
-     */
-    public String obtenerMensajeExito() {
-        if (hayMensajeExito()) {
-            String mensaje = obtenerTexto(MENSAJE_EXITO);
-            logger.info("Mensaje de éxito encontrado: {}", mensaje);
-            return mensaje;
-        }
-        return "";
-    }
-
-    /**
-     * Verifica si hay un mensaje de advertencia visible.
-     *
-     * @return true si hay mensaje de advertencia, false en caso contrario
-     */
-    public boolean hayMensajeAdvertencia() {
-        return esElementoVisible(MENSAJE_ADVERTENCIA);
-    }
-
-    /**
-     * Obtiene el texto del mensaje de advertencia si está presente.
-     *
-     * @return texto del mensaje de advertencia o cadena vacía si no hay mensaje
-     */
-    public String obtenerMensajeAdvertencia() {
-        if (hayMensajeAdvertencia()) {
-            String mensaje = obtenerTexto(MENSAJE_ADVERTENCIA);
-            logger.info("Mensaje de advertencia encontrado: {}", mensaje);
-            return mensaje;
-        }
-        return "";
-    }
-
-    // ==================== MÉTODOS DE VALIDACIÓN ====================
-
-    /**
-     * Verifica que la página actual sea la esperada.
-     *
-     * @return true si es la página correcta, false en caso contrario
-     */
-    public boolean esPaginaCorrecta() {
-        try {
-            boolean tituloCorrect = utileria.verificarTituloPagina(obtenerTituloEsperado());
-            boolean urlCorrecta = utileria.verificarUrl(obtenerUrlEsperada());
-            boolean paginaCargada = esPaginaCargada();
-
-            boolean esCorrecta = tituloCorrect && urlCorrecta && paginaCargada;
-
-            logger.debug("Verificación de página: Título={}, URL={}, Cargada={}, Resultado={}",
-                    tituloCorrect, urlCorrecta, paginaCargada, esCorrecta);
-
-            return esCorrecta;
-
-        } catch (Exception e) {
-            logger.error("Error verificando página correcta: {}", e.getMessage());
+            logger.warn("Error verificando URL para {}: {}", this.getClass().getSimpleName(), e.getMessage());
             return false;
         }
     }
 
     /**
-     * Valida que un campo obligatorio tenga contenido.
+     * Obtiene el título actual de la página.
      *
-     * @param localizador localizador del campo
-     * @param nombreCampo nombre del campo para el mensaje de error
-     * @return true si el campo tiene contenido, false en caso contrario
+     * @return título de la página
      */
-    protected boolean validarCampoObligatorio(By localizador, String nombreCampo) {
+    public String obtenerTituloPagina() {
         try {
-            String valor = obtenerAtributo(localizador, "value");
+            String titulo = obtenerNavegador().getTitle();
+            logger.debug("Título de página obtenido: {}", titulo);
+            return titulo != null ? titulo : "";
 
-            if (valor == null || valor.trim().isEmpty()) {
-                logger.warn("Campo obligatorio vacío: {}", nombreCampo);
-                return false;
+        } catch (Exception e) {
+            logger.warn("Error obteniendo título de página: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Verifica si el título de la página contiene el texto esperado.
+     *
+     * @param textoEsperado texto que debe contener el título
+     * @return true si el título contiene el texto, false en caso contrario
+     */
+    public boolean tituloContiene(String textoEsperado) {
+        if (textoEsperado == null || textoEsperado.trim().isEmpty()) {
+            return false;
+        }
+
+        try {
+            String tituloActual = obtenerTituloPagina().toLowerCase();
+            String textoBuscar = textoEsperado.toLowerCase().trim();
+
+            boolean contiene = tituloActual.contains(textoBuscar);
+            logger.debug("Verificación título - Actual: '{}', Buscar: '{}', Contiene: {}",
+                    tituloActual, textoBuscar, contiene);
+
+            return contiene;
+
+        } catch (Exception e) {
+            logger.warn("Error verificando título: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Obtiene la URL actual del navegador.
+     *
+     * @return URL actual
+     */
+    public String obtenerUrlActual() {
+        try {
+            String url = obtenerNavegador().getCurrentUrl();
+            logger.debug("URL actual obtenida: {}", url);
+            return url != null ? url : "";
+
+        } catch (Exception e) {
+            logger.warn("Error obteniendo URL actual: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Espera a que la página termine de cargar usando JavaScript.
+     *
+     * @return true si la página cargó completamente, false si hubo timeout
+     */
+    public boolean esperarCargaCompleta() {
+        return esperarCargaCompleta(30); // 30 segundos por defecto
+    }
+
+    /**
+     * Espera a que la página termine de cargar con timeout personalizado.
+     *
+     * @param timeoutSegundos timeout en segundos
+     * @return true si la página cargó completamente, false si hubo timeout
+     */
+    public boolean esperarCargaCompleta(int timeoutSegundos) {
+        try {
+            org.openqa.selenium.support.ui.WebDriverWait wait =
+                    new org.openqa.selenium.support.ui.WebDriverWait(
+                            obtenerNavegador(),
+                            java.time.Duration.ofSeconds(timeoutSegundos)
+                    );
+
+            boolean cargaCompleta = wait.until(driver -> {
+                org.openqa.selenium.JavascriptExecutor js = (org.openqa.selenium.JavascriptExecutor) driver;
+                String readyState = js.executeScript("return document.readyState").toString();
+                return "complete".equals(readyState);
+            });
+
+            logger.debug("Carga completa de página: {}", cargaCompleta);
+            return cargaCompleta;
+
+        } catch (Exception e) {
+            logger.warn("Timeout esperando carga completa de página: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si hay elementos de carga visible en la página.
+     *
+     * @return true si hay indicadores de carga, false en caso contrario
+     */
+    public boolean hayCargaVisible() {
+        try {
+            // Selectores comunes para indicadores de carga
+            String[] selectoresCarga = {
+                    ".loading", ".spinner", ".loader",
+                    "[data-testid='loading']", ".progress",
+                    ".loading-overlay", ".ajax-loader"
+            };
+
+            for (String selector : selectoresCarga) {
+                try {
+                    org.openqa.selenium.WebElement elemento =
+                            obtenerNavegador().findElement(org.openqa.selenium.By.cssSelector(selector));
+
+                    if (elemento.isDisplayed()) {
+                        logger.debug("Indicador de carga visible: {}", selector);
+                        return true;
+                    }
+                } catch (org.openqa.selenium.NoSuchElementException e) {
+                    // Elemento no encontrado, continuar con el siguiente
+                }
             }
 
-            logger.debug("Campo obligatorio válido: {}", nombreCampo);
-            return true;
-
-        } catch (Exception e) {
-            logger.error("Error validando campo obligatorio {}: {}", nombreCampo, e.getMessage());
             return false;
-        }
-    }
 
-    /**
-     * Valida el formato de un email.
-     *
-     * @param email email a validar
-     * @return true si el formato es válido, false en caso contrario
-     */
-    protected boolean validarFormatoEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
+        } catch (Exception e) {
+            logger.debug("Error verificando indicadores de carga: {}", e.getMessage());
             return false;
-        }
-
-        String patronEmail = "^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$";
-        boolean esValido = email.matches(patronEmail);
-
-        logger.debug("Validación de email '{}': {}", email, esValido);
-        return esValido;
-    }
-
-    // ==================== MÉTODOS DE UTILIDAD ====================
-
-    /**
-     * Registra una acción ejecutada en la página.
-     *
-     * @param descripcionAccion descripción de la acción
-     */
-    protected void registrarAccion(String descripcionAccion) {
-        String accionCompleta = String.format("[%s] %s", this.getClass().getSimpleName(), descripcionAccion);
-        logger.debug(accionCompleta);
-
-        // Registrar en trazabilidad si hay contexto de escenario activo
-        try {
-            utileria.registrarPaso("ACTUAL", accionCompleta);
-        } catch (Exception e) {
-            // Ignorar errores de trazabilidad para no interrumpir el flujo
-            logger.trace("No se pudo registrar en trazabilidad: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Captura un screenshot específico de la página.
-     *
-     * @param contexto contexto adicional para el nombre del archivo
-     * @return ruta del archivo de screenshot
-     */
-    public String capturarScreenshotPagina(String contexto) {
-        String nombreArchivo = this.getClass().getSimpleName() + "_" + contexto;
-        return utileria.capturarScreenshot(nombreArchivo);
-    }
-
-    /**
-     * Refresh de la página actual.
-     */
-    public void refrescarPagina() {
-        logger.info("Refrescando página: {}", this.getClass().getSimpleName());
-
-        try {
-            utileria.obtenerNavegador().navigate().refresh();
-            esperarCargaCompletaPagina();
-
-            logger.debug("Página refrescada exitosamente");
-
-        } catch (Exception e) {
-            logger.error("Error refrescando página: {}", e.getMessage());
-            throw new RuntimeException("Error refrescando página: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Vuelve a la página anterior en el historial.
-     */
-    public void volverPaginaAnterior() {
-        logger.info("Navegando a página anterior desde: {}", this.getClass().getSimpleName());
-
-        try {
-            utileria.obtenerNavegador().navigate().back();
-            utileria.esperarCargaPagina();
-
-            logger.debug("Navegación a página anterior exitosa");
-
-        } catch (Exception e) {
-            logger.error("Error navegando a página anterior: {}", e.getMessage());
-            throw new RuntimeException("Error navegando atrás: " + e.getMessage(), e);
         }
     }
 
@@ -506,56 +233,78 @@ public abstract class PaginaBase {
     public String obtenerInformacionDebug() {
         try {
             return String.format(
-                    "Página: %s | %s | Cargada: %s | Mensajes: Error=%s, Éxito=%s",
+                    "Página: %s | URL: %s | Título: %s | URL Correcta: %s | Cargada: %s",
                     this.getClass().getSimpleName(),
-                    utileria.obtenerInformacionEntorno(),
-                    esPaginaCargada(),
-                    hayMensajeError(),
-                    hayMensajeExito()
+                    obtenerUrlActual(),
+                    obtenerTituloPagina(),
+                    estaEnUrlCorrecta(),
+                    esPaginaCargada()
             );
 
         } catch (Exception e) {
-            return "Error obteniendo información de debug: " + e.getMessage();
+            return String.format("Error obteniendo info debug para %s: %s",
+                    this.getClass().getSimpleName(), e.getMessage());
         }
     }
 
     /**
-     * Método de limpieza que se puede sobreescribir en páginas específicas.
-     * Se ejecuta al finalizar operaciones en la página.
+     * Template method que implementa la verificación estándar de carga de página.
+     * Las clases hijas pueden sobrescribir este método para lógica personalizada.
+     *
+     * @return true si la página está cargada según criterios estándar
      */
-    public void limpiar() {
-        logger.debug("Ejecutando limpieza de página: {}", this.getClass().getSimpleName());
-
+    public boolean verificarCargaEstandar() {
         try {
-            // Limpieza básica - las páginas pueden sobreescribir para agregar limpieza específica
-            // Por ejemplo: cerrar modales, limpiar filtros, etc.
+            // Verificaciones estándar
+            boolean urlCorrecta = estaEnUrlCorrecta();
+            boolean cargaCompleta = esperarCargaCompleta(10);
+            boolean sinCargaVisible = !hayCargaVisible();
+
+            logger.debug("Verificación estándar - URL: {}, Carga: {}, Sin Loading: {}",
+                    urlCorrecta, cargaCompleta, sinCargaVisible);
+
+            return urlCorrecta && cargaCompleta && sinCargaVisible;
 
         } catch (Exception e) {
-            logger.warn("Error en limpieza de página: {}", e.getMessage());
+            logger.warn("Error en verificación estándar de carga: {}", e.getMessage());
+            return false;
         }
     }
 
-    // ==================== MÉTODOS PROTEGIDOS FINALES ====================
-
     /**
-     * Obtiene la instancia de Utileria para uso en clases heredadas.
+     * Obtiene el nombre de la clase de la página para logging.
      *
-     * @return instancia de Utileria
+     * @return nombre simple de la clase
      */
-    protected final Utileria obtenerUtileria() {
-        return utileria;
+    protected String obtenerNombrePagina() {
+        return this.getClass().getSimpleName();
     }
 
     /**
-     * Obtiene el logger para uso en clases heredadas.
+     * Log estándar para inicio de operación en la página.
      *
-     * @return logger configurado
+     * @param operacion descripción de la operación
      */
-    protected final Logger obtenerLogger() {
-        return logger;
+    protected void logInicioOperacion(String operacion) {
+        logger.info("[{}] Iniciando: {}", obtenerNombrePagina(), operacion);
     }
 
-    protected void esperarElementoVisible(By localizador) {
-        utileria.esperarElementoVisible(localizador, TIMEOUT_CARGA_PAGINA);
+    /**
+     * Log estándar para fin exitoso de operación en la página.
+     *
+     * @param operacion descripción de la operación
+     */
+    protected void logExitoOperacion(String operacion) {
+        logger.info("[{}] Completado exitosamente: {}", obtenerNombrePagina(), operacion);
+    }
+
+    /**
+     * Log estándar para error en operación de la página.
+     *
+     * @param operacion descripción de la operación
+     * @param error error ocurrido
+     */
+    protected void logErrorOperacion(String operacion, Exception error) {
+        logger.error("[{}] Error en {}: {}", obtenerNombrePagina(), operacion, error.getMessage());
     }
 }

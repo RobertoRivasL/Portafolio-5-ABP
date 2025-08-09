@@ -298,6 +298,12 @@ public class PaginaLogin extends PaginaBase {
         }
     }
 
+    @Override
+    protected String obtenerUrlEsperada() {
+        return "/login";
+    }
+
+
     // ==================== MÉTODOS DE NAVEGACIÓN ====================
 
     /**

@@ -3,168 +3,168 @@
 Característica: Registro de nuevos usuarios en el sistema
   Como visitante del sitio web
   Quiero poder registrarme en el sistema
-  Para obtener acceso a las funcionalidades de la aplicación
+  Para obtener acceso a las funcionalidades del sistema
 
-  # Referencia: HU-002 - Registro de Nuevo Usuario
+  # Referencia: HU-002 - Registro de Usuario
 
   Antecedentes:
-    Dado que el visitante está en la página de registro
-    Y el sistema está disponible para nuevos registros
+    Dado que el usuario está en la página de registro
+    Y el sistema está funcionando correctamente
 
   @SmokeTest @Positivo
   Escenario: Registro exitoso con datos válidos
-    # HU-002: Criterios de aceptación - Formulario con campos obligatorios
-    Dado que el visitante completa el formulario de registro con datos válidos:
-      | nombre     | Juan Carlos                    |
-      | apellido   | Pérez González                 |
-      | email      | juan.perez@ejemplo.com         |
-      | password   | MiPassword123!                 |
-      | confirmar  | MiPassword123!                 |
-      | telefono   | +56912345678                   |
-    Cuando hace clic en el botón "Registrarse"
-    Entonces debe ver el mensaje de éxito "Registro completado exitosamente"
-    Y debe recibir un email de confirmación
-    Y debe ser redirigido a la página de login
-    Y debe ver el mensaje "Por favor, confirme su email para activar su cuenta"
+    # HU-002: Criterio de aceptación - El usuario puede registrarse con datos válidos
+    Dado que el usuario tiene datos de registro válidos
+      | nombre    | email           | password    | confirmarPassword |
+      | Juan Test | juan@test.com   | password123 | password123       |
+    Cuando el usuario completa el formulario de registro
+    Y hace clic en el botón "Registrarse"
+    Entonces debe ver el mensaje de éxito "Usuario registrado exitosamente"
+    Y debe ser redirigido a la página de confirmación
+    Y debe recibir un email de verificación
 
-  @Validacion @Negativo
-  Esquema del escenario: Validación de campos obligatorios
-    # HU-002: Validación de campos requeridos
-    Dado que el visitante completa el formulario excepto el campo "<campo_faltante>"
+  @Negativo @Validacion
+  Escenario: Intento de registro con campos vacíos
+    # HU-002: Validación de campos obligatorios
+    Cuando el usuario hace clic en el botón "Registrarse" sin llenar los campos
+    Entonces debe ver el mensaje de error "Por favor, complete todos los campos obligatorios"
+    Y debe ver indicadores de error en los campos vacíos
+    Y el botón "Registrarse" debe permanecer deshabilitado
+
+  @Negativo @Validacion
+  Esquema del escenario: Validación de formato de email en registro
+    # HU-002: Validación de formato de email
+    Dado que el usuario ingresa los siguientes datos de registro:
+      | nombre    | email     | password    | confirmarPassword |
+      | Juan Test | <email>   | password123 | password123       |
     Cuando hace clic en el botón "Registrarse"
     Entonces debe ver el mensaje de error "<mensaje_error>"
     Y debe permanecer en la página de registro
 
     Ejemplos:
-      | campo_faltante | mensaje_error                           |
-      | nombre         | El nombre es obligatorio                |
-      | apellido       | El apellido es obligatorio              |
-      | email          | El email es obligatorio                 |
-      | password       | La contraseña es obligatoria           |
-      | confirmar      | La confirmación de contraseña es obligatoria |
+      | email           | mensaje_error                    |
+      | invalidemail    | Formato de email inválido        |
+      | @test.com       | Formato de email inválido        |
+      | test@           | Formato de email inválido        |
+      | test.com        | Formato de email inválido        |
+      | test@.com       | Formato de email inválido        |
 
-  @Validacion @Negativo
-  Esquema del escenario: Validación de formato de email
-    # HU-002: Criterio de aceptación - Validación de formato de email
-    Dado que el visitante ingresa el email "<email_invalido>"
-    Y completa el resto de campos correctamente
-    Cuando hace clic en el botón "Registrarse"
-    Entonces debe ver el mensaje de error "Formato de email inválido"
-
-    Ejemplos:
-      | email_invalido    |
-      | email-invalido    |
-      | @dominio.com      |
-      | usuario@          |
-      | usuario.dominio   |
-      | usuario@@test.com |
-
-  @Seguridad @Validacion
+  @Negativo @Validacion
   Esquema del escenario: Validación de fortaleza de contraseña
-    # HU-002: Requisito de seguridad - Contraseñas seguras
-    Dado que el visitante ingresa la contraseña "<password_debil>"
-    Y completa el resto de campos correctamente
+    # HU-002: Criterio de aceptación - Validación de contraseña segura
+    Dado que el usuario ingresa los siguientes datos de registro:
+      | nombre    | email         | password   | confirmarPassword |
+      | Juan Test | juan@test.com | <password> | <password>        |
     Cuando hace clic en el botón "Registrarse"
     Entonces debe ver el mensaje de error "<mensaje_error>"
+    Y debe ver el indicador de fortaleza "<nivel_fortaleza>"
 
     Ejemplos:
-      | password_debil | mensaje_error                                          |
-      | 123            | La contraseña debe tener al menos 8 caracteres        |
-      | password       | La contraseña debe contener al menos un número        |
-      | PASSWORD123    | La contraseña debe contener al menos una minúscula    |
-      | password123    | La contraseña debe contener al menos una mayúscula    |
-      | Password123    | La contraseña debe contener al menos un carácter especial |
+      | password | mensaje_error                               | nivel_fortaleza |
+      | 123      | La contraseña debe tener al menos 8 caracteres | Muy débil       |
+      | password | La contraseña debe incluir números y mayúsculas | Débil           |
+      | Password | La contraseña debe incluir números             | Moderada        |
+      | 12345678 | La contraseña debe incluir letras              | Débil           |
 
-  @Validacion @Negativo
+  @Negativo @Validacion
   Escenario: Confirmación de contraseña no coincide
-    # HU-002: Criterio de aceptación - Confirmación de contraseña
-    Dado que el visitante ingresa la contraseña "MiPassword123!"
-    Y ingresa la confirmación "OtraPassword456!"
-    Y completa el resto de campos correctamente
+    # HU-002: Validación de confirmación de contraseña
+    Dado que el usuario ingresa los siguientes datos de registro:
+      | nombre    | email         | password    | confirmarPassword |
+      | Juan Test | juan@test.com | password123 | password456       |
     Cuando hace clic en el botón "Registrarse"
     Entonces debe ver el mensaje de error "Las contraseñas no coinciden"
-    Y los campos de contraseña deben quedar vacíos
-
-  @BusinessRule @Negativo
-  Escenario: Prevención de usuarios duplicados
-    # HU-002: Criterio de aceptación - Prevención de usuarios duplicados
-    Dado que ya existe un usuario registrado con el email "usuario.existente@test.com"
-    Cuando un visitante intenta registrarse con el mismo email
-    Entonces debe ver el mensaje de error "Ya existe una cuenta con este email"
-    Y debe ver un enlace "¿Olvidaste tu contraseña?"
+    Y el campo "Confirmar Contraseña" debe estar resaltado en rojo
     Y debe permanecer en la página de registro
 
-  @UX @Positivo
+  @Negativo @BusinessRule
+  Escenario: Prevención de usuarios duplicados
+    # HU-002: Criterio de aceptación - No permitir emails duplicados
+    Dado que ya existe un usuario registrado con email "juan@test.com"
+    Y el usuario intenta registrarse con los datos:
+      | nombre     | email         | password    | confirmarPassword |
+      | Juan Nuevo | juan@test.com | password123 | password123       |
+    Cuando hace clic en el botón "Registrarse"
+    Entonces debe ver el mensaje de error "Este email ya está registrado"
+    Y debe ver el enlace "¿Ya tienes cuenta? Inicia sesión"
+    Y debe permanecer en la página de registro
+
+  @Positivo @UX
   Escenario: Indicador de fortaleza de contraseña en tiempo real
-    # HU-002: Mejora de experiencia de usuario
-    Dado que el visitante está completando el campo de contraseña
-    Cuando ingresa "<password_parcial>"
-    Entonces debe ver el indicador de fortaleza "<nivel_fortaleza>"
-    Y debe ver las reglas de contraseña restantes "<reglas_pendientes>"
+    # HU-002: Funcionalidad adicional - Feedback visual de contraseña
+    Dado que el usuario está en la página de registro
+    Cuando ingresa progresivamente una contraseña
+      | contraseña  | fortaleza_esperada |
+      | a           | Muy débil          |
+      | abc123      | Débil              |
+      | Abc123      | Moderada           |
+      | Abc123!     | Fuerte             |
+      | Abc123!@#   | Muy fuerte         |
+    Entonces debe ver el indicador de fortaleza actualizarse en tiempo real
+    Y debe ver consejos para mejorar la contraseña cuando sea necesario
 
-    Ejemplos:
-      | password_parcial | nivel_fortaleza | reglas_pendientes                    |
-      | pass             | Débil           | Mínimo 8 caracteres, números, mayúsculas, especiales |
-      | password         | Débil           | Números, mayúsculas, caracteres especiales |
-      | Password         | Media           | Números, caracteres especiales       |
-      | Password1        | Media           | Caracteres especiales                |
-      | Password1!       | Fuerte          | ¡Contraseña segura!                 |
-
-  @Integracion @Positivo
+  @Positivo @Integration
   Escenario: Verificación por email después del registro
-    # HU-002: Flujo completo de registro y verificación
-    Dado que el usuario se registró exitosamente con "nuevo.usuario@test.com"
-    Cuando recibe el email de verificación
-    Y hace clic en el enlace de verificación
-    Entonces debe ser redirigido a la página de confirmación
-    Y debe ver el mensaje "Email verificado exitosamente"
+    # HU-002: Criterio de aceptación - Proceso de verificación
+    Dado que el usuario se ha registrado exitosamente con email "juan@test.com"
+    Cuando revisa su bandeja de entrada
+    Entonces debe recibir un email con asunto "Verifica tu cuenta"
+    Y el email debe contener un enlace de verificación válido
+    Y al hacer clic en el enlace debe activar su cuenta
     Y debe poder hacer login con sus credenciales
-    Y su cuenta debe estar activa en el sistema
 
-  @Accesibilidad @UX
+  @Positivo @Accessibility
   Escenario: Navegación con teclado en formulario de registro
-    # HU-002: Requisito de accesibilidad
-    Dado que el visitante usa navegación por teclado
-    Cuando presiona Tab secuencialmente
-    Entonces debe poder navegar en el siguiente orden:
-      | campo                    | orden |
-      | Nombre                   | 1     |
-      | Apellido                 | 2     |
-      | Email                    | 3     |
-      | Teléfono                 | 4     |
-      | Contraseña              | 5     |
-      | Confirmar contraseña    | 6     |
-      | Acepto términos         | 7     |
-      | Botón registrarse       | 8     |
-    Y cada campo debe mostrar claramente el foco visual
+    # HU-002: Accesibilidad - Navegación con Tab
+    Dado que el usuario está en la página de registro
+    Cuando usa la tecla Tab para navegar entre los campos
+    Entonces debe poder acceder a todos los campos en orden lógico:
+      | orden | campo               |
+      | 1     | Nombre              |
+      | 2     | Email               |
+      | 3     | Contraseña          |
+      | 4     | Confirmar Contraseña|
+      | 5     | Términos y Condiciones |
+      | 6     | Botón Registrarse   |
+    Y cada campo debe tener indicadores visuales claros de foco
 
   @Performance @SmokeTest
   Escenario: Tiempo de respuesta del registro
-    # HU-002: Requisito no funcional - Performance
-    Dado que el visitante completa correctamente el formulario de registro
-    Cuando hace clic en "Registrarse"
-    Entonces el sistema debe procesar la solicitud en menos de 3 segundos
-    Y debe mostrar la confirmación en menos de 5 segundos totales
+    # HU-002: Requerimiento no funcional - Performance
+    Dado que el usuario tiene datos de registro válidos
+    Cuando completa el proceso de registro
+    Entonces el sistema debe responder en menos de 3 segundos
+    Y debe mostrar indicadores de carga mientras procesa
+    Y debe confirmar el registro exitoso
 
-  @Regression @DataIntegrity
+  @Integration @DataIntegrity
   Escenario: Integridad de datos después del registro
-    # HU-002: Verificación de integridad de datos
-    Dado que un usuario se registra con los siguientes datos:
-      | nombre     | María José                     |
-      | apellido   | Silva Rodríguez                |
-      | email      | maria.silva@empresa.cl         |
-      | telefono   | +56987654321                   |
+    # HU-002: Validación de integridad de datos
+    Dado que el usuario se registra con datos válidos:
+      | nombre    | email         | password    |
+      | Juan Test | juan@test.com | password123 |
     Cuando el registro se completa exitosamente
-    Entonces los datos deben estar correctamente almacenados en la base de datos
-    Y la contraseña debe estar encriptada
-    Y la fecha de registro debe ser la fecha actual
-    Y el estado de la cuenta debe ser "Pendiente de verificación"
+    Entonces los datos del usuario deben estar correctamente almacenados en la base de datos
+    Y la contraseña debe estar encriptada de forma segura
+    Y debe existir un registro de auditoría de la creación del usuario
+    Y el usuario debe aparecer en la lista de usuarios pendientes de verificación
 
-  @Seguridad @Edge
+  @Security @Negativo
   Escenario: Protección contra ataques de fuerza bruta en registro
-    # HU-002: Medida de seguridad adicional
-    Dado que se han realizado más de 5 intentos de registro desde la misma IP en 10 minutos
-    Cuando se intenta realizar otro registro
-    Entonces debe aparecer un captcha de verificación
-    Y debe mostrar el mensaje "Verificación adicional requerida"
-    Y debe requerir completar el captcha antes de proceder
+    # HU-002: Medida de seguridad - Rate limiting
+    Dado que se han realizado 5 intentos de registro fallidos desde la misma IP
+    Cuando se intenta un sexto registro
+    Entonces debe mostrar el mensaje "Demasiados intentos de registro. Intente más tarde"
+    Y debe bloquear los intentos de registro por 15 minutos
+    Y debe registrar el evento de seguridad en los logs
+
+  @Regression @E2E
+  Escenario: Flujo completo de registro e inicio de sesión
+    # HU-002: Escenario de regresión - Flujo end-to-end
+    Dado que el usuario es un visitante nuevo del sistema
+    Cuando completa el proceso de registro con datos válidos
+    Y verifica su email
+    Y hace login con sus nuevas credenciales
+    Entonces debe acceder exitosamente al dashboard
+    Y debe ver un mensaje de bienvenida personalizado
+    Y debe tener todos los permisos de usuario estándar

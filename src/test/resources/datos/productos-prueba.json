@@ -1,396 +1,443 @@
 {
-  "productos": [
+  "productos_validos": [
     {
-      "id": "producto_laptop_dell",
-      "codigo_sku": "DELL-INS-15-2024",
-      "nombre": "Laptop Dell Inspiron 15",
-      "descripcion": "Laptop para uso profesional y estudiantil con procesador Intel Core i5",
-      "precio": 799999.00,
-      "categoria": "Electrónicos",
-      "stock": 25,
-      "estado": "ACTIVO",
-      "fecha_creacion": "2024-01-15T10:00:00",
-      "fecha_modificacion": "2024-12-10T14:30:00",
-      "usuario_creacion": "admin@test.com",
-      "usuario_modificacion": "admin@test.com",
-      "especificaciones": {
-        "marca": "Dell",
-        "modelo": "Inspiron 15 3000",
-        "procesador": "Intel Core i5-1135G7",
-        "memoria_ram": "8GB DDR4",
-        "almacenamiento": "256GB SSD",
-        "pantalla": "15.6 pulgadas Full HD",
-        "sistema_operativo": "Windows 11 Home"
-      },
-      "dimensiones": {
-        "alto": 2.0,
-        "ancho": 36.0,
-        "profundidad": 25.0,
-        "peso": 1.8
-      },
-      "precio_historico": [
-        {"fecha": "2024-01-15", "precio": 849999.00},
-        {"fecha": "2024-06-01", "precio": 799999.00}
-      ],
+      "id": "producto_laptop_gamer",
+      "descripcion": "Laptop para gaming de alta gama",
       "casos_uso": ["crear_producto", "editar_producto", "buscar_producto"],
-      "descripcion_prueba": "Producto principal para pruebas CRUD"
+      "historia_usuario": "HU-003",
+      "datos": {
+        "nombre": "Laptop Gamer ROG",
+        "codigo": "LG001",
+        "categoria": "Electrónicos",
+        "precio": "1500",
+        "stock": "10",
+        "descripcion": "Laptop para gaming con RTX 4080",
+        "marca": "ASUS",
+        "peso": "2.5kg",
+        "garantia": "24 meses"
+      }
     },
     {
-      "id": "producto_mouse_logitech",
-      "codigo_sku": "LOGI-MX-MASTER-3",
-      "nombre": "Mouse Logitech MX Master 3",
-      "descripcion": "Mouse inalámbrico de alta precisión para profesionales",
-      "precio": 89990.00,
-      "categoria": "Electrónicos",
-      "stock": 50,
-      "estado": "ACTIVO",
-      "fecha_creacion": "2024-02-01T09:30:00",
-      "fecha_modificacion": "2024-12-01T16:15:00",
-      "usuario_creacion": "admin@test.com",
-      "usuario_modificacion": "test@test.com",
-      "especificaciones": {
-        "marca": "Logitech",
-        "modelo": "MX Master 3",
-        "conectividad": "Bluetooth, USB-C",
-        "bateria": "Hasta 70 días",
-        "sensor": "Darkfield 4000 DPI",
-        "botones": "7 botones programables"
-      },
-      "casos_uso": ["operaciones_stock", "busqueda_categoria"],
-      "descripcion_prueba": "Producto para pruebas de gestión de stock"
+      "id": "producto_smartphone",
+      "descripcion": "Smartphone de última generación",
+      "casos_uso": ["crear_producto", "operaciones_masivas"],
+      "historia_usuario": "HU-003",
+      "datos": {
+        "nombre": "iPhone 15 Pro",
+        "codigo": "IP015",
+        "categoria": "Móviles",
+        "precio": "999",
+        "stock": "25",
+        "descripcion": "iPhone 15 Pro con chip A17 Pro",
+        "marca": "Apple",
+        "peso": "187g",
+        "garantia": "12 meses"
+      }
     },
     {
-      "id": "producto_libro_java",
-      "codigo_sku": "BOOK-JAVA-EFF-3ED",
-      "nombre": "Effective Java 3rd Edition",
-      "descripcion": "Libro de mejores prácticas en programación Java por Joshua Bloch",
-      "precio": 45990.00,
-      "categoria": "Libros",
-      "stock": 15,
-      "estado": "ACTIVO",
-      "fecha_creacion": "2024-03-10T11:45:00",
-      "fecha_modificacion": "2024-11-20T13:20:00",
-      "usuario_creacion": "test@test.com",
-      "usuario_modificacion": "test@test.com",
-      "especificaciones": {
-        "autor": "Joshua Bloch",
-        "editorial": "Addison-Wesley",
-        "isbn": "978-0134685991",
-        "paginas": 416,
-        "idioma": "Inglés",
-        "formato": "Tapa blanda"
-      },
-      "casos_uso": ["cambio_categoria", "validacion_precio"],
-      "descripcion_prueba": "Producto de categoría diferente para pruebas de filtros"
+      "id": "producto_tablet",
+      "descripcion": "Tablet profesional para trabajo",
+      "casos_uso": ["crear_producto", "filtrar_productos"],
+      "historia_usuario": "HU-003",
+      "datos": {
+        "nombre": "iPad Pro 12.9",
+        "codigo": "IPD129",
+        "categoria": "Tablets",
+        "precio": "800",
+        "stock": "15",
+        "descripcion": "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
+        "marca": "Apple",
+        "peso": "682g",
+        "garantia": "12 meses"
+      }
     },
     {
-      "id": "producto_silla_ergonomica",
-      "codigo_sku": "CHAIR-ERGO-PREM-2024",
-      "nombre": "Silla Ergonómica Premium",
-      "descripcion": "Silla de oficina ergonómica con soporte lumbar ajustable",
-      "precio": 299990.00,
-      "categoria": "Muebles",
-      "stock": 8,
-      "estado": "ACTIVO",
-      "fecha_creacion": "2024-04-05T14:20:00",
-      "fecha_modificacion": "2024-12-05T10:10:00",
-      "usuario_creacion": "admin@test.com",
-      "usuario_modificacion": "admin@test.com",
-      "especificaciones": {
-        "material": "Malla transpirable",
-        "soporte_lumbar": "Ajustable",
-        "reposabrazos": "4D ajustables",
-        "altura_ajustable": "42-52 cm",
-        "peso_maximo": "120 kg",
-        "garantia": "5 años"
-      },
-      "casos_uso": ["producto_alto_valor", "stock_limitado"],
-      "descripcion_prueba": "Producto de alto valor para pruebas de validación"
+      "id": "producto_audifonos",
+      "descripcion": "Audífonos inalámbricos premium",
+      "casos_uso": ["crear_producto", "gestionar_stock"],
+      "historia_usuario": "HU-003",
+      "datos": {
+        "nombre": "AirPods Pro 2",
+        "codigo": "APP002",
+        "categoria": "Audio",
+        "precio": "249",
+        "stock": "50",
+        "descripcion": "Audífonos con cancelación activa de ruido",
+        "marca": "Apple",
+        "peso": "56g",
+        "garantia": "12 meses"
+      }
     },
     {
-      "id": "producto_cafe_origen",
-      "codigo_sku": "COFFEE-COL-ORIGIN-500G",
-      "nombre": "Café de Origen Colombia",
-      "descripcion": "Café premium de origen único, tostado artesanal",
-      "precio": 12990.00,
-      "categoria": "Alimentos",
-      "stock": 100,
-      "estado": "ACTIVO",
-      "fecha_creacion": "2024-05-15T08:30:00",
-      "fecha_modificacion": "2024-12-12T09:45:00",
-      "usuario_creacion": "test@test.com",
-      "usuario_modificacion": "admin@test.com",
-      "especificaciones": {
-        "origen": "Huila, Colombia",
-        "variedad": "Arábica Caturra",
-        "proceso": "Lavado",
-        "tostado": "Medio",
-        "peso": "500g",
-        "fecha_tostado": "2024-12-10"
-      },
-      "casos_uso": ["stock_alto", "precio_bajo", "operaciones_masivas"],
-      "descripcion_prueba": "Producto con stock alto para pruebas de operaciones masivas"
-    },
-    {
-      "id": "producto_agotado",
-      "codigo_sku": "AGOTADO-TEST-001",
-      "nombre": "Producto Agotado Test",
-      "descripcion": "Producto para probar manejo de stock cero",
-      "precio": 19990.00,
-      "categoria": "Test",
-      "stock": 0,
-      "estado": "AGOTADO",
-      "fecha_creacion": "2024-06-01T12:00:00",
-      "fecha_modificacion": "2024-12-14T18:00:00",
-      "usuario_creacion": "admin@test.com",
-      "usuario_modificacion": "sistema",
-      "casos_uso": ["stock_cero", "estado_agotado", "validacion_disponibilidad"],
-      "descripcion_prueba": "Producto específico para probar manejo de stock agotado"
+      "id": "producto_monitor",
+      "descripcion": "Monitor 4K para profesionales",
+      "casos_uso": ["crear_producto", "exportar_productos"],
+      "historia_usuario": "HU-003",
+      "datos": {
+        "nombre": "Monitor 4K Dell",
+        "codigo": "MDL4K",
+        "categoria": "Monitores",
+        "precio": "450",
+        "stock": "8",
+        "descripcion": "Monitor 27 pulgadas 4K UHD con HDR",
+        "marca": "Dell",
+        "peso": "6.2kg",
+        "garantia": "36 meses"
+      }
     }
   ],
-  "productos_para_crear": [
+  "productos_existentes": [
     {
-      "id": "nuevo_producto_1",
-      "codigo_sku": "NUEVO-PROD-2024-001",
-      "nombre": "Nuevo Producto de Prueba",
-      "descripcion": "Producto creado durante las pruebas automatizadas",
-      "precio": 25990.00,
-      "categoria": "Test",
-      "stock": 10,
-      "descripcion_prueba": "Producto para probar funcionalidad de creación"
+      "id": "producto_existente_1",
+      "datos": {
+        "nombre": "Samsung Galaxy S24",
+        "codigo": "SGS24",
+        "categoria": "Móviles",
+        "precio": "899",
+        "stock": "12"
+      }
     },
     {
-      "id": "nuevo_producto_2",
-      "codigo_sku": "TABLET-SAMSUNG-TAB-A8",
-      "nombre": "Tablet Samsung Galaxy Tab A8",
-      "descripcion": "Tablet de 10.5 pulgadas para entretenimiento y productividad",
-      "precio": 199990.00,
-      "categoria": "Electrónicos",
-      "stock": 20,
-      "especificaciones": {
-        "marca": "Samsung",
-        "pantalla": "10.5 pulgadas",
-        "procesador": "Unisoc Tiger T618",
-        "memoria": "4GB RAM + 64GB Storage",
-        "sistema": "Android 11"
-      },
-      "descripcion_prueba": "Producto con especificaciones completas para crear"
+      "id": "producto_existente_2",
+      "datos": {
+        "nombre": "MacBook Air M3",
+        "codigo": "MBA3",
+        "categoria": "Portátiles",
+        "precio": "1199",
+        "stock": "6"
+      }
+    },
+    {
+      "id": "producto_existente_3",
+      "datos": {
+        "nombre": "Sony WH-1000XM5",
+        "codigo": "SWXM5",
+        "categoria": "Audio",
+        "precio": "399",
+        "stock": "20"
+      }
     }
   ],
-  "productos_invalidos": [
+  "productos_para_edicion": [
     {
-      "id": "sin_nombre",
-      "codigo_sku": "SIN-NOMBRE-001",
-      "nombre": "",
-      "descripcion": "Producto sin nombre para validación",
-      "precio": 10000.00,
-      "categoria": "Test",
-      "stock": 5,
-      "mensaje_error_esperado": "El nombre del producto es obligatorio"
+      "id": "producto_editable",
+      "datos_originales": {
+        "nombre": "iPhone 14",
+        "codigo": "IP014",
+        "categoria": "Móviles",
+        "precio": "899",
+        "stock": "8"
+      },
+      "datos_modificados": {
+        "nombre": "iPhone 14 Pro",
+        "precio": "1099",
+        "stock": "15"
+      },
+      "campos_no_modificables": ["codigo"]
+    }
+  ],
+  "productos_para_eliminacion": [
+    {
+      "id": "producto_eliminable",
+      "datos": {
+        "nombre": "Producto de Prueba",
+        "codigo": "TEST001",
+        "categoria": "Testing",
+        "precio": "1",
+        "stock": "1"
+      },
+      "puede_eliminar": true
     },
     {
-      "id": "sin_precio",
-      "codigo_sku": "SIN-PRECIO-001",
-      "nombre": "Producto Sin Precio",
-      "descripcion": "Producto sin precio para validación",
-      "precio": null,
-      "categoria": "Test",
-      "stock": 5,
-      "mensaje_error_esperado": "El precio es obligatorio"
+      "id": "producto_con_stock_critico",
+      "datos": {
+        "nombre": "Producto Stock Bajo",
+        "codigo": "PSB001",
+        "categoria": "Testing",
+        "precio": "100",
+        "stock": "1"
+      },
+      "alertas": ["stock_bajo"]
+    }
+  ],
+  "validaciones_productos": [
+    {
+      "tipo": "campos_obligatorios",
+      "descripcion": "Validación de campos obligatorios",
+      "casos_invalidos": [
+        {
+          "campo_faltante": "nombre",
+          "datos": {
+            "nombre": "",
+            "codigo": "TEST",
+            "categoria": "Test",
+            "precio": "100"
+          },
+          "error_esperado": "El nombre del producto es obligatorio"
+        },
+        {
+          "campo_faltante": "codigo",
+          "datos": {
+            "nombre": "Test Product",
+            "codigo": "",
+            "categoria": "Test",
+            "precio": "100"
+          },
+          "error_esperado": "El código del producto es obligatorio"
+        },
+        {
+          "campo_faltante": "categoria",
+          "datos": {
+            "nombre": "Test Product",
+            "codigo": "TEST",
+            "categoria": "",
+            "precio": "100"
+          },
+          "error_esperado": "Debe seleccionar una categoría"
+        },
+        {
+          "campo_faltante": "precio",
+          "datos": {
+            "nombre": "Test Product",
+            "codigo": "TEST",
+            "categoria": "Test",
+            "precio": ""
+          },
+          "error_esperado": "El precio debe ser mayor a 0"
+        }
+      ]
     },
     {
-      "id": "precio_negativo",
-      "codigo_sku": "PRECIO-NEG-001",
-      "nombre": "Producto Precio Negativo",
-      "descripcion": "Producto con precio negativo para validación",
-      "precio": -100.00,
-      "categoria": "Test",
-      "stock": 5,
-      "mensaje_error_esperado": "El precio debe ser mayor a cero"
+      "tipo": "validacion_tipos_datos",
+      "descripcion": "Validación de tipos de datos incorrectos",
+      "casos_invalidos": [
+        {
+          "campo": "precio",
+          "valor_invalido": "-50",
+          "error_esperado": "El precio debe ser un número positivo"
+        },
+        {
+          "campo": "precio",
+          "valor_invalido": "abc",
+          "error_esperado": "El precio debe ser un número válido"
+        },
+        {
+          "campo": "stock",
+          "valor_invalido": "-10",
+          "error_esperado": "El stock no puede ser negativo"
+        },
+        {
+          "campo": "stock",
+          "valor_invalido": "10.5",
+          "error_esperado": "El stock debe ser un número entero"
+        },
+        {
+          "campo": "nombre",
+          "valor_invalido": "",
+          "error_esperado": "El nombre no puede estar vacío"
+        }
+      ]
     },
     {
-      "id": "stock_negativo",
-      "codigo_sku": "STOCK-NEG-001",
-      "nombre": "Producto Stock Negativo",
-      "descripcion": "Producto con stock negativo para validación",
-      "precio": 10000.00,
-      "categoria": "Test",
-      "stock": -5,
-      "mensaje_error_esperado": "El stock no puede ser negativo"
-    },
-    {
-      "id": "sku_duplicado",
-      "codigo_sku": "DELL-INS-15-2024",
-      "nombre": "Producto SKU Duplicado",
-      "descripcion": "Producto con SKU duplicado para validación",
-      "precio": 10000.00,
-      "categoria": "Test",
-      "stock": 5,
-      "mensaje_error_esperado": "El código SKU ya existe en el sistema"
+      "tipo": "codigos_duplicados",
+      "descripcion": "Prevención de códigos SKU duplicados",
+      "codigo_existente": "LP001",
+      "intento_duplicado": {
+        "nombre": "Laptop Nueva",
+        "codigo": "LP001",
+        "categoria": "Electrónicos",
+        "precio": "1200"
+      },
+      "error_esperado": "El código de producto ya existe"
     }
   ],
   "criterios_busqueda": [
     {
-      "tipo": "por_nombre",
-      "valor": "Laptop",
-      "resultados_esperados": ["DELL-INS-15-2024"],
-      "descripcion": "Búsqueda por nombre de producto"
+      "criterio": "nombre",
+      "termino": "iPhone",
+      "resultados_esperados": ["iPhone 15 Pro", "iPhone 14 Pro"],
+      "debe_resaltar": true
     },
     {
-      "tipo": "por_categoria",
-      "valor": "Electrónicos",
-      "resultados_esperados": ["DELL-INS-15-2024", "LOGI-MX-MASTER-3"],
-      "descripcion": "Búsqueda por categoría"
+      "criterio": "categoria",
+      "termino": "Móviles",
+      "resultados_esperados": ["iPhone 15 Pro", "Samsung Galaxy S24"],
+      "debe_resaltar": false
     },
     {
-      "tipo": "por_codigo_sku",
-      "valor": "DELL",
-      "resultados_esperados": ["DELL-INS-15-2024"],
-      "descripcion": "Búsqueda por código SKU parcial"
+      "criterio": "codigo",
+      "termino": "IP015",
+      "resultados_esperados": ["iPhone 15 Pro"],
+      "debe_resaltar": true
     },
     {
-      "tipo": "por_rango_precio",
-      "valor_minimo": 500000,
-      "valor_maximo": 1000000,
-      "resultados_esperados": ["DELL-INS-15-2024"],
-      "descripcion": "Búsqueda por rango de precios"
+      "criterio": "precio",
+      "termino": "999",
+      "resultados_esperados": ["iPhone 15 Pro"],
+      "debe_resaltar": false
+    }
+  ],
+  "filtros_avanzados": [
+    {
+      "tipo": "filtro_categoria",
+      "valores": ["Electrónicos", "Móviles", "Audio", "Tablets", "Monitores"],
+      "multiple_seleccion": true
+    },
+    {
+      "tipo": "filtro_precio",
+      "rango": {
+        "minimo": 0,
+        "maximo": 5000
+      },
+      "formato": "decimal"
+    },
+    {
+      "tipo": "filtro_stock",
+      "opciones": ["Disponible", "Stock Bajo", "Agotado"],
+      "criterios": {
+        "disponible": "> 10",
+        "stock_bajo": "1-10",
+        "agotado": "0"
+      }
     }
   ],
   "operaciones_masivas": [
     {
       "tipo": "cambio_categoria",
-      "productos_seleccionados": ["DELL-INS-15-2024", "LOGI-MX-MASTER-3"],
-      "nueva_categoria": "Ofertas Especiales",
-      "mensaje_exito_esperado": "2 productos actualizados exitosamente"
+      "descripcion": "Cambiar categoría de múltiples productos",
+      "productos_seleccionados": ["Producto1", "Producto2", "Producto3"],
+      "parametros": {
+        "nueva_categoria": "Categoría B"
+      },
+      "resultado_esperado": "Productos actualizados exitosamente"
     },
     {
       "tipo": "descuento_masivo",
-      "productos_seleccionados": ["BOOK-JAVA-EFF-3ED", "COFFEE-COL-ORIGIN-500G"],
-      "porcentaje_descuento": 10,
-      "mensaje_exito_esperado": "Descuento aplicado a 2 productos"
+      "descripcion": "Aplicar descuento a productos seleccionados",
+      "productos_seleccionados": ["iPhone 15 Pro", "iPad Pro 12.9"],
+      "parametros": {
+        "porcentaje_descuento": "10"
+      },
+      "resultado_esperado": "Descuento aplicado a 2 productos"
     },
     {
-      "tipo": "activar_productos",
-      "productos_seleccionados": ["AGOTADO-TEST-001"],
-      "nuevo_estado": "ACTIVO",
-      "mensaje_exito_esperado": "1 producto activado exitosamente"
-    }
-  ],
-  "configuracion": {
-    "categorias_disponibles": [
-      "Electrónicos",
-      "Libros",
-      "Muebles",
-      "Alimentos",
-      "Ropa",
-      "Deportes",
-      "Hogar",
-      "Test"
-    ],
-    "estados_producto": [
-      "ACTIVO",
-      "INACTIVO",
-      "AGOTADO",
-      "DESCONTINUADO"
-    ],
-    "precio_minimo": 0.01,
-    "precio_maximo": 99999999.99,
-    "stock_minimo_alerta": 10,
-    "longitud_maxima_nombre": 200,
-    "longitud_maxima_descripcion": 1000,
-    "formato_sku": "^[A-Z0-9-]+$",
-    "longitud_maxima_sku": 50
-  },
-  "validaciones": {
-    "campos_obligatorios": [
-      "codigo_sku",
-      "nombre",
-      "precio",
-      "categoria"
-    ],
-    "formatos_precio": {
-      "decimales_permitidos": 2,
-      "separador_decimal": ".",
-      "separador_miles": ","
-    },
-    "reglas_sku": {
-      "unico": true,
-      "solo_mayusculas": true,
-      "caracteres_permitidos": "A-Z0-9-",
-      "no_espacios": true
-    }
-  },
-  "mensajes_sistema": {
-    "producto_creado": "Producto creado exitosamente",
-    "producto_actualizado": "Producto actualizado exitosamente",
-    "producto_eliminado": "Producto eliminado exitosamente",
-    "sin_resultados": "No se encontraron productos que coincidan con la búsqueda",
-    "confirmacion_eliminar": "¿Está seguro de eliminar este producto?",
-    "stock_agotado": "Producto sin stock disponible",
-    "precio_actualizado": "Precio actualizado correctamente"
-  },
-  "datos_auditoria": [
-    {
-      "producto_id": "DELL-INS-15-2024",
-      "cambios": [
-        {
-          "fecha": "2024-12-10T14:30:00",
-          "usuario": "admin@test.com",
-          "campo": "precio",
-          "valor_anterior": 849999.00,
-          "valor_nuevo": 799999.00,
-          "motivo": "Ajuste de precio promocional"
-        },
-        {
-          "fecha": "2024-11-15T10:15:00",
-          "usuario": "test@test.com",
-          "campo": "stock",
-          "valor_anterior": 30,
-          "valor_nuevo": 25,
-          "motivo": "Ajuste de inventario"
-        }
-      ]
+      "tipo": "eliminacion_masiva",
+      "descripcion": "Eliminar múltiples productos",
+      "productos_seleccionados": ["Producto Test 1", "Producto Test 2"],
+      "confirmacion_requerida": true,
+      "resultado_esperado": "2 productos eliminados exitosamente"
     }
   ],
   "escenarios_performance": [
     {
-      "tipo": "carga_masiva",
-      "numero_productos": 1000,
-      "tiempo_maximo_segundos": 30,
-      "descripcion": "Cargar 1000 productos en menos de 30 segundos"
-    },
-    {
-      "tipo": "busqueda_rapida",
-      "criterio": "nombre contiene 'test'",
-      "tiempo_maximo_milisegundos": 500,
-      "descripcion": "Búsqueda debe responder en menos de 500ms"
-    },
-    {
-      "tipo": "operacion_crud",
       "operacion": "crear",
-      "tiempo_maximo_segundos": 2,
-      "descripcion": "Crear producto en menos de 2 segundos"
+      "tiempo_maximo_ms": 2000,
+      "datos_test": "producto_laptop_gamer"
+    },
+    {
+      "operacion": "leer",
+      "tiempo_maximo_ms": 1000,
+      "cantidad_productos": 100
+    },
+    {
+      "operacion": "actualizar",
+      "tiempo_maximo_ms": 2000,
+      "datos_test": "producto_editable"
+    },
+    {
+      "operacion": "eliminar",
+      "tiempo_maximo_ms": 1000,
+      "datos_test": "producto_eliminable"
     }
   ],
-  "metadatos": {
-    "version": "1.0.0",
-    "fecha_creacion": "2024-12-15",
-    "autor": "Equipo QA - Proyecto BDD",
-    "descripcion": "Datos de prueba para escenarios CRUD de productos",
-    "casos_cubiertos": [
-      "Crear productos",
-      "Editar productos",
-      "Eliminar productos",
-      "Buscar productos",
-      "Validaciones de campos",
-      "Operaciones masivas",
-      "Manejo de stock",
-      "Validación de SKU único",
-      "Filtros por categoría",
-      "Rangos de precio"
-    ],
-    "historias_usuario_relacionadas": [
-      "HU-003: Gestión de Productos (CRUD)"
-    ]
+  "escenarios_integracion": [
+    {
+      "tipo": "sincronizacion_inventario",
+      "producto_inicial": {
+        "nombre": "Producto Sync",
+        "stock": 10
+      },
+      "venta_simulada": {
+        "unidades_vendidas": 3
+      },
+      "stock_esperado": 7,
+      "debe_generar_historial": true
+    },
+    {
+      "tipo": "alerta_stock_bajo",
+      "producto": {
+        "nombre": "Producto Crítico",
+        "stock": 2,
+        "stock_minimo": 5
+      },
+      "debe_generar_alerta": true,
+      "notificacion_esperada": "Stock por debajo del mínimo"
+    }
+  ],
+  "datos_auditoria": [
+    {
+      "tipo": "modificacion_precio",
+      "producto": "iPhone 15 Pro",
+      "campo_modificado": "precio",
+      "valor_anterior": "999",
+      "valor_nuevo": "1099",
+      "usuario": "admin",
+      "debe_registrar": true
+    },
+    {
+      "tipo": "eliminacion_producto",
+      "producto": "Producto Obsoleto",
+      "usuario": "admin",
+      "razon": "Producto descontinuado",
+      "debe_registrar": true
+    }
+  ],
+  "configuracion_paginacion": [
+    {
+      "total_productos": 50,
+      "productos_por_pagina": 10,
+      "paginas_esperadas": 5
+    },
+    {
+      "total_productos": 100,
+      "productos_por_pagina": 25,
+      "paginas_esperadas": 4
+    },
+    {
+      "total_productos": 75,
+      "productos_por_pagina": 20,
+      "paginas_esperadas": 4
+    }
+  ],
+  "configuracion_exportacion": [
+    {
+      "formato": "excel",
+      "extension": ".xlsx",
+      "incluye_columnas": ["nombre", "codigo", "categoria", "precio", "stock"],
+      "nombre_archivo_patron": "productos_YYYY-MM-DD.xlsx"
+    },
+    {
+      "formato": "csv",
+      "extension": ".csv",
+      "separador": ",",
+      "encoding": "UTF-8"
+    }
+  ],
+  "configuracion_tests": {
+    "timeouts": {
+      "crear_producto": 3000,
+      "cargar_lista": 2000,
+      "buscar_productos": 1500,
+      "operacion_masiva": 5000
+    },
+    "reintentos": {
+      "maximo_intentos": 3,
+      "delay_entre_intentos": 1000
+    },
+    "validaciones": {
+      "verificar_datos_guardados": true,
+      "verificar_trazabilidad": true,
+      "verificar_performance": true
+    }
   }
 }

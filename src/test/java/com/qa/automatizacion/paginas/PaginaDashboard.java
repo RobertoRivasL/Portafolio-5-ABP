@@ -129,6 +129,11 @@ public class PaginaDashboard extends PaginaBase {
         return utileria.obtenerUrlDashboard();
     }
 
+    @Override
+    protected String obtenerUrlEsperada() {
+        return "/dashboard";
+    }
+
     // ==================== MÉTODOS DE INFORMACIÓN DEL USUARIO ====================
 
     /**
